@@ -1,5 +1,5 @@
 CREATE TABLE `stats_access` (
-  `id`       INTEGER PRIMARY KEY AUTOINCREMENT,
+  `id`       INTEGER PRIMARY KEY,
   `dt`       TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `page`     TEXT NOT NULL,
   `ip`       TEXT NOT NULL,
@@ -43,7 +43,7 @@ ALTER TABLE `stats_access` ADD COLUMN `js` INTEGER NOT NULL DEFAULT 1;
 ALTER TABLE `stats_access` ADD COLUMN `uid` TEXT NOT NULL DEFAULT '';
 
 CREATE TABLE `stats_outlinks` (
-  `id`       INTEGER PRIMARY KEY AUTOINCREMENT,
+  `id`       INTEGER PRIMARY KEY,
   `dt`       TEXT NOT NULL,
   `session`  TEXT NOT NULL,
   `link_md5` TEXT NOT NULL,
@@ -56,7 +56,7 @@ CREATE INDEX `idx_stats_outlinks_link_md5` ON `stats_outlinks` (`link_md5`);
 ALTER TABLE `stats_outlinks` ADD COLUMN `page` TEXT NOT NULL DEFAULT '';
 
 CREATE TABLE `stats_search` (
-  `id`     INTEGER PRIMARY KEY AUTOINCREMENT,
+  `id`     INTEGER PRIMARY KEY,
   `dt`     TEXT NOT NULL,
   `page`   TEXT NOT NULL,
   `query`  TEXT NOT NULL,
@@ -103,7 +103,7 @@ INSERT INTO stats_refseen (`ref_md5`, `dt`) SELECT
 
 -- UPGRADE added 2012-02-08
 CREATE TABLE `stats_edits` (
-  `id`      INTEGER PRIMARY KEY AUTOINCREMENT,
+  `id`      INTEGER PRIMARY KEY,
   `dt`      TEXT NOT NULL,
   `ip`      TEXT NOT NULL,
   `user`    TEXT NOT NULL,
@@ -126,7 +126,7 @@ CREATE TABLE `stats_session` (
 );
 
 CREATE TABLE `stats_logins` (
-  `id`      INTEGER PRIMARY KEY AUTOINCREMENT,
+  `id`      INTEGER PRIMARY KEY,
   `dt`      TEXT NOT NULL,
   `ip`      TEXT NOT NULL,
   `user`    TEXT NOT NULL,
@@ -153,7 +153,7 @@ CREATE TABLE `stats_lastseen` (
 );
 
 CREATE TABLE `stats_media` (
-  `id`      INTEGER PRIMARY KEY AUTOINCREMENT,
+  `id`      INTEGER PRIMARY KEY,
   `dt`      TEXT NOT NULL,
   `media`   TEXT NOT NULL,
   `ip`      TEXT,
@@ -185,7 +185,7 @@ CREATE TABLE `stats_history` (
 );
 
 CREATE TABLE `stats_groups` (
-  `id`      INTEGER PRIMARY KEY AUTOINCREMENT,
+  `id`      INTEGER PRIMARY KEY,
   `dt`      TEXT NOT NULL,
   `group`   TEXT NOT NULL,
   `type`    TEXT NOT NULL
