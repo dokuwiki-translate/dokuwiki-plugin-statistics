@@ -1,116 +1,73 @@
 CREATE TABLE `stats_access` (
-  `id`       BIGINT(20) UNSIGNED     NOT NULL AUTO_INCREMENT,
-  `dt`       TIMESTAMP               NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `page`     VARCHAR(255)
-             COLLATE utf8_unicode_ci NOT NULL,
-  `ip`       VARCHAR(40)
-             COLLATE utf8_unicode_ci NOT NULL,
-  `ua`       VARCHAR(255)
-             COLLATE utf8_unicode_ci NOT NULL,
-  `ua_info`  VARCHAR(255)
-             COLLATE utf8_unicode_ci NOT NULL,
-  `ua_type`  VARCHAR(32)
-             COLLATE utf8_unicode_ci NOT NULL,
-  `ua_ver`   VARCHAR(10)
-             COLLATE utf8_unicode_ci NOT NULL,
-  `os`       VARCHAR(32)
-             COLLATE utf8_unicode_ci NOT NULL,
-  `ref_md5`  VARCHAR(32)
-             COLLATE utf8_unicode_ci NOT NULL,
-  `ref_type` VARCHAR(32)
-             COLLATE utf8_unicode_ci NOT NULL,
-  `ref`      TEXT
-             COLLATE utf8_unicode_ci NOT NULL,
-  `screen_x` INT(10) UNSIGNED        NOT NULL,
-  `screen_y` INT(10) UNSIGNED        NOT NULL,
-  `view_x`   INT(10) UNSIGNED        NOT NULL,
-  `view_y`   INT(10) UNSIGNED        NOT NULL,
-  `user`     VARCHAR(255)
-             COLLATE utf8_unicode_ci NOT NULL,
-  `session`  VARCHAR(255)
-             COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `ref_type` (`ref_type`),
-  KEY `page` (`page`),
-  KEY `ref_md5` (`ref_md5`),
-  KEY `dt` (`dt`)
-)
-  ENGINE =MyISAM
-  DEFAULT CHARSET =utf8
-  COLLATE =utf8_unicode_ci;
+  `id`       INTEGER PRIMARY KEY AUTOINCREMENT,
+  `dt`       TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `page`     TEXT NOT NULL,
+  `ip`       TEXT NOT NULL,
+  `ua`       TEXT NOT NULL,
+  `ua_info`  TEXT NOT NULL,
+  `ua_type`  TEXT NOT NULL,
+  `ua_ver`   TEXT NOT NULL,
+  `os`       TEXT NOT NULL,
+  `ref_md5`  TEXT NOT NULL,
+  `ref_type` TEXT NOT NULL,
+  `ref`      TEXT NOT NULL,
+  `screen_x` INTEGER NOT NULL,
+  `screen_y` INTEGER NOT NULL,
+  `view_x`   INTEGER NOT NULL,
+  `view_y`   INTEGER NOT NULL,
+  `user`     TEXT NOT NULL,
+  `session`  TEXT NOT NULL
+);
+
+CREATE INDEX `idx_stats_access_ref_type` ON `stats_access` (`ref_type`);
+CREATE INDEX `idx_stats_access_page` ON `stats_access` (`page`);
+CREATE INDEX `idx_stats_access_ref_md5` ON `stats_access` (`ref_md5`);
+CREATE INDEX `idx_stats_access_dt` ON `stats_access` (`dt`);
 
 CREATE TABLE `stats_iplocation` (
-  `ip`      VARCHAR(40)
-            COLLATE utf8_unicode_ci NOT NULL,
-  `code`    VARCHAR(3)
-            COLLATE utf8_unicode_ci NOT NULL,
-  `country` VARCHAR(255)
-            COLLATE utf8_unicode_ci NOT NULL,
-  `city`    VARCHAR(255)
-            COLLATE utf8_unicode_ci NOT NULL,
-  `host`    VARCHAR(255)
-            COLLATE utf8_unicode_ci NOT NULL,
-  `lastupd` TIMESTAMP               NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`ip`),
-  KEY `code` (`code`)
-)
-  ENGINE =MyISAM
-  DEFAULT CHARSET =utf8
-  COLLATE =utf8_unicode_ci;
+  `ip`      TEXT PRIMARY KEY,
+  `code`    TEXT NOT NULL,
+  `country` TEXT NOT NULL,
+  `city`    TEXT NOT NULL,
+  `host`    TEXT NOT NULL,
+  `lastupd` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX `idx_stats_iplocation_code` ON `stats_iplocation` (`code`);
 
 -- UPGRADE added 2007-01-28
-ALTER TABLE `stats_access` CHANGE `dt` `dt` DATETIME NOT NULL;
-ALTER TABLE `stats_access` ADD `js` TINYINT(1) NOT NULL
-AFTER `view_y`;
-UPDATE `stats_access`
-SET js = 1;
+-- SQLite doesn't support CHANGE COLUMN, dt is already TEXT which works for datetime
+ALTER TABLE `stats_access` ADD COLUMN `js` INTEGER NOT NULL DEFAULT 1;
 
 -- UPGRADE added 2007-01-31
-ALTER TABLE `stats_access` ADD `uid` VARCHAR(50) NOT NULL;
+ALTER TABLE `stats_access` ADD COLUMN `uid` TEXT NOT NULL DEFAULT '';
 
 CREATE TABLE `stats_outlinks` (
-  `id`       BIGINT(20) UNSIGNED     NOT NULL AUTO_INCREMENT,
-  `dt`       DATETIME                NOT NULL,
-  `session`  VARCHAR(255)
-             COLLATE utf8_unicode_ci NOT NULL,
-  `link_md5` VARCHAR(32)
-             COLLATE utf8_unicode_ci NOT NULL,
-  `link`     TEXT
-             COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `link_md5` (`link_md5`)
-)
-  ENGINE =MyISAM
-  DEFAULT CHARSET =utf8
-  COLLATE =utf8_unicode_ci;
+  `id`       INTEGER PRIMARY KEY AUTOINCREMENT,
+  `dt`       TEXT NOT NULL,
+  `session`  TEXT NOT NULL,
+  `link_md5` TEXT NOT NULL,
+  `link`     TEXT NOT NULL
+);
+
+CREATE INDEX `idx_stats_outlinks_link_md5` ON `stats_outlinks` (`link_md5`);
 
 -- UPGRADE added 2007-02-04
-ALTER TABLE `stats_outlinks` ADD `page` VARCHAR(255) NOT NULL
-AFTER `dt`;
+ALTER TABLE `stats_outlinks` ADD COLUMN `page` TEXT NOT NULL DEFAULT '';
 
 CREATE TABLE `stats_search` (
-  `id`     BIGINT(20) UNSIGNED     NOT NULL AUTO_INCREMENT,
-  `dt`     DATETIME                NOT NULL,
-  `page`   VARCHAR(255)
-           COLLATE utf8_unicode_ci NOT NULL,
-  `query`  VARCHAR(255)
-           COLLATE utf8_unicode_ci NOT NULL,
-  `engine` VARCHAR(255)
-           COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`)
-)
-  ENGINE =MyISAM
-  DEFAULT CHARSET =utf8
-  COLLATE =utf8_unicode_ci;
+  `id`     INTEGER PRIMARY KEY AUTOINCREMENT,
+  `dt`     TEXT NOT NULL,
+  `page`   TEXT NOT NULL,
+  `query`  TEXT NOT NULL,
+  `engine` TEXT NOT NULL
+);
 
 CREATE TABLE `stats_searchwords` (
-  `sid`  BIGINT UNSIGNED NOT NULL,
-  `word` VARCHAR(255)    NOT NULL,
+  `sid`  INTEGER NOT NULL,
+  `word` TEXT NOT NULL,
   PRIMARY KEY (`sid`, `word`)
-)
-  ENGINE = MYISAM
-  CHARACTER SET utf8
-  COLLATE utf8_unicode_ci;
+);
 
 -- statistic fixes
 UPDATE stats_access
@@ -131,15 +88,11 @@ WHERE ref LIKE 'http://segnalo.alice.it/%';
 
 -- UPGRADE added 2008-06-15
 CREATE TABLE `stats_refseen` (
-  `ref_md5` VARCHAR(32)
-            COLLATE utf8_unicode_ci NOT NULL,
-  `dt`      DATETIME                NOT NULL,
-  PRIMARY KEY (`ref_md5`),
-  KEY `dt` (`dt`)
-)
-  ENGINE = MYISAM
-  CHARACTER SET utf8
-  COLLATE utf8_unicode_ci;
+  `ref_md5` TEXT PRIMARY KEY,
+  `dt`      TEXT NOT NULL
+);
+
+CREATE INDEX `idx_stats_refseen_dt` ON `stats_refseen` (`dt`);
 
 -- This will take some time...
 INSERT INTO stats_refseen (`ref_md5`, `dt`) SELECT
@@ -150,118 +103,99 @@ INSERT INTO stats_refseen (`ref_md5`, `dt`) SELECT
 
 -- UPGRADE added 2012-02-08
 CREATE TABLE `stats_edits` (
-  `id`      BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `dt`      DATETIME            NOT NULL,
-  `ip`      VARCHAR(40)         NOT NULL,
-  `user`    VARCHAR(255)        NOT NULL,
-  `session` VARCHAR(255)        NOT NULL,
-  `uid`     VARCHAR(50)         NOT NULL,
-  `page`    VARCHAR(255)        NOT NULL,
-  `type`    CHAR(1)
-            COLLATE 'ascii_bin' NOT NULL
-)
-  ENGINE ='MyISAM'
-  COLLATE 'utf8_general_ci';
+  `id`      INTEGER PRIMARY KEY AUTOINCREMENT,
+  `dt`      TEXT NOT NULL,
+  `ip`      TEXT NOT NULL,
+  `user`    TEXT NOT NULL,
+  `session` TEXT NOT NULL,
+  `uid`     TEXT NOT NULL,
+  `page`    TEXT NOT NULL,
+  `type`    TEXT NOT NULL
+);
 
-ALTER TABLE `stats_access` CHANGE `ip` `ip` VARCHAR(40);
+-- SQLite doesn't support CHANGE COLUMN, ip column already exists as TEXT
 
-ALTER TABLE `stats_search` ADD INDEX `engine` (`engine`);
+CREATE INDEX `idx_stats_search_engine` ON `stats_search` (`engine`);
 
 CREATE TABLE `stats_session` (
-  `session` VARCHAR(255) NOT NULL PRIMARY KEY,
-  `dt`      DATETIME     NOT NULL,
-  `end`     DATETIME     NOT NULL,
-  `views`   INT UNSIGNED NOT NULL,
-  `uid`     VARCHAR(50)  NOT NULL
-)
-  COMMENT =''
-  ENGINE ='MyISAM'
-  COLLATE 'utf8_general_ci';
+  `session` TEXT PRIMARY KEY,
+  `dt`      TEXT NOT NULL,
+  `end`     TEXT NOT NULL,
+  `views`   INTEGER NOT NULL,
+  `uid`     TEXT NOT NULL
+);
 
 CREATE TABLE `stats_logins` (
-  `id`      BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `dt`      DATETIME            NOT NULL,
-  `ip`      VARCHAR(40)         NOT NULL,
-  `user`    VARCHAR(255)        NOT NULL,
-  `session` VARCHAR(255)        NOT NULL,
-  `uid`     VARCHAR(50)         NOT NULL,
-  `type`    CHAR(1)
-            COLLATE 'ascii_bin' NOT NULL
-)
-  ENGINE ='MyISAM'
-  COLLATE 'utf8_general_ci';
+  `id`      INTEGER PRIMARY KEY AUTOINCREMENT,
+  `dt`      TEXT NOT NULL,
+  `ip`      TEXT NOT NULL,
+  `user`    TEXT NOT NULL,
+  `session` TEXT NOT NULL,
+  `uid`     TEXT NOT NULL,
+  `type`    TEXT NOT NULL
+);
 
-ALTER TABLE `stats_edits` ADD INDEX `dt` (`dt`);
-ALTER TABLE `stats_edits` ADD INDEX `type` (`type`);
-ALTER TABLE `stats_logins` ADD INDEX `dt` (`dt`);
-ALTER TABLE `stats_logins` ADD INDEX `type` (`type`);
-ALTER TABLE `stats_outlinks` ADD INDEX `dt` (`dt`);
-ALTER TABLE `stats_search` ADD INDEX `dt` (`dt`);
-ALTER TABLE `stats_session` ADD INDEX `dt` (`dt`);
-ALTER TABLE `stats_session` ADD INDEX `views` (`views`);
-ALTER TABLE `stats_session` ADD INDEX `uid` (`uid`);
-ALTER TABLE `stats_access` ADD INDEX `ua_type` (`ua_type`);
+CREATE INDEX `idx_stats_edits_dt` ON `stats_edits` (`dt`);
+CREATE INDEX `idx_stats_edits_type` ON `stats_edits` (`type`);
+CREATE INDEX `idx_stats_logins_dt` ON `stats_logins` (`dt`);
+CREATE INDEX `idx_stats_logins_type` ON `stats_logins` (`type`);
+CREATE INDEX `idx_stats_outlinks_dt` ON `stats_outlinks` (`dt`);
+CREATE INDEX `idx_stats_search_dt` ON `stats_search` (`dt`);
+CREATE INDEX `idx_stats_session_dt` ON `stats_session` (`dt`);
+CREATE INDEX `idx_stats_session_views` ON `stats_session` (`views`);
+CREATE INDEX `idx_stats_session_uid` ON `stats_session` (`uid`);
+CREATE INDEX `idx_stats_access_ua_type` ON `stats_access` (`ua_type`);
 
 -- UPGRADE added 2014-06-18
 CREATE TABLE `stats_lastseen` (
-  `user` VARCHAR(255) NOT NULL,
-  `dt`   TIMESTAMP    NOT NULL,
-  PRIMARY KEY (`user`)
-)
-  ENGINE ='MEMORY'
-  COLLATE 'utf8_general_ci';
+  `user` TEXT PRIMARY KEY,
+  `dt`   TEXT NOT NULL
+);
 
 CREATE TABLE `stats_media` (
-  `id`      BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `dt`      DATETIME            NOT NULL,
-  `media`   VARCHAR(255)        NOT NULL,
-  `ip`      VARCHAR(40) DEFAULT NULL,
-  `ua`      VARCHAR(255)        NOT NULL,
-  `ua_info` VARCHAR(255)        NOT NULL,
-  `ua_type` VARCHAR(32)         NOT NULL,
-  `ua_ver`  VARCHAR(10)         NOT NULL,
-  `os`      VARCHAR(32)         NOT NULL,
-  `user`    VARCHAR(255)        NOT NULL,
-  `session` VARCHAR(255)        NOT NULL,
-  `uid`     VARCHAR(50)         NOT NULL,
-  `size`    INT UNSIGNED        NOT NULL,
-  `mime1`   VARCHAR(50)         NOT NULL,
-  `mime2`   VARCHAR(50)         NOT NULL,
-  `inline`  TINYINT(1)          NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `media` (`media`),
-  KEY `dt` (`dt`),
-  KEY `ua_type` (`ua_type`)
-)
-  ENGINE ='MyISAM'
-  COLLATE ='utf8_unicode_ci';
+  `id`      INTEGER PRIMARY KEY AUTOINCREMENT,
+  `dt`      TEXT NOT NULL,
+  `media`   TEXT NOT NULL,
+  `ip`      TEXT,
+  `ua`      TEXT NOT NULL,
+  `ua_info` TEXT NOT NULL,
+  `ua_type` TEXT NOT NULL,
+  `ua_ver`  TEXT NOT NULL,
+  `os`      TEXT NOT NULL,
+  `user`    TEXT NOT NULL,
+  `session` TEXT NOT NULL,
+  `uid`     TEXT NOT NULL,
+  `size`    INTEGER NOT NULL,
+  `mime1`   TEXT NOT NULL,
+  `mime2`   TEXT NOT NULL,
+  `inline`  INTEGER NOT NULL
+);
 
-ALTER TABLE `stats_media` ADD INDEX `mime1` (`mime1`);
+CREATE INDEX `idx_stats_media_media` ON `stats_media` (`media`);
+CREATE INDEX `idx_stats_media_dt` ON `stats_media` (`dt`);
+CREATE INDEX `idx_stats_media_ua_type` ON `stats_media` (`ua_type`);
+
+CREATE INDEX `idx_stats_media_mime1` ON `stats_media` (`mime1`);
 
 CREATE TABLE `stats_history` (
-  `info`    VARCHAR(50)         NOT NULL,
-  `dt`      DATE                NOT NULL,
-  `value`   INT UNSIGNED        NOT NULL,
+  `info`    TEXT NOT NULL,
+  `dt`      TEXT NOT NULL,
+  `value`   INTEGER NOT NULL,
   PRIMARY KEY (`info`, `dt`)
-)
-  ENGINE ='MyISAM'
-  COLLATE ='utf8_unicode_ci';
+);
 
 CREATE TABLE `stats_groups` (
-  `id`      BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `dt`      DATETIME            NOT NULL,
-  `group`   VARCHAR(255)        NOT NULL,
-  `type`    VARCHAR(50)         NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `dt` (`dt`),
-  KEY `type` (`type`)
-)
-  ENGINE ='MyISAM'
-  COLLATE ='utf8_unicode_ci';
+  `id`      INTEGER PRIMARY KEY AUTOINCREMENT,
+  `dt`      TEXT NOT NULL,
+  `group`   TEXT NOT NULL,
+  `type`    TEXT NOT NULL
+);
+
+CREATE INDEX `idx_stats_groups_dt` ON `stats_groups` (`dt`);
+CREATE INDEX `idx_stats_groups_type` ON `stats_groups` (`type`);
 
 -- UPGRADE added 2019-04-10
-ALTER TABLE `stats_history` MODIFY COLUMN `value` BIGINT;
+-- SQLite INTEGER can handle large values, no modification needed
 
 -- UPGRADE added 2023-12-08
-ALTER TABLE `stats_iplocation` MODIFY COLUMN `ip` VARCHAR(40);
-ALTER TABLE `stats_access` MODIFY COLUMN `ip` VARCHAR(40);
+-- SQLite TEXT columns already handle variable length strings, no modification needed
