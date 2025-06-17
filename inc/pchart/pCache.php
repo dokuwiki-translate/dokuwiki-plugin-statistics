@@ -1,4 +1,5 @@
 <?php
+
 /**
  * pCache - Faster renderding using data cache
  *
@@ -21,25 +22,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-class pCache {
+class pCache
+{
     protected $HashKey = "";
     protected $CacheFolder = "Cache/";
 
     /**
      *  Create the pCache object
      */
-    public function __construct($CacheFolder = "Cache") {
-        $this->CacheFolder = $CacheFolder.'/';
+    public function __construct($CacheFolder = "Cache")
+    {
+        $this->CacheFolder = $CacheFolder . '/';
     }
 
     /**
      *  Clear the cache folder
      */
-    public function ClearCache() {
-        if($handle = opendir($this->CacheFolder)) {
-            while(false !== ($file = readdir($handle))) {
-                if($file != "." && $file != "..")
-                    unlink($this->CacheFolder.$file);
+    public function ClearCache()
+    {
+        if ($handle = opendir($this->CacheFolder)) {
+            while (false !== ($file = readdir($handle))) {
+                if ($file != "." && $file != "..")
+                    unlink($this->CacheFolder . $file);
             }
             closedir($handle);
         }
@@ -48,19 +52,21 @@ class pCache {
     /**
      *  Check if we have an offline version of this chart
      */
-    public function IsInCache($ID, $Data, $Hash = '') {
-        if($Hash === '')
+    public function IsInCache($ID, $Data, $Hash = '')
+    {
+        if ($Hash === '')
             $Hash = $this->GetHash($ID, $Data);
 
-        return file_exists($this->CacheFolder.$Hash);
+        return file_exists($this->CacheFolder . $Hash);
     }
 
     /**
      * Make a copy of drawn chart in the cache folder
      */
-    public function WriteToCache($ID, $Data, pChart $Picture) {
+    public function WriteToCache($ID, $Data, pChart $Picture)
+    {
         $Hash     = $this->GetHash($ID, $Data);
-        $FileName = $this->CacheFolder.$Hash;
+        $FileName = $this->CacheFolder . $Hash;
 
         imagepng($Picture->getPicture(), $FileName);
     }
@@ -68,11 +74,12 @@ class pCache {
     /**
      * Remove any cached copy of this chart
      */
-    public function DeleteFromCache($ID, $Data) {
+    public function DeleteFromCache($ID, $Data)
+    {
         $Hash     = $this->GetHash($ID, $Data);
-        $FileName = $this->CacheFolder.$Hash;
+        $FileName = $this->CacheFolder . $Hash;
 
-        if(file_exists($FileName))
+        if (file_exists($FileName))
             unlink($FileName);
     }
 
@@ -84,30 +91,32 @@ class pCache {
      * @param   bool    $return   FALSE prints the image and exits TRUE returns the picture
      * @return  string  image/PNG If $return == TRUE, the image is returned
      */
-    public function GetFromCache($ID, $Data, $return = FALSE) {
+    public function GetFromCache($ID, $Data, $return = false)
+    {
         $Hash = $this->GetHash($ID, $Data);
-        if(!$this->IsInCache('', '', $Hash)) return false;
+        if (!$this->IsInCache('', '', $Hash)) return false;
 
-        $FileName = $this->CacheFolder.$Hash;
-        if($return) {
+        $FileName = $this->CacheFolder . $Hash;
+        if ($return) {
             return file_get_contents($FileName);
         } else {
             header('Content-type: image/png');
             @readfile($FileName);
-            exit ();
+            exit();
         }
     }
 
     /**
      * Build the graph unique hash key
      */
-    protected function GetHash($ID, $Data) {
+    protected function GetHash($ID, $Data)
+    {
         $mKey = "$ID";
-        foreach($Data as $Values) {
+        foreach ($Data as $Values) {
             $tKey = "";
-            foreach($Values as $Serie => $Value)
-                $tKey = $tKey.$Serie.$Value;
-            $mKey = $mKey.md5($tKey);
+            foreach ($Values as $Serie => $Value)
+                $tKey = $tKey . $Serie . $Value;
+            $mKey .= md5($tKey);
         }
         return (md5($mKey));
     }

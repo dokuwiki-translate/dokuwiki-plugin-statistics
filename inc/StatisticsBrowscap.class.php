@@ -1,15 +1,19 @@
 <?php
-require dirname(__FILE__) . '/Browscap.php';
+
+use dokuwiki\HTTP\DokuHTTPClient;
+
+require __DIR__ . '/Browscap.php';
 
 /**
  * Overwrites some methods from the original upstream Browscap class
  */
-class StatisticsBrowscap extends Browscap {
-
+class StatisticsBrowscap extends Browscap
+{
     /**
      * Defines our own cache locations and names
      */
-    public function __construct() {
+    public function __construct()
+    {
         global $conf;
         $this->cacheDir      = $conf['cachedir'] . '/';
         $this->cacheFilename = 'browscap.ini.php';
@@ -23,10 +27,11 @@ class StatisticsBrowscap extends Browscap {
      * @throws Exception
      * @return string
      */
-    protected function _getRemoteData($url) {
+    protected function _getRemoteData($url)
+    {
         $http = new DokuHTTPClient($url);
         $file = $http->get($url);
-        if(!$file)
+        if (!$file)
             throw new Exception('Your server can\'t connect to external resources. Please update the file manually.');
         return $file;
     }

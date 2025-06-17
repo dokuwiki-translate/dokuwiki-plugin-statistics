@@ -1,17 +1,20 @@
 <?php
 
-class StatisticsQuery {
+class StatisticsQuery
+{
     private $hlp;
 
-    public function __construct(helper_plugin_statistics $hlp) {
+    public function __construct(helper_plugin_statistics $hlp)
+    {
         $this->hlp = $hlp;
     }
 
     /**
      * Return some aggregated statistics
      */
-    public function aggregate($tlimit) {
-        $data = array();
+    public function aggregate($tlimit)
+    {
+        $data = [];
 
         $sql    = "SELECT ref_type, COUNT(*) as cnt
                   FROM " . $this->hlp->prefix . "access as A
@@ -20,11 +23,11 @@ class StatisticsQuery {
               GROUP BY ref_type";
         $result = $this->hlp->runSQL($sql);
 
-        if(is_array($result)) foreach($result as $row) {
-            if($row['ref_type'] == 'search') $data['search'] = $row['cnt'];
-            if($row['ref_type'] == 'external') $data['external'] = $row['cnt'];
-            if($row['ref_type'] == 'internal') $data['internal'] = $row['cnt'];
-            if($row['ref_type'] == '') $data['direct'] = $row['cnt'];
+        if (is_array($result)) foreach ($result as $row) {
+            if ($row['ref_type'] == 'search') $data['search'] = $row['cnt'];
+            if ($row['ref_type'] == 'external') $data['external'] = $row['cnt'];
+            if ($row['ref_type'] == 'internal') $data['internal'] = $row['cnt'];
+            if ($row['ref_type'] == '') $data['direct'] = $row['cnt'];
         }
 
         // general user and session info
@@ -43,24 +46,13 @@ class StatisticsQuery {
         $data['visitors']  = $result[0]['visitors'];
 
         // calculate bounce rate
-        if($data['sessions']) {
+        if ($data['sessions']) {
             $sql                = "SELECT COUNT(*) as cnt
                       FROM " . $this->hlp->prefix . "session as A
                      WHERE $tlimit
                        AND views = 1";
             $result             = $this->hlp->runSQL($sql);
             $data['bouncerate'] = $result[0]['cnt'] * 100 / $data['sessions'];
-
-            // new visitors
-            $result              = "SELECT COUNT(*) as cnt
-                         FROM " . $this->hlp->prefix . "session as A
-                        WHERE $tlimit
-                          AND NOT EXISTS (
-                                SELECT *
-                                  FROM stats_session B
-                                 WHERE A.session <> B.session
-                                   AND B.uid = B.uid
-                              )";
             $result              = $this->hlp->runSQL($sql);
             $data['newvisitors'] = $result[0]['cnt'] * 100 / $data['sessions'];
         }
@@ -108,7 +100,7 @@ class StatisticsQuery {
 
         // current users
         $sql = "SELECT COUNT(*) as current
-                  FROM ". $this->hlp->prefix . "lastseen
+                  FROM " . $this->hlp->prefix . "lastseen
                  WHERE `dt` >= NOW() - INTERVAL 10 MINUTE";
         $result                = $this->hlp->runSQL($sql);
         $data['current'] = $result[0]['current'];
@@ -124,14 +116,15 @@ class StatisticsQuery {
     /**
      * Return some trend data about visits and edits in the wiki
      */
-    public function dashboardviews($tlimit, $hours = false) {
-        if($hours) {
+    public function dashboardviews($tlimit, $hours = false)
+    {
+        if ($hours) {
             $TIME = 'HOUR(dt)';
         } else {
             $TIME = 'DATE(dt)';
         }
 
-        $data = array();
+        $data = [];
 
         // access trends
         $sql    = "SELECT $TIME as time,
@@ -144,7 +137,7 @@ class StatisticsQuery {
               GROUP BY $TIME
               ORDER BY time";
         $result = $this->hlp->runSQL($sql);
-        foreach($result as $row) {
+        foreach ($result as $row) {
             $data[$row['time']]['sessions']  = $row['sessions'];
             $data[$row['time']]['pageviews'] = $row['pageviews'];
             $data[$row['time']]['visitors']  = $row['visitors'];
@@ -152,17 +145,18 @@ class StatisticsQuery {
         return $data;
     }
 
-    public function dashboardwiki($tlimit, $hours = false) {
-        if($hours) {
+    public function dashboardwiki($tlimit, $hours = false)
+    {
+        if ($hours) {
             $TIME = 'HOUR(dt)';
         } else {
             $TIME = 'DATE(dt)';
         }
 
-        $data = array();
+        $data = [];
 
         // edit trends
-        foreach(array('E', 'C', 'D') as $type) {
+        foreach (['E', 'C', 'D'] as $type) {
             $sql    = "SELECT $TIME as time,
                            COUNT(*) as cnt
                       FROM " . $this->hlp->prefix . "edits as A
@@ -171,7 +165,7 @@ class StatisticsQuery {
                   GROUP BY $TIME
                   ORDER BY time";
             $result = $this->hlp->runSQL($sql);
-            foreach($result as $row) {
+            foreach ($result as $row) {
                 $data[$row['time']][$type] = $row['cnt'];
             }
         }
@@ -179,8 +173,9 @@ class StatisticsQuery {
         return $data;
     }
 
-    public function history($tlimit, $info, $interval = false) {
-        if($interval == 'weeks') {
+    public function history($tlimit, $info, $interval = false)
+    {
+        if ($interval == 'weeks') {
             $TIME = 'EXTRACT(YEAR FROM dt), EXTRACT(WEEK FROM dt)';
         } elseif ($interval == 'months') {
             $TIME = 'EXTRACT(YEAR_MONTH FROM dt)';
@@ -189,8 +184,8 @@ class StatisticsQuery {
         }
 
         $mod = 1;
-        if($info == 'media_size' || $info == 'page_size') {
-            $mod = 1024*1024;
+        if ($info == 'media_size' || $info == 'page_size') {
+            $mod = 1024 * 1024;
         }
 
         $sql = "SELECT $TIME as time,
@@ -203,7 +198,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function searchengines($tlimit, $start = 0, $limit = 20) {
+    public function searchengines($tlimit, $start = 0, $limit = 20)
+    {
         $sql = "SELECT COUNT(*) as cnt, engine as eflag, engine
                   FROM " . $this->hlp->prefix . "search as A
                  WHERE $tlimit
@@ -213,8 +209,9 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function searchphrases($extern, $tlimit, $start = 0, $limit = 20) {
-        if($extern) {
+    public function searchphrases($extern, $tlimit, $start = 0, $limit = 20)
+    {
+        if ($extern) {
             $WHERE = "engine != 'dokuwiki'";
             $I     = '';
         } else {
@@ -231,8 +228,9 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function searchwords($extern, $tlimit, $start = 0, $limit = 20) {
-        if($extern) {
+    public function searchwords($extern, $tlimit, $start = 0, $limit = 20)
+    {
+        if ($extern) {
             $WHERE = "engine != 'dokuwiki'";
             $I     = '';
         } else {
@@ -251,7 +249,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function outlinks($tlimit, $start = 0, $limit = 20) {
+    public function outlinks($tlimit, $start = 0, $limit = 20)
+    {
         $sql = "SELECT COUNT(*) as cnt, link as url
                   FROM " . $this->hlp->prefix . "outlinks as A
                  WHERE $tlimit
@@ -261,7 +260,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function pages($tlimit, $start = 0, $limit = 20) {
+    public function pages($tlimit, $start = 0, $limit = 20)
+    {
         $sql = "SELECT COUNT(*) as cnt, page
                   FROM " . $this->hlp->prefix . "access as A
                  WHERE $tlimit
@@ -272,7 +272,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function edits($tlimit, $start = 0, $limit = 20) {
+    public function edits($tlimit, $start = 0, $limit = 20)
+    {
         $sql = "SELECT COUNT(*) as cnt, page
                   FROM " . $this->hlp->prefix . "edits as A
                  WHERE $tlimit
@@ -282,7 +283,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function images($tlimit, $start = 0, $limit = 20) {
+    public function images($tlimit, $start = 0, $limit = 20)
+    {
         $sql = "SELECT COUNT(*) as cnt, media, SUM(size) as filesize
                   FROM " . $this->hlp->prefix . "media as A
                  WHERE $tlimit
@@ -293,7 +295,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function imagessum($tlimit) {
+    public function imagessum($tlimit)
+    {
         $sql = "SELECT COUNT(*) as cnt, SUM(size) as filesize
                   FROM " . $this->hlp->prefix . "media as A
                  WHERE $tlimit
@@ -301,7 +304,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function downloads($tlimit, $start = 0, $limit = 20) {
+    public function downloads($tlimit, $start = 0, $limit = 20)
+    {
         $sql = "SELECT COUNT(*) as cnt, media, SUM(size) as filesize
                   FROM " . $this->hlp->prefix . "media as A
                  WHERE $tlimit
@@ -312,7 +316,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function downloadssum($tlimit) {
+    public function downloadssum($tlimit)
+    {
         $sql = "SELECT COUNT(*) as cnt, SUM(size) as filesize
                   FROM " . $this->hlp->prefix . "media as A
                  WHERE $tlimit
@@ -320,7 +325,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function referer($tlimit, $start = 0, $limit = 20) {
+    public function referer($tlimit, $start = 0, $limit = 20)
+    {
         $sql = "SELECT COUNT(*) as cnt, ref as url
                   FROM " . $this->hlp->prefix . "access as A
                  WHERE $tlimit
@@ -332,7 +338,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function newreferer($tlimit, $start = 0, $limit = 20) {
+    public function newreferer($tlimit, $start = 0, $limit = 20)
+    {
         $sql = "SELECT COUNT(*) as cnt, ref as url
                   FROM " . $this->hlp->prefix . "access as B,
                        " . $this->hlp->prefix . "refseen as A
@@ -346,7 +353,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function countries($tlimit, $start = 0, $limit = 20) {
+    public function countries($tlimit, $start = 0, $limit = 20)
+    {
         $sql = "SELECT COUNT(DISTINCT session) as cnt, B.code AS cflag, B.country
                   FROM " . $this->hlp->prefix . "access as A,
                        " . $this->hlp->prefix . "iplocation as B
@@ -358,8 +366,9 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function browsers($tlimit, $start = 0, $limit = 20, $ext = true) {
-        if($ext) {
+    public function browsers($tlimit, $start = 0, $limit = 20, $ext = true)
+    {
+        if ($ext) {
             $sel = 'ua_info as bflag, ua_info as browser, ua_ver';
             $grp = 'ua_info, ua_ver';
         } else {
@@ -377,7 +386,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function os($tlimit, $start = 0, $limit = 20) {
+    public function os($tlimit, $start = 0, $limit = 20)
+    {
         $sql = "SELECT COUNT(DISTINCT session) as cnt, os as osflag, os
                   FROM " . $this->hlp->prefix . "access as A
                  WHERE $tlimit
@@ -388,7 +398,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function topuser($tlimit, $start = 0, $limit = 20) {
+    public function topuser($tlimit, $start = 0, $limit = 20)
+    {
         $sql = "SELECT COUNT(*) as cnt, user
                   FROM " . $this->hlp->prefix . "access as A
                  WHERE $tlimit
@@ -400,7 +411,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function topeditor($tlimit, $start = 0, $limit = 20) {
+    public function topeditor($tlimit, $start = 0, $limit = 20)
+    {
         $sql = "SELECT COUNT(*) as cnt, user
                   FROM " . $this->hlp->prefix . "edits as A
                  WHERE $tlimit
@@ -411,7 +423,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function topgroup($tlimit, $start = 0, $limit = 20) {
+    public function topgroup($tlimit, $start = 0, $limit = 20)
+    {
         $sql = "SELECT COUNT(*) as cnt, `group`
                   FROM " . $this->hlp->prefix . "groups as A
                  WHERE $tlimit
@@ -422,7 +435,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function topgroupedit($tlimit, $start = 0, $limit = 20) {
+    public function topgroupedit($tlimit, $start = 0, $limit = 20)
+    {
         $sql = "SELECT COUNT(*) as cnt, `group`
                   FROM " . $this->hlp->prefix . "groups as A
                  WHERE $tlimit
@@ -434,7 +448,8 @@ class StatisticsQuery {
     }
 
 
-    public function resolution($tlimit, $start = 0, $limit = 20) {
+    public function resolution($tlimit, $start = 0, $limit = 20)
+    {
         $sql = "SELECT COUNT(DISTINCT uid) as cnt,
                        ROUND(screen_x/100)*100 as res_x,
                        ROUND(screen_y/100)*100 as res_y,
@@ -450,7 +465,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function viewport($tlimit, $start = 0, $limit = 20) {
+    public function viewport($tlimit, $start = 0, $limit = 20)
+    {
         $sql = "SELECT COUNT(DISTINCT uid) as cnt,
                        ROUND(view_x/100)*100 as res_x,
                        ROUND(view_y/100)*100 as res_y,
@@ -467,7 +483,8 @@ class StatisticsQuery {
         return $this->hlp->runSQL($sql);
     }
 
-    public function seenusers($tlimit, $start = 0, $limit = 20) {
+    public function seenusers($tlimit, $start = 0, $limit = 20)
+    {
         $sql = "SELECT `user`, `dt`
                   FROM " . $this->hlp->prefix . "lastseen as A
               ORDER BY `dt` DESC" .
@@ -480,13 +497,14 @@ class StatisticsQuery {
     /**
      * Builds a limit clause
      */
-    public function mklimit($start, $limit) {
+    public function mklimit($start, $limit)
+    {
         $start = (int) $start;
         $limit = (int) $limit;
-        if($limit) {
+        if ($limit) {
             $limit += 1;
             return " LIMIT $start,$limit";
-        } elseif($start) {
+        } elseif ($start) {
             return " OFFSET $start";
         }
         return '';
@@ -495,12 +513,13 @@ class StatisticsQuery {
     /**
      * Create a time limit for use in SQL
      */
-    public function mktlimit(&$from, &$to) {
+    public function mktlimit(&$from, &$to)
+    {
         // fixme add better sanity checking here:
         $from = preg_replace('/[^\d\-]+/', '', $from);
         $to   = preg_replace('/[^\d\-]+/', '', $to);
-        if(!$from) $from = date('Y-m-d');
-        if(!$to) $to = date('Y-m-d');
+        if (!$from) $from = date('Y-m-d');
+        if (!$to) $to = date('Y-m-d');
 
         return "A.dt >= '$from 00:00:00' AND A.dt <= '$to 23:59:59'";
     }

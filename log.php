@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Statistics plugin - data logger
  *
@@ -6,7 +7,7 @@
  * @author     Andreas Gohr <gohr@cosmocode.de>
  */
 
-if(!defined('DOKU_INC')) define('DOKU_INC', realpath(dirname(__FILE__) . '/../../../') . '/');
+if (!defined('DOKU_INC')) define('DOKU_INC', realpath(__DIR__ . '/../../../') . '/');
 define('DOKU_DISABLE_GZIP_OUTPUT', 1);
 require_once(DOKU_INC . 'inc/init.php');
 session_write_close();
@@ -17,7 +18,7 @@ $plugin = plugin_load('helper', 'statistics');
 
 dbglog('Log ' . $_SERVER['REQUEST_URI']);
 
-switch($_REQUEST['do']) {
+switch ($_REQUEST['do']) {
     case 'v':
         $plugin->Logger()->log_access();
         $plugin->Logger()->log_session(1);

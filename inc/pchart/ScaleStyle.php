@@ -1,12 +1,13 @@
 <?php
 
-
-class ScaleStyle {
+class ScaleStyle
+{
     /**
      * @todo The color, lineWidth and lineDotSize variables could all
      * be combined into a single LineStyle class
      */
-    public function __construct($scaleMode, Color $color, $drawTicks = true, $lineWidth = 1, $lineDotSize = 0) {
+    public function __construct($scaleMode, Color $color, $drawTicks = true, $lineWidth = 1, $lineDotSize = 0)
+    {
         $this->scaleMode   = $scaleMode;
         $this->color       = $color;
         $this->drawTicks   = $drawTicks;
@@ -14,28 +15,36 @@ class ScaleStyle {
         $this->lineDotSize = $lineDotSize;
     }
 
-    static public function DefaultStyle() {
-        return new ScaleStyle(SCALE_NORMAL,
-                              new Color(150, 150, 150));
+    public static function DefaultStyle()
+    {
+        return new ScaleStyle(
+            SCALE_NORMAL,
+            new Color(150, 150, 150)
+        );
     }
 
-    public function getScaleMode() {
+    public function getScaleMode()
+    {
         return $this->scaleMode;
     }
 
-    public function getColor() {
+    public function getColor()
+    {
         return $this->color;
     }
 
-    public function getDrawTicks() {
+    public function getDrawTicks()
+    {
         return $this->drawTicks;
     }
 
-    public function getLineWidth() {
+    public function getLineWidth()
+    {
         return $this->lineWidth;
     }
 
-    public function getLineDotSize() {
+    public function getLineDotSize()
+    {
         return $this->lineDotSize;
     }
 

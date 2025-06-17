@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @author Andreas Gohr <andi@splitbrain.org>
  */

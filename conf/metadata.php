@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Options for the statistics plugin
  *

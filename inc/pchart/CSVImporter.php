@@ -1,4 +1,5 @@
 <?php
+
 /**
  * pData - Simplifying data population for pChart
  *
@@ -28,7 +29,8 @@
  * All the methods on this class are static, it's debatable whether it
  * really needs to be a class, or whether it should be a namespace.
  */
-class CSVImporter {
+class CSVImporter
+{
     /**
      * @brief Import data into the specified dataobject from a CSV
      * file
@@ -39,19 +41,20 @@ class CSVImporter {
      * to name the series of data. If this is left to the default,
      * numbers will be used instead.
      */
-    static public function importFromCSV(pData $data, $FileName, $Delimiter = ",", $DataColumns = -1, $HasHeader = FALSE, $DataName = -1) {
+    public static function importFromCSV(pData $data, $FileName, $Delimiter = ",", $DataColumns = -1, $HasHeader = false, $DataName = -1)
+    {
         $handle = @fopen($FileName, "r");
 
-        if($handle == null) {
+        if ($handle == null) {
             throw new Exception("Failed to open file");
         }
 
-        $HeaderParsed = FALSE;
-        while(!feof($handle)) {
+        $HeaderParsed = false;
+        while (!feof($handle)) {
             $buffer = fgets($handle, 4096);
 
-            if($buffer != "") {
-                if($HasHeader && !$HeaderParsed) {
+            if ($buffer != "") {
+                if ($HasHeader && !$HeaderParsed) {
                     self::importHeaderFromCSV($data, $buffer, $Delimiter, $DataColumns);
                     $HeaderParsed = true;
                 } else {
@@ -62,44 +65,48 @@ class CSVImporter {
         fclose($handle);
     }
 
-    static private function importHeaderFromCSV(pData $data, $buffer, $Delimiter, $DataColumns) {
+    private static function importHeaderFromCSV(pData $data, $buffer, $Delimiter, $DataColumns)
+    {
         $buffer = str_replace(chr(10), "", $buffer);
         $buffer = str_replace(chr(13), "", $buffer);
+
         $Values = explode($Delimiter, $buffer);
 
-        if($DataColumns == -1) {
+        if ($DataColumns == -1) {
             $ID = 1;
-            foreach($Values as $key => $Value) {
-                $data->SetSeriesName($Value, "Serie".$ID);
+            foreach ($Values as $Value) {
+                $data->SetSeriesName($Value, "Serie" . $ID);
                 $ID++;
             }
         } else {
-            foreach($DataColumns as $key => $Value)
-                $data->SetSeriesName($Values [$Value], "Serie".$Value);
+            foreach ($DataColumns as $Value)
+                $data->SetSeriesName($Values [$Value], "Serie" . $Value);
         }
     }
 
     /**
      * @brief Import CSV data from a partial file chunk
      */
-    static private function importChunkFromCSV(pData $data, $buffer, $Delimiter, $DataColumns, $DataName) {
+    private static function importChunkFromCSV(pData $data, $buffer, $Delimiter, $DataColumns, $DataName)
+    {
         $buffer = str_replace(chr(10), "", $buffer);
         $buffer = str_replace(chr(13), "", $buffer);
+
         $Values = explode($Delimiter, $buffer);
 
-        if($DataColumns == -1) {
+        if ($DataColumns == -1) {
             $ID = 1;
-            foreach($Values as $key => $Value) {
-                $data->AddPoint(intval($Value), "Serie".$ID);
+            foreach ($Values as $Value) {
+                $data->AddPoint(intval($Value), "Serie" . $ID);
                 $ID++;
             }
         } else {
             $SerieName = "";
-            if($DataName != -1)
+            if ($DataName != -1)
                 $SerieName = $Values [$DataName];
 
-            foreach($DataColumns as $key => $Value)
-                $data->AddPoint($Values [$Value], "Serie".$Value, $SerieName);
+            foreach ($DataColumns as $Value)
+                $data->AddPoint($Values [$Value], "Serie" . $Value, $SerieName);
         }
     }
 }

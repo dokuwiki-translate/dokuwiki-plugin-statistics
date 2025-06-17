@@ -1,20 +1,30 @@
 <?php
 
-class GDCanvas implements ICanvas {
-    public function __construct($xSize, $ySize, $transparent=true) {
+class GDCanvas implements ICanvas
+{
+    public $Layers;
+    public function __construct($xSize, $ySize, $transparent = true)
+    {
         $this->picture = imagecreatetruecolor($xSize, $ySize);
 
         $C_White = $this->allocateColor(new Color(255, 255, 255));
         imagefilledrectangle($this->picture, 0, 0, $xSize, $ySize, $C_White);
-        if($transparent) imagecolortransparent($this->picture, $C_White);
+        if ($transparent) imagecolortransparent($this->picture, $C_White);
 
         $this->antialiasQuality = 0;
     }
 
-    function drawFilledRectangle(Point $corner1, Point $corner2, Color $color,
-                                 ShadowProperties $shadowProperties, $drawBorder = false,
-                                 $alpha = 100, $lineWidth = 1, $lineDotSize = 0) {
-        if($corner2->getX() < $corner1->getX()) {
+    public function drawFilledRectangle(
+        Point $corner1,
+        Point $corner2,
+        Color $color,
+        ShadowProperties $shadowProperties,
+        $drawBorder = false,
+        $alpha = 100,
+        $lineWidth = 1,
+        $lineDotSize = 0
+    ) {
+        if ($corner2->getX() < $corner1->getX()) {
             $newCorner1 = new Point($corner2->getX(), $corner1->getY());
             $newCorner2 = new Point($corner1->getX(), $corner2->getY());
 
@@ -22,7 +32,7 @@ class GDCanvas implements ICanvas {
             $corner2 = $newCorner2;
         }
 
-        if($corner2->getY() < $corner1->getY()) {
+        if ($corner2->getY() < $corner1->getY()) {
             $newCorner1 = new Point($corner1->getX(), $corner2->getY());
             $newCorner2 = new Point($corner2->getX(), $corner1->getY());
 
@@ -36,42 +46,54 @@ class GDCanvas implements ICanvas {
         $X2 = $corner2->getX();
         $Y2 = $corner2->getY();
 
-        if($alpha == 100) {
+        if ($alpha == 100) {
             /* Process shadows */
-            if($shadowProperties->active) {
+            if ($shadowProperties->active) {
                 $this->drawFilledRectangle(
-                    new Point($X1 + $shadowProperties->xDistance,
-                              $Y1 + $shadowProperties->yDistance),
-                    new Point($X2 + $shadowProperties->xDistance,
-                              $Y2 + $shadowProperties->yDistance),
+                    new Point(
+                        $X1 + $shadowProperties->xDistance,
+                        $Y1 + $shadowProperties->yDistance
+                    ),
+                    new Point(
+                        $X2 + $shadowProperties->xDistance,
+                        $Y2 + $shadowProperties->yDistance
+                    ),
                     $shadowProperties->color,
                     ShadowProperties::NoShadow(),
-                    FALSE,
+                    false,
                     $shadowProperties->alpha
                 );
-                if($shadowProperties->blur != 0) {
+                if ($shadowProperties->blur != 0) {
                     $AlphaDecay = ($shadowProperties->alpha / $shadowProperties->blur);
 
-                    for($i = 1; $i <= $shadowProperties->blur; $i++)
+                    for ($i = 1; $i <= $shadowProperties->blur; $i++)
                         $this->drawFilledRectangle(
-                            new Point($X1 + $shadowProperties->xDistance - $i / 2,
-                                      $Y1 + $shadowProperties->yDistance - $i / 2),
-                            new Point($X2 + $shadowProperties->xDistance - $i / 2,
-                                      $Y2 + $shadowProperties->yDistance - $i / 2),
+                            new Point(
+                                $X1 + $shadowProperties->xDistance - $i / 2,
+                                $Y1 + $shadowProperties->yDistance - $i / 2
+                            ),
+                            new Point(
+                                $X2 + $shadowProperties->xDistance - $i / 2,
+                                $Y2 + $shadowProperties->yDistance - $i / 2
+                            ),
                             $shadowProperties->color,
                             ShadowProperties::NoShadow(),
-                            FALSE,
+                            false,
                             $shadowProperties->alpha - $AlphaDecay * $i
                         );
-                    for($i = 1; $i <= $shadowProperties->blur; $i++)
+                    for ($i = 1; $i <= $shadowProperties->blur; $i++)
                         $this->drawFilledRectangle(
-                            new Point($X1 + $shadowProperties->xDistance + $i / 2,
-                                      $Y1 + $shadowProperties->yDistance + $i / 2),
-                            new Point($X2 + $shadowProperties->xDistance + $i / 2,
-                                      $Y2 + $shadowProperties->xDistance + $i / 2),
+                            new Point(
+                                $X1 + $shadowProperties->xDistance + $i / 2,
+                                $Y1 + $shadowProperties->yDistance + $i / 2
+                            ),
+                            new Point(
+                                $X2 + $shadowProperties->xDistance + $i / 2,
+                                $Y2 + $shadowProperties->xDistance + $i / 2
+                            ),
                             $shadowProperties->color,
                             ShadowProperties::NoShadow(),
-                            FALSE,
+                            false,
                             $shadowProperties->alpha - $AlphaDecay * $i
                         );
                 }
@@ -95,7 +117,7 @@ class GDCanvas implements ICanvas {
             imagedestroy($this->Layers [0]);
         }
 
-        if($drawBorder) {
+        if ($drawBorder) {
             $this->drawRectangle(
                 new Point($X1, $Y1),
                 new Point($X2, $Y2),
@@ -107,7 +129,8 @@ class GDCanvas implements ICanvas {
         }
     }
 
-    public function drawRectangle(Point $corner1, Point $corner2, Color $color, $lineWidth, $lineDotSize, ShadowProperties $shadowProperties) {
+    public function drawRectangle(Point $corner1, Point $corner2, Color $color, $lineWidth, $lineDotSize, ShadowProperties $shadowProperties)
+    {
         $X1 = $corner1->getX() - .2;
         $Y1 = $corner1->getY() - .2;
         $X2 = $corner2->getX() + .2;
@@ -147,13 +170,13 @@ class GDCanvas implements ICanvas {
             $lineDotSize,
             $shadowProperties
         );
-
     }
 
-    public function drawRoundedRectangle(Point $point1, Point $point2, $radius, Color $color, $lineWidth, $lineDotSize, ShadowProperties $shadowProperties) {
+    public function drawRoundedRectangle(Point $point1, Point $point2, $radius, Color $color, $lineWidth, $lineDotSize, ShadowProperties $shadowProperties)
+    {
         $Step = 90 / ((M_PI * $radius) / 2);
 
-        for($i = 0; $i <= 90; $i = $i + $Step) {
+        for ($i = 0; $i <= 90; $i += $Step) {
             $X = cos(($i + 180) * M_PI / 180) * $radius + $point1->getX() + $radius;
             $Y = sin(($i + 180) * M_PI / 180) * $radius + $point1->getY() + $radius;
             $this->drawAntialiasPixel(new Point($X, $Y), $color, $shadowProperties);
@@ -216,14 +239,20 @@ class GDCanvas implements ICanvas {
      * This function creates a filled rectangle with rounded corners
      * and antialiasing
      */
-    function drawFilledRoundedRectangle(Point $point1, Point $point2, $radius,
-                                        Color $color, $lineWidth, $lineDotSize,
-                                        ShadowProperties $shadowProperties) {
+    public function drawFilledRoundedRectangle(
+        Point $point1,
+        Point $point2,
+        $radius,
+        Color $color,
+        $lineWidth,
+        $lineDotSize,
+        ShadowProperties $shadowProperties
+    ) {
         $C_Rectangle = $this->allocateColor($color);
 
         $Step = 90 / ((M_PI * $radius) / 2);
 
-        for($i = 0; $i <= 90; $i = $i + $Step) {
+        for ($i = 0; $i <= 90; $i += $Step) {
             $Xi1 = cos(($i + 180) * M_PI / 180) * $radius
                 + $point1->getX()
                 + $radius;
@@ -258,28 +287,37 @@ class GDCanvas implements ICanvas {
 
             imageline(
                 $this->picture,
-                $Xi1, $Yi1,
-                $point1->getX() + $radius, $Yi1,
-                $C_Rectangle
-            );
-
-            imageline(
-                $this->picture, $point2->getX() - $radius, $Yi2,
-                $Xi2, $Yi2,
-                $C_Rectangle
-            );
-
-            imageline(
-                $this->picture,
-                $point2->getX() - $radius, $Yi3,
-                $Xi3, $Yi3,
+                $Xi1,
+                $Yi1,
+                $point1->getX() + $radius,
+                $Yi1,
                 $C_Rectangle
             );
 
             imageline(
                 $this->picture,
-                $Xi4, $Yi4,
-                $point1->getX() + $radius, $Yi4,
+                $point2->getX() - $radius,
+                $Yi2,
+                $Xi2,
+                $Yi2,
+                $C_Rectangle
+            );
+
+            imageline(
+                $this->picture,
+                $point2->getX() - $radius,
+                $Yi3,
+                $Xi3,
+                $Yi3,
+                $C_Rectangle
+            );
+
+            imageline(
+                $this->picture,
+                $Xi4,
+                $Yi4,
+                $point1->getX() + $radius,
+                $Yi4,
                 $C_Rectangle
             );
 
@@ -307,15 +345,19 @@ class GDCanvas implements ICanvas {
 
         imagefilledrectangle(
             $this->picture,
-            $point1->getX(), $point1->getY() + $radius,
-            $point2->getX(), $point2->getY() - $radius,
+            $point1->getX(),
+            $point1->getY() + $radius,
+            $point2->getX(),
+            $point2->getY() - $radius,
             $C_Rectangle
         );
 
         imagefilledrectangle(
             $this->picture,
-            $point1->getX() + $radius, $point1->getY(),
-            $point2->getX() - $radius, $point2->getY(),
+            $point1->getX() + $radius,
+            $point1->getY(),
+            $point2->getX() - $radius,
+            $point2->getY(),
             $C_Rectangle
         );
 
@@ -327,7 +369,8 @@ class GDCanvas implements ICanvas {
             new Point($X1 + $radius, $Y1),
             new Point($X2 - $radius, $Y1),
             $color,
-            $lineWidth, $lineDotSize,
+            $lineWidth,
+            $lineDotSize,
             $shadowProperties
         );
 
@@ -335,7 +378,8 @@ class GDCanvas implements ICanvas {
             new Point($X2, $Y1 + $radius),
             new Point($X2, $Y2 - $radius),
             $color,
-            $lineWidth, $lineDotSize,
+            $lineWidth,
+            $lineDotSize,
             $shadowProperties
         );
 
@@ -343,7 +387,8 @@ class GDCanvas implements ICanvas {
             new Point($X2 - $radius, $Y2),
             new Point($X1 + $radius, $Y2),
             $color,
-            $lineWidth, $lineDotSize,
+            $lineWidth,
+            $lineDotSize,
             $shadowProperties
         );
 
@@ -351,19 +396,22 @@ class GDCanvas implements ICanvas {
             new Point($X1, $Y2 - $radius),
             new Point($X1, $Y1 + $radius),
             $color,
-            $lineWidth, $lineDotSize,
+            $lineWidth,
+            $lineDotSize,
             $shadowProperties
         );
-
     }
 
-    public function drawLine(Point $point1, Point $point2, Color $color, $lineWidth, $lineDotSize, ShadowProperties $shadowProperties, Point $boundingBoxMin = null, Point $boundingBoxMax = null) {
-        if($lineDotSize > 1) {
+    public function drawLine(Point $point1, Point $point2, Color $color, $lineWidth, $lineDotSize, ShadowProperties $shadowProperties, Point $boundingBoxMin = null, Point $boundingBoxMax = null)
+    {
+        if ($lineDotSize > 1) {
             $this->drawDottedLine(
                 $point1,
                 $point2,
-                $lineDotSize, $lineWidth,
-                $color, $shadowProperties,
+                $lineDotSize,
+                $lineWidth,
+                $color,
+                $shadowProperties,
                 $boundingBoxMin,
                 $boundingBoxMax
             );
@@ -371,65 +419,73 @@ class GDCanvas implements ICanvas {
         }
 
         $Distance = $point1->distanceFrom($point2);
-        if($Distance == 0)
+        if ($Distance == 0)
             return;
         $XStep = ($point2->getX() - $point1->getX()) / $Distance;
         $YStep = ($point2->getY() - $point1->getY()) / $Distance;
 
-        for($i = 0; $i <= $Distance; $i++) {
+        for ($i = 0; $i <= $Distance; $i++) {
             $X = $i * $XStep + $point1->getX();
             $Y = $i * $YStep + $point1->getY();
 
-            if((($boundingBoxMin == null) || (($X >= $boundingBoxMin->getX())
+            if (
+                (($boundingBoxMin == null) || (($X >= $boundingBoxMin->getX())
                 && ($Y >= $boundingBoxMin->getY())))
                 && (($boundingBoxMax == null) || (($X <= $boundingBoxMax->getX())
                     && ($Y <= $boundingBoxMax->getY())))
             ) {
-                if($lineWidth == 1)
+                if ($lineWidth == 1)
                     $this->drawAntialiasPixel(new Point($X, $Y), $color, $shadowProperties);
                 else {
                     $StartOffset = -($lineWidth / 2);
                     $EndOffset   = ($lineWidth / 2);
-                    for($j = $StartOffset; $j <= $EndOffset; $j++)
+                    for ($j = $StartOffset; $j <= $EndOffset; $j++)
                         $this->drawAntialiasPixel(
                             new Point($X + $j, $Y + $j),
-                            $color, $shadowProperties
+                            $color,
+                            $shadowProperties
                         );
                 }
             }
         }
     }
 
-    public function drawDottedLine(Point $point1, Point $point2, $dotSize, $lineWidth, Color $color, ShadowProperties $shadowProperties, Point $boundingBoxMin = null, Point $boundingBoxMax = null) {
+    public function drawDottedLine(Point $point1, Point $point2, $dotSize, $lineWidth, Color $color, ShadowProperties $shadowProperties, Point $boundingBoxMin = null, Point $boundingBoxMax = null)
+    {
         $Distance = $point1->distanceFrom($point2);
 
         $XStep = ($point2->getX() - $point1->getX()) / $Distance;
         $YStep = ($point2->getY() - $point1->getY()) / $Distance;
 
         $DotIndex = 0;
-        for($i = 0; $i <= $Distance; $i++) {
+        for ($i = 0; $i <= $Distance; $i++) {
             $X = $i * $XStep + $point1->getX();
             $Y = $i * $YStep + $point1->getY();
 
-            if($DotIndex <= $dotSize) {
-                if(($boundingBoxMin == null || (($X >= $boundingBoxMin->getX())
+            if ($DotIndex <= $dotSize) {
+                if (
+                    ($boundingBoxMin == null || (($X >= $boundingBoxMin->getX())
                     && ($Y >= $boundingBoxMin->getY())))
                     && ($boundingBoxMax == null || (($X <= $boundingBoxMax->getX())
                         && ($Y <= $boundingBoxMax->getY())))
                 ) {
-                    if($lineWidth == 1)
+                    if ($lineWidth == 1)
                         $this->drawAntialiasPixel(
                             new Point($X, $Y),
-                            $color, $shadowProperties
+                            $color,
+                            $shadowProperties
                         );
                     else {
                         $StartOffset = -($lineWidth / 2);
                         $EndOffset   = ($lineWidth / 2);
-                        for($j = $StartOffset; $j <= $EndOffset; $j++) {
+                        for ($j = $StartOffset; $j <= $EndOffset; $j++) {
                             $this->drawAntialiasPixel(
-                                new Point($X + $j,
-                                          $Y + $j),
-                                $color, $shadowProperties
+                                new Point(
+                                    $X + $j,
+                                    $Y + $j
+                                ),
+                                $color,
+                                $shadowProperties
                             );
                         }
                     }
@@ -437,36 +493,43 @@ class GDCanvas implements ICanvas {
             }
 
             $DotIndex++;
-            if($DotIndex == $dotSize * 2)
+            if ($DotIndex == $dotSize * 2)
                 $DotIndex = 0;
         }
     }
 
-    public function drawAntialiasPixel(Point $point, Color $color, ShadowProperties $shadowProperties, $alpha = 100) {
+    public function drawAntialiasPixel(Point $point, Color $color, ShadowProperties $shadowProperties, $alpha = 100)
+    {
         /* Process shadows */
-        if($shadowProperties->active) {
+        if ($shadowProperties->active) {
             $this->drawAntialiasPixel(
-                new Point($point->getX() + $shadowProperties->xDistance,
-                          $point->getY() + $shadowProperties->yDistance),
+                new Point(
+                    $point->getX() + $shadowProperties->xDistance,
+                    $point->getY() + $shadowProperties->yDistance
+                ),
                 $shadowProperties->color,
                 ShadowProperties::NoShadow(),
                 $shadowProperties->alpha
             );
-            if($shadowProperties->blur != 0) {
+            if ($shadowProperties->blur != 0) {
                 $AlphaDecay = ($shadowProperties->alpha / $shadowProperties->blur);
 
-                for($i = 1; $i <= $shadowProperties->blur; $i++)
+                for ($i = 1; $i <= $shadowProperties->blur; $i++)
                     $this->drawAntialiasPixel(
-                        new Point($point->getX() + $shadowProperties->xDistance - $i / 2,
-                                  $point->getY() + $shadowProperties->yDistance - $i / 2),
+                        new Point(
+                            $point->getX() + $shadowProperties->xDistance - $i / 2,
+                            $point->getY() + $shadowProperties->yDistance - $i / 2
+                        ),
                         $shadowProperties->color,
                         ShadowProperties::NoShadow(),
                         $shadowProperties->alpha - $AlphaDecay * $i
                     );
-                for($i = 1; $i <= $shadowProperties->blur; $i++)
+                for ($i = 1; $i <= $shadowProperties->blur; $i++)
                     $this->drawAntialiasPixel(
-                        new Point($point->getX() + $shadowProperties->xDistance + $i / 2,
-                                  $point->getY() + $shadowProperties->yDistance + $i / 2),
+                        new Point(
+                            $point->getX() + $shadowProperties->xDistance + $i / 2,
+                            $point->getY() + $shadowProperties->yDistance + $i / 2
+                        ),
                         $shadowProperties->color,
                         ShadowProperties::NoShadow(),
                         $shadowProperties->alpha - $AlphaDecay * $i
@@ -477,42 +540,43 @@ class GDCanvas implements ICanvas {
         $Xi = floor($point->getX());
         $Yi = floor($point->getY());
 
-        if($Xi == $point->getX() && $Yi == $point->getY()) {
-            if($alpha == 100) {
+        if ($Xi == $point->getX() && $Yi == $point->getY()) {
+            if ($alpha == 100) {
                 $C_Aliased = $this->allocateColor($color);
                 imagesetpixel(
                     $this->picture,
-                    $point->getX(), $point->getY(),
+                    $point->getX(),
+                    $point->getY(),
                     $C_Aliased
                 );
-            } else
-                $this->drawAlphaPixel($point, $alpha, $color);
+            } else $this->drawAlphaPixel($point, $alpha, $color);
         } else {
             $Alpha1 = (((1 - ($point->getX() - $Xi)) * (1 - ($point->getY() - $Yi)) * 100) / 100) * $alpha;
-            if($Alpha1 > $this->antialiasQuality) {
+            if ($Alpha1 > $this->antialiasQuality) {
                 $this->drawAlphaPixel(new Point($Xi, $Yi), $Alpha1, $color);
             }
 
             $Alpha2 = ((($point->getX() - $Xi) * (1 - ($point->getY() - $Yi)) * 100) / 100) * $alpha;
-            if($Alpha2 > $this->antialiasQuality) {
+            if ($Alpha2 > $this->antialiasQuality) {
                 $this->drawAlphaPixel(new Point($Xi + 1, $Yi), $Alpha2, $color);
             }
 
             $Alpha3 = (((1 - ($point->getX() - $Xi)) * ($point->getY() - $Yi) * 100) / 100)
                 * $alpha;
-            if($Alpha3 > $this->antialiasQuality) {
+            if ($Alpha3 > $this->antialiasQuality) {
                 $this->drawAlphaPixel(new Point($Xi, $Yi + 1), $Alpha3, $color);
             }
 
             $Alpha4 = ((($point->getX() - $Xi) * ($point->getY() - $Yi) * 100) / 100)
                 * $alpha;
-            if($Alpha4 > $this->antialiasQuality) {
+            if ($Alpha4 > $this->antialiasQuality) {
                 $this->drawAlphaPixel(new Point($Xi + 1, $Yi + 1), $Alpha4, $color);
             }
         }
     }
 
-    public function drawAlphaPixel(Point $point, $alpha, Color $color) {
+    public function drawAlphaPixel(Point $point, $alpha, Color $color)
+    {
         /** @todo Check that the point is within the bounds of the
          * canvas */
 
@@ -522,7 +586,7 @@ class GDCanvas implements ICanvas {
         $B2   = $RGB2 & 0xFF;
 
         $iAlpha = (100 - $alpha) / 100;
-        $alpha  = $alpha / 100;
+        $alpha /= 100;
 
         $Ra = floor($color->r * $alpha + $R2 * $iAlpha);
         $Ga = floor($color->g * $alpha + $G2 * $iAlpha);
@@ -538,12 +602,13 @@ class GDCanvas implements ICanvas {
      * @todo This shouldn't need to be public, it's only a temporary
      * step while refactoring
      */
-    public function allocateColor(Color $color, $Factor = 0, $alpha = 100) {
-        if($Factor != 0) {
+    public function allocateColor(Color $color, $Factor = 0, $alpha = 100)
+    {
+        if ($Factor != 0) {
             $color = $color->addRGBIncrement($Factor);
         }
 
-        if($alpha == 100) {
+        if ($alpha == 100) {
             return (imagecolorallocate($this->picture, $color->r, $color->g, $color->b));
         } else {
             return imagecolorallocatealpha(
@@ -560,16 +625,20 @@ class GDCanvas implements ICanvas {
      * @todo This is only a temporary interface while I'm
      * refactoring. This should eventually be removed.
      */
-    public function getPicture() {
+    public function getPicture()
+    {
         return $this->picture;
     }
 
-    public function getAntialiasQuality() {
+    public function getAntialiasQuality()
+    {
         return $this->antialiasQuality;
     }
 
-    public function setAntialiasQuality($newQuality) {
-        if(!is_numeric($newQuality)
+    public function setAntialiasQuality($newQuality)
+    {
+        if (
+            !is_numeric($newQuality)
             || $newQuality < 0
             || $newQuality > 100
         ) {
@@ -579,36 +648,46 @@ class GDCanvas implements ICanvas {
         $this->antialiasQuality = $newQuality;
     }
 
-    function drawText($fontSize, $angle, Point $point, Color $color, $fontName, $text, ShadowProperties $shadowProperties) {
-        if($shadowProperties->active) {
+    public function drawText($fontSize, $angle, Point $point, Color $color, $fontName, $text, ShadowProperties $shadowProperties)
+    {
+        if ($shadowProperties->active) {
             $gdShadowColor = $this->allocateColor($shadowProperties->color);
 
             imagettftext(
-                $this->picture, $fontSize, $angle,
+                $this->picture,
+                $fontSize,
+                $angle,
                 $point->getX() + $shadowProperties->xDistance,
                 $point->getY() + $shadowProperties->yDistance,
                 $gdShadowColor,
-                $fontName, $text
+                $fontName,
+                $text
             );
         }
 
         $gdColor = $this->allocateColor($color);
 
         imagettftext(
-            $this->picture, $fontSize, $angle,
-            $point->getX(), $point->getY(),
-            $gdColor, $fontName, $text
+            $this->picture,
+            $fontSize,
+            $angle,
+            $point->getX(),
+            $point->getY(),
+            $gdColor,
+            $fontName,
+            $text
         );
     }
 
-    function drawCircle(Point $center, $height, Color $color, ShadowProperties $shadowProperties, $width = null) {
-        if($width == null) {
+    public function drawCircle(Point $center, $height, Color $color, ShadowProperties $shadowProperties, $width = null)
+    {
+        if ($width == null) {
             $width = $height;
         }
 
         $Step = 360 / (2 * M_PI * max($width, $height));
 
-        for($i = 0; $i <= 360; $i = $i + $Step) {
+        for ($i = 0; $i <= 360; $i += $Step) {
             $X = cos($i * M_PI / 180) * $height + $center->getX();
             $Y = sin($i * M_PI / 180) * $width + $center->getY();
             $this->drawAntialiasPixel(
@@ -617,18 +696,18 @@ class GDCanvas implements ICanvas {
                 $shadowProperties
             );
         }
-
     }
 
-    public function drawFilledCircle(Point $center, $height, Color $color, ShadowProperties $shadowProperties, $width = null) {
-        if($width == null) {
+    public function drawFilledCircle(Point $center, $height, Color $color, ShadowProperties $shadowProperties, $width = null)
+    {
+        if ($width == null) {
             $width = $height;
         }
 
         $C_Circle = $this->allocateColor($color);
         $Step     = 360 / (2 * M_PI * max($width, $height));
 
-        for($i = 90; $i <= 270; $i = $i + $Step) {
+        for ($i = 90; $i <= 270; $i += $Step) {
             $X1 = cos($i * M_PI / 180) * $height + $center->getX();
             $Y1 = sin($i * M_PI / 180) * $width + $center->getY();
             $X2 = cos((180 - $i) * M_PI / 180) * $height + $center->getX();
@@ -645,13 +724,14 @@ class GDCanvas implements ICanvas {
                 $shadowProperties
             );
 
-            if(($Y1 - 1) > $center->getY() - max($width, $height)) {
+            if (($Y1 - 1) > $center->getY() - max($width, $height)) {
                 imageline($this->picture, $X1, $Y1 - 1, $X2 - 1, $Y2 - 1, $C_Circle);
             }
         }
     }
 
-    function drawFilledPolygon(array $points, $numPoints, Color $color, $alpha = 100) {
+    public function drawFilledPolygon(array $points, $numPoints, Color $color, $alpha = 100)
+    {
         $gdColor = $this->allocateColor($color, 0, $alpha);
 
         imagefilledpolygon(

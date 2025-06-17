@@ -1,4 +1,5 @@
 <?php
+
 /**
  *    pChart - a PHP class to build charts!
  *    Copyright (C) 2008 Jean-Damien POGOLOTTI
@@ -21,72 +22,76 @@
  */
 
 spl_autoload_register('pChart_autoload');
-function pChart_autoload($name){
-    $file = dirname(__FILE__).'/'.$name.'.php';
-    if(file_exists($file)) require_once($file);
+function pChart_autoload($name)
+{
+    $file = __DIR__ . '/' . $name . '.php';
+    if (file_exists($file)) require_once($file);
 }
 
 /* Declare some script wide constants */
-define ("SCALE_NORMAL", 1);
-define ("SCALE_ADDALL", 2);
-define ("SCALE_START0", 3);
-define ("SCALE_ADDALLSTART0", 4);
-define ("TARGET_GRAPHAREA", 1);
-define ("TARGET_BACKGROUND", 2);
-define ("ALIGN_TOP_LEFT", 1);
-define ("ALIGN_TOP_CENTER", 2);
-define ("ALIGN_TOP_RIGHT", 3);
-define ("ALIGN_LEFT", 4);
-define ("ALIGN_CENTER", 5);
-define ("ALIGN_RIGHT", 6);
-define ("ALIGN_BOTTOM_LEFT", 7);
-define ("ALIGN_BOTTOM_CENTER", 8);
-define ("ALIGN_BOTTOM_RIGHT", 9);
+define("SCALE_NORMAL", 1);
+define("SCALE_ADDALL", 2);
+define("SCALE_START0", 3);
+define("SCALE_ADDALLSTART0", 4);
+define("TARGET_GRAPHAREA", 1);
+define("TARGET_BACKGROUND", 2);
+define("ALIGN_TOP_LEFT", 1);
+define("ALIGN_TOP_CENTER", 2);
+define("ALIGN_TOP_RIGHT", 3);
+define("ALIGN_LEFT", 4);
+define("ALIGN_CENTER", 5);
+define("ALIGN_RIGHT", 6);
+define("ALIGN_BOTTOM_LEFT", 7);
+define("ALIGN_BOTTOM_CENTER", 8);
+define("ALIGN_BOTTOM_RIGHT", 9);
 
 /**
  * pChart class definition
  */
-class pChart {
+class pChart
+{
+    public $lineWidth;
+    public $lineDotSize;
     protected $palette;
 
     /* Some static vars used in the class */
-    protected $XSize = NULL;
-    protected $YSize = NULL;
-    protected $Picture = NULL;
-    protected $ImageMap = NULL;
+    protected $XSize;
+    protected $YSize;
+    protected $Picture;
+    protected $ImageMap;
 
     /* Error management */
-    protected $ErrorReporting = FALSE;
+    protected $ErrorReporting = false;
     protected $ErrorInterface = "CLI";
-    protected $Errors = NULL;
+    protected $Errors;
     protected $ErrorFontName = "Fonts/pf_arma_five.ttf";
     protected $ErrorFontSize = 6;
 
     /* vars related to the graphing area */
-    protected $GArea_X1 = NULL;
-    protected $GArea_Y1 = NULL;
-    protected $GArea_X2 = NULL;
-    protected $GArea_Y2 = NULL;
-    protected $GAreaXOffset = NULL;
-    protected $VMax = NULL;
-    protected $VMin = NULL;
-    protected $VXMax = NULL;
-    protected $VXMin = NULL;
-    protected $Divisions = NULL;
-    protected $XDivisions = NULL;
-    protected $DivisionHeight = NULL;
-    protected $XDivisionHeight = NULL;
-    protected $DivisionCount = NULL;
-    protected $XDivisionCount = NULL;
-    protected $DivisionRatio = NULL;
-    protected $XDivisionRatio = NULL;
-    protected $DivisionWidth = NULL;
-    protected $DataCount = NULL;
+    protected $GArea_X1;
+    protected $GArea_Y1;
+    protected $GArea_X2;
+    protected $GArea_Y2;
+    protected $GAreaXOffset;
+    protected $VMax;
+    protected $VMin;
+    protected $VXMax;
+    protected $VXMin;
+    protected $Divisions;
+    protected $XDivisions;
+    protected $DivisionHeight;
+    protected $XDivisionHeight;
+    protected $DivisionCount;
+    protected $XDivisionCount;
+    protected $DivisionRatio;
+    protected $XDivisionRatio;
+    protected $DivisionWidth;
+    protected $DataCount;
 
     /* Text format related vars */
-    protected $FontName = NULL;
+    protected $FontName;
     /** @var float $FontSize */
-    protected $FontSize = NULL;
+    protected $FontSize;
     protected $DateFormat = "d/m/Y";
 
     /* Lines format related vars */
@@ -97,10 +102,10 @@ class pChart {
     private $shadowProperties;
 
     /* Image Map settings */
-    protected $BuildMap = FALSE;
-    protected $MapFunction = NULL;
+    protected $BuildMap = false;
+    protected $MapFunction;
     protected $tmpFolder = "tmp/";
-    protected $MapID = NULL;
+    protected $MapID;
 
     /**
      * @brief An abstract ICanvas onto which we draw the chart
@@ -109,12 +114,13 @@ class pChart {
      * on how the modules are going to break down between the various
      * chart types.
      */
-    protected $canvas = null;
+    protected $canvas;
 
     /**
      * Initializes the Graph and Canvas object
      */
-    public function __construct($XSize, $YSize, ICanvas $canvas) {
+    public function __construct($XSize, $YSize, ICanvas $canvas)
+    {
         $this->palette = Palette::defaultPalette();
 
         $this->XSize = $XSize;
@@ -130,8 +136,9 @@ class pChart {
     /**
      * Set if warnings should be reported
      */
-    function reportWarnings($Interface = "CLI") {
-        $this->ErrorReporting = TRUE;
+    public function reportWarnings($Interface = "CLI")
+    {
+        $this->ErrorReporting = true;
         $this->ErrorInterface = $Interface;
     }
 
@@ -143,7 +150,8 @@ class pChart {
      * @param string $FontFile full path to the TTF font file
      * @param float  $FontSize
      */
-    function setFontProperties($FontFile, $FontSize) {
+    public function setFontProperties($FontFile, $FontSize)
+    {
         $this->FontName = $FontFile;
         $this->FontSize = $FontSize;
     }
@@ -153,15 +161,17 @@ class pChart {
      *
      * @param Palette $newPalette
      */
-    public function setPalette(Palette $newPalette) {
+    public function setPalette(Palette $newPalette)
+    {
         $this->palette = $newPalette;
     }
 
     /**
      * Set the shadow properties
      */
-    function setShadowProperties($XDistance = 1, $YDistance = 1, Color $color = null, $Alpha = 50, $Blur = 0) {
-        if($color == null) {
+    public function setShadowProperties($XDistance = 1, $YDistance = 1, Color $color = null, $Alpha = 50, $Blur = 0)
+    {
+        if ($color == null) {
             $color = new Color(60, 60, 60);
         }
 
@@ -177,21 +187,24 @@ class pChart {
     /**
      * Remove shadow option
      */
-    function clearShadow() {
+    public function clearShadow()
+    {
         $this->shadowProperties = ShadowProperties::FromDefaults();
     }
 
     /**
      * Load Color Palette from file
      */
-    function loadColorPalette($FileName, $Delimiter = ",") {
+    public function loadColorPalette($FileName, $Delimiter = ",")
+    {
         $this->palette = Palette::fromFile($FileName, $Delimiter);
     }
 
     /**
      * Set line style
      */
-    function setLineStyle($Width = 1, $DotSize = 0) {
+    public function setLineStyle($Width = 1, $DotSize = 0)
+    {
         $this->LineWidth   = $Width;
         $this->LineDotSize = $DotSize;
     }
@@ -199,7 +212,8 @@ class pChart {
     /**
      * Set the graph area location
      */
-    function setGraphArea($X1, $Y1, $X2, $Y2) {
+    public function setGraphArea($X1, $Y1, $X2, $Y2)
+    {
         $this->GArea_X1 = $X1;
         $this->GArea_Y1 = $Y1;
         $this->GArea_X2 = $X2;
@@ -209,12 +223,14 @@ class pChart {
     /**
      * Prepare the graph area
      */
-    private function drawGraphArea(BackgroundStyle $style) {
+    private function drawGraphArea(BackgroundStyle $style)
+    {
         $this->canvas->drawFilledRectangle(
             new Point($this->GArea_X1, $this->GArea_Y1),
             new Point($this->GArea_X2, $this->GArea_Y2),
             $style->getBackgroundColor(),
-            $this->shadowProperties, FALSE
+            $this->shadowProperties,
+            false
         );
         $this->canvas->drawRectangle(
             new Point($this->GArea_X1, $this->GArea_Y1),
@@ -225,23 +241,23 @@ class pChart {
             $this->shadowProperties
         );
 
-        if($style->useStripe()) {
+        if ($style->useStripe()) {
             $color2 = $style->getBackgroundColor()->addRGBIncrement(-15);
 
             $SkewWidth = $this->GArea_Y2 - $this->GArea_Y1 - 1;
 
-            for($i = $this->GArea_X1 - $SkewWidth; $i <= $this->GArea_X2; $i = $i + 4) {
+            for ($i = $this->GArea_X1 - $SkewWidth; $i <= $this->GArea_X2; $i += 4) {
                 $X1 = $i;
                 $Y1 = $this->GArea_Y2;
                 $X2 = $i + $SkewWidth;
                 $Y2 = $this->GArea_Y1;
 
-                if($X1 < $this->GArea_X1) {
+                if ($X1 < $this->GArea_X1) {
                     $X1 = $this->GArea_X1;
                     $Y1 = $this->GArea_Y1 + $X2 - $this->GArea_X1 + 1;
                 }
 
-                if($X2 >= $this->GArea_X2) {
+                if ($X2 >= $this->GArea_X2) {
                     $Y2 = $this->GArea_Y1 + $X2 - $this->GArea_X2 + 1;
                     $X2 = $this->GArea_X2 - 1;
                 }
@@ -258,7 +274,8 @@ class pChart {
         }
     }
 
-    public function drawGraphBackground(BackgroundStyle $style) {
+    public function drawGraphBackground(BackgroundStyle $style)
+    {
         $this->drawGraphArea($style);
         $this->drawGraphAreaGradient($style);
     }
@@ -266,24 +283,26 @@ class pChart {
     /**
      * Allow you to clear the scale : used if drawing multiple charts
      */
-    function clearScale() {
-        $this->VMin       = NULL;
-        $this->VMax       = NULL;
-        $this->VXMin      = NULL;
-        $this->VXMax      = NULL;
-        $this->Divisions  = NULL;
-        $this->XDivisions = NULL;
+    public function clearScale()
+    {
+        $this->VMin       = null;
+        $this->VMax       = null;
+        $this->VXMin      = null;
+        $this->VXMax      = null;
+        $this->Divisions  = null;
+        $this->XDivisions = null;
     }
 
     /**
      * Allow you to fix the scale, use this to bypass the automatic scaling
      */
-    function setFixedScale($VMin, $VMax, $Divisions = 5, $VXMin = 0, $VXMax = 0, $XDivisions = 5) {
+    public function setFixedScale($VMin, $VMax, $Divisions = 5, $VXMin = 0, $VXMax = 0, $XDivisions = 5)
+    {
         $this->VMin      = $VMin;
         $this->VMax      = $VMax;
         $this->Divisions = $Divisions;
 
-        if(!$VXMin == 0) {
+        if (!$VXMin == 0) {
             $this->VXMin      = $VXMin;
             $this->VXMax      = $VXMax;
             $this->XDivisions = $XDivisions;
@@ -294,14 +313,16 @@ class pChart {
      * Wrapper to the drawScale() function allowing a second scale to
      * be drawn
      */
-    function drawRightScale(pData $data, ScaleStyle $style, $Angle = 0, $Decimals = 1, $WithMargin = FALSE, $SkipLabels = 1) {
-        $this->drawScale($data, $style, $Angle, $Decimals, $WithMargin, $SkipLabels, TRUE);
+    public function drawRightScale(pData $data, ScaleStyle $style, $Angle = 0, $Decimals = 1, $WithMargin = false, $SkipLabels = 1)
+    {
+        $this->drawScale($data, $style, $Angle, $Decimals, $WithMargin, $SkipLabels, true);
     }
 
     /**
      * Compute and draw the scale
      */
-    function drawScale(pData $Data, ScaleStyle $style, $Angle = 0, $Decimals = 1, $WithMargin = FALSE, $SkipLabels = 1, $RightScale = FALSE) {
+    public function drawScale(pData $Data, ScaleStyle $style, $Angle = 0, $Decimals = 1, $WithMargin = false, $SkipLabels = 1, $RightScale = false)
+    {
         /* Validate the Data and DataDescription array */
         $this->validateData("drawScale", $Data->getData());
 
@@ -322,15 +343,14 @@ class pChart {
             $this->shadowProperties
         );
 
-        if($this->VMin == NULL && $this->VMax == NULL) {
+        if ($this->VMin == null && $this->VMax == null) {
             $Divisions = $this->calculateDivisions($Data, $style);
-        } else
-            $Divisions = $this->Divisions;
+        } else $Divisions = $this->Divisions;
 
         $this->DivisionCount = $Divisions;
 
         $DataRange = $this->VMax - $this->VMin;
-        if($DataRange == 0) {
+        if ($DataRange == 0) {
             $DataRange = .1;
         }
 
@@ -338,8 +358,8 @@ class pChart {
         $this->DivisionRatio  = ($this->GArea_Y2 - $this->GArea_Y1) / $DataRange;
 
         $this->GAreaXOffset = 0;
-        if(count($Data->getData()) > 1) {
-            if($WithMargin == FALSE)
+        if (count($Data->getData()) > 1) {
+            if ($WithMargin == false)
                 $this->DivisionWidth = ($this->GArea_X2 - $this->GArea_X1) / (count($Data->getData()) - 1);
             else {
                 $this->DivisionWidth = ($this->GArea_X2 - $this->GArea_X1) / (count($Data->getData()));
@@ -352,13 +372,13 @@ class pChart {
 
         $this->DataCount = count($Data->getData());
 
-        if($style->getDrawTicks() == FALSE)
+        if ($style->getDrawTicks() == false)
             return (0);
 
         $YPos = $this->GArea_Y2;
-        $XMin = NULL;
-        for($i = 1; $i <= $Divisions + 1; $i++) {
-            if($RightScale)
+        $XMin = null;
+        for ($i = 1; $i <= $Divisions + 1; $i++) {
+            if ($RightScale)
                 $this->canvas->drawLine(
                     new Point($this->GArea_X2, $YPos),
                     new Point($this->GArea_X2 + 5, $YPos),
@@ -367,80 +387,88 @@ class pChart {
                     $style->getLineDotSize(),
                     $this->shadowProperties
                 );
-            else
-                $this->canvas->drawLine(
-                    new Point($this->GArea_X1, $YPos),
-                    new Point($this->GArea_X1 - 5, $YPos),
-                    $style->getColor(),
-                    $style->getLineWidth(),
-                    $style->getLineDotSize(),
-                    $this->shadowProperties
-                );
+            else $this->canvas->drawLine(
+                new Point($this->GArea_X1, $YPos),
+                new Point($this->GArea_X1 - 5, $YPos),
+                $style->getColor(),
+                $style->getLineWidth(),
+                $style->getLineDotSize(),
+                $this->shadowProperties
+            );
 
             $Value = $this->VMin + ($i - 1) * (($this->VMax - $this->VMin) / $Divisions);
-            $Value = round($Value * pow(10, $Decimals)) / pow(10, $Decimals);
-            $Value = $this->convertValueForDisplay(
-                $Value,
-                $Data->getDataDescription()->getYFormat(),
-                $Data->getDataDescription()->getYUnit()
-            );
+            $Value = round($Value * 10 ** $Decimals) / 10 ** $Decimals;
+            $Value = $this->convertValueForDisplay($Value, $Data->getDataDescription()->getYFormat(), $Data->getDataDescription()->getYUnit());
 
             $Position  = imageftbbox($this->FontSize, 0, $this->FontName, $Value);
             $TextWidth = $Position [2] - $Position [0];
 
-            if($RightScale) {
+            if ($RightScale) {
                 $this->canvas->drawText(
-                    $this->FontSize, 0,
-                    new Point($this->GArea_X2 + 10,
-                              $YPos + ($this->FontSize / 2)),
+                    $this->FontSize,
+                    0,
+                    new Point(
+                        $this->GArea_X2 + 10,
+                        $YPos + ($this->FontSize / 2)
+                    ),
                     $style->getColor(),
                     $this->FontName,
                     $Value,
                     ShadowProperties::NoShadow()
                 );
-                if($XMin < $this->GArea_X2 + 15 + $TextWidth || $XMin == NULL) {
+                if ($XMin < $this->GArea_X2 + 15 + $TextWidth || $XMin == null) {
                     $XMin = $this->GArea_X2 + 15 + $TextWidth;
                 }
             } else {
                 $this->canvas->drawText(
                     $this->FontSize,
                     0,
-                    new Point($this->GArea_X1 - 10 - $TextWidth,
-                              $YPos + ($this->FontSize / 2)),
+                    new Point(
+                        $this->GArea_X1 - 10 - $TextWidth,
+                        $YPos + ($this->FontSize / 2)
+                    ),
                     $style->getColor(),
                     $this->FontName,
                     $Value,
                     ShadowProperties::NoShadow()
                 );
-                if($XMin > $this->GArea_X1 - 10 - $TextWidth || $XMin == NULL) {
+                if ($XMin > $this->GArea_X1 - 10 - $TextWidth || $XMin == null) {
                     $XMin = $this->GArea_X1 - 10 - $TextWidth;
                 }
             }
 
-            $YPos = $YPos - $this->DivisionHeight;
+            $YPos -= $this->DivisionHeight;
         }
 
         /* Write the Y Axis caption if set */
-        if($Data->getDataDescription()->getYAxisName() != '') {
+        if ($Data->getDataDescription()->getYAxisName() != '') {
             $Position   = imageftbbox($this->FontSize, 90, $this->FontName, $Data->getDataDescription()->getYAxisName());
             $TextHeight = abs($Position [1]) + abs($Position [3]);
             $TextTop    = (($this->GArea_Y2 - $this->GArea_Y1) / 2) + $this->GArea_Y1 + ($TextHeight / 2);
 
-            if($RightScale) {
+            if ($RightScale) {
                 $this->canvas->drawText(
-                    $this->FontSize, 90,
-                    new Point($XMin + $this->FontSize,
-                              $TextTop),
-                    $style->getColor(), $this->FontName,
+                    $this->FontSize,
+                    90,
+                    new Point(
+                        $XMin + $this->FontSize,
+                        $TextTop
+                    ),
+                    $style->getColor(),
+                    $this->FontName,
                     $Data->getDataDescription()->getYAxisName(),
                     ShadowProperties::NoShadow()
                 );
             } else {
                 $this->canvas->drawText(
-                    $this->FontSize, 90,
-                    new Point($XMin - $this->FontSize,
-                              $TextTop),
-                    $style->getColor(), $this->FontName,
+                    $this->FontSize,
+                    90,
+                    new Point(
+                        $XMin - $this->FontSize,
+                        $TextTop
+                    ),
+                    $style->getColor(),
+                    $this->FontName,
                     $Data->getDataDescription()->getYAxisName(),
                     ShadowProperties::NoShadow()
                 );
@@ -450,9 +478,9 @@ class pChart {
         /* Horizontal Axis */
         $XPos = $this->GArea_X1 + $this->GAreaXOffset;
         $ID   = 1;
-        $YMax = NULL;
-        foreach($Data->getData() as $Values) {
-            if($ID % $SkipLabels == 0) {
+        $YMax = null;
+        foreach ($Data->getData() as $Values) {
+            if ($ID % $SkipLabels == 0) {
                 $this->canvas->drawLine(
                     new Point(floor($XPos), $this->GArea_Y2),
                     new Point(floor($XPos), $this->GArea_Y2 + 5),
@@ -462,23 +490,21 @@ class pChart {
                     $this->shadowProperties
                 );
                 $Value = $Values[$Data->getDataDescription()->getPosition()];
-                $Value = $this->convertValueForDisplay(
-                    $Value,
-                    $Data->getDataDescription()->getXFormat(),
-                    $Data->getDataDescription()->getXUnit()
-                );
+                $Value = $this->convertValueForDisplay($Value, $Data->getDataDescription()->getXFormat(), $Data->getDataDescription()->getXUnit());
 
                 $Position   = imageftbbox($this->FontSize, $Angle, $this->FontName, $Value);
                 $TextWidth  = abs($Position [2]) + abs($Position [0]);
                 $TextHeight = abs($Position [1]) + abs($Position [3]);
 
-                if($Angle == 0) {
+                if ($Angle == 0) {
                     $YPos = $this->GArea_Y2 + 18;
                     $this->canvas->drawText(
                         $this->FontSize,
                         $Angle,
-                        new Point(floor($XPos) - floor($TextWidth / 2),
-                                  $YPos),
+                        new Point(
+                            floor($XPos) - floor($TextWidth / 2),
+                            $YPos
+                        ),
                         $style->getColor(),
                         $this->FontName,
                         $Value,
@@ -486,12 +512,14 @@ class pChart {
                     );
                 } else {
                     $YPos = $this->GArea_Y2 + 10 + $TextHeight;
-                    if($Angle <= 90) {
+                    if ($Angle <= 90) {
                         $this->canvas->drawText(
                             $this->FontSize,
                             $Angle,
-                            new Point(floor($XPos) - $TextWidth + 5,
-                                      $YPos),
+                            new Point(
+                                floor($XPos) - $TextWidth + 5,
+                                $YPos
+                            ),
                             $style->getColor(),
                             $this->FontName,
                             $Value,
@@ -501,8 +529,10 @@ class pChart {
                         $this->canvas->drawText(
                             $this->FontSize,
                             $Angle,
-                            new Point(floor($XPos) + $TextWidth + 5,
-                                      $YPos),
+                            new Point(
+                                floor($XPos) + $TextWidth + 5,
+                                $YPos
+                            ),
                             $style->getColor(),
                             $this->FontName,
                             $Value,
@@ -510,29 +540,34 @@ class pChart {
                         );
                     }
                 }
-                if($YMax < $YPos || $YMax == NULL) {
+                if ($YMax < $YPos || $YMax == null) {
                     $YMax = $YPos;
                 }
             }
 
-            $XPos = $XPos + $this->DivisionWidth;
+            $XPos += $this->DivisionWidth;
             $ID++;
         }
 
         /* Write the X Axis caption if set */
-        if($Data->getDataDescription()->getXAxisName() != '') {
+        if ($Data->getDataDescription()->getXAxisName() != '') {
             $Position  = imageftbbox(
-                $this->FontSize, 90,
+                $this->FontSize,
+                90,
                 $this->FontName,
                 $Data->getDataDescription()->getXAxisName()
             );
             $TextWidth = abs($Position [2]) + abs($Position [0]);
             $TextLeft  = (($this->GArea_X2 - $this->GArea_X1) / 2) + $this->GArea_X1 + ($TextWidth / 2);
             $this->canvas->drawText(
-                $this->FontSize, 0,
-                new Point($TextLeft,
-                          $YMax + $this->FontSize + 5),
-                $style->getColor(), $this->FontName,
+                $this->FontSize,
+                0,
+                new Point(
+                    $TextLeft,
+                    $YMax + $this->FontSize + 5
+                ),
+                $style->getColor(),
+                $this->FontName,
                 $Data->getDataDescription()->getXAxisName(),
                 ShadowProperties::NoShadow()
             );
@@ -551,11 +586,12 @@ class pChart {
      * side-effects on some class data members. This needs to be
      * refactored to make it clearer what is and isn't affected.
      */
-    private function calculateDivisions(pData $Data, ScaleStyle $style) {
-        if(isset ($Data->getDataDescription()->values[0])) {
+    private function calculateDivisions(pData $Data, ScaleStyle $style)
+    {
+        if (isset($Data->getDataDescription()->values[0])) {
             /* Pointless temporary is necessary because you can't
-			 * directly apply an array index to the return value
-			 * of a function in PHP */
+             * directly apply an array index to the return value
+             * of a function in PHP */
             $dataArray  = $Data->getData();
             $this->VMin = $dataArray[0] [$Data->getDataDescription()->values[0]];
             $this->VMax = $dataArray[0] [$Data->getDataDescription()->values[0]];
@@ -565,48 +601,49 @@ class pChart {
         }
 
         /* Compute Min and Max values */
-        if($style->getScaleMode() == SCALE_NORMAL
+        if (
+            $style->getScaleMode() == SCALE_NORMAL
             || $style->getScaleMode() == SCALE_START0
         ) {
-            if($style->getScaleMode() == SCALE_START0) {
+            if ($style->getScaleMode() == SCALE_START0) {
                 $this->VMin = 0;
             }
 
-            foreach($Data->getData() as $Values) {
-                foreach($Data->getDataDescription()->values as $ColName) {
-                    if(isset ($Values[$ColName])) {
+            foreach ($Data->getData() as $Values) {
+                foreach ($Data->getDataDescription()->values as $ColName) {
+                    if (isset($Values[$ColName])) {
                         $Value = $Values[$ColName];
 
-                        if(is_numeric($Value)) {
-                            if($this->VMax < $Value) {
+                        if (is_numeric($Value)) {
+                            if ($this->VMax < $Value) {
                                 $this->VMax = $Value;
                             }
-                            if($this->VMin > $Value) {
+                            if ($this->VMin > $Value) {
                                 $this->VMin = $Value;
                             }
                         }
                     }
                 }
             }
-        } elseif($style->getScaleMode() == SCALE_ADDALL || $style->getScaleMode() == SCALE_ADDALLSTART0) /* Experimental */ {
-            if($style->getScaleMode() == SCALE_ADDALLSTART0) {
+        } elseif ($style->getScaleMode() == SCALE_ADDALL || $style->getScaleMode() == SCALE_ADDALLSTART0) { /* Experimental */
+            if ($style->getScaleMode() == SCALE_ADDALLSTART0) {
                 $this->VMin = 0;
             }
 
-            foreach($Data->getData() as $Values) {
+            foreach ($Data->getData() as $Values) {
                 $Sum = 0;
-                foreach($Data->getDataDescription()->values as $ColName) {
+                foreach ($Data->getDataDescription()->values as $ColName) {
                     $dataArray = $Data->getData();
-                    if(isset ($Values[$ColName])) {
+                    if (isset($Values[$ColName])) {
                         $Value = $Values[$ColName];
-                        if(is_numeric($Value))
+                        if (is_numeric($Value))
                             $Sum += $Value;
                     }
                 }
-                if($this->VMax < $Sum) {
+                if ($this->VMax < $Sum) {
                     $this->VMax = $Sum;
                 }
-                if($this->VMin > $Sum) {
+                if ($this->VMin > $Sum) {
                     $this->VMin = $Sum;
                 }
             }
@@ -615,8 +652,8 @@ class pChart {
         $this->VMax = ceil($this->VMax);
 
         /* If all values are the same */
-        if($this->VMax == $this->VMin) {
-            if($this->VMax >= 0) {
+        if ($this->VMax == $this->VMin) {
+            if ($this->VMax >= 0) {
                 $this->VMax++;
             } else {
                 $this->VMin--;
@@ -624,16 +661,16 @@ class pChart {
         }
 
         $DataRange = $this->VMax - $this->VMin;
-        if($DataRange == 0) {
+        if ($DataRange == 0) {
             $DataRange = .1;
         }
 
         $this->calculateScales($Scale, $Divisions);
 
-        if(!isset ($Divisions))
+        if (!isset($Divisions))
             $Divisions = 2;
 
-        if($Scale == 1 && $Divisions % 2 == 1)
+        if ($Scale == 1 && $Divisions % 2 == 1)
             $Divisions--;
 
         return $Divisions;
@@ -642,7 +679,8 @@ class pChart {
     /**
      * Compute and draw the scale for X/Y charts
      */
-    function drawXYScale(pData $Data, ScaleStyle $style, $YSerieName, $XSerieName, $Angle = 0, $Decimals = 1) {
+    public function drawXYScale(pData $Data, ScaleStyle $style, $YSerieName, $XSerieName, $Angle = 0, $Decimals = 1)
+    {
         /* Validate the Data and DataDescription array */
         $this->validateData("drawScale", $Data->getData());
 
@@ -664,7 +702,7 @@ class pChart {
         );
 
         /* Process Y scale */
-        if($this->VMin == NULL && $this->VMax == NULL) {
+        if ($this->VMin == null && $this->VMax == null) {
             $this->VMin = $Data->getSeriesMin($YSerieName);
             $this->VMax = $Data->getSeriesMax($YSerieName);
 
@@ -673,24 +711,17 @@ class pChart {
             $this->VMax = ceil($this->VMax);
 
             $DataRange = $this->VMax - $this->VMin;
-            if($DataRange == 0) {
+            if ($DataRange == 0) {
                 $DataRange = .1;
             }
 
-            self::computeAutomaticScaling(
-                $this->GArea_Y1,
-                $this->GArea_Y2,
-                $this->VMin,
-                $this->VMax,
-                $Divisions
-            );
-        } else
-            $Divisions = $this->Divisions;
+            $this->computeAutomaticScaling($this->GArea_Y1, $this->GArea_Y2, $this->VMin, $this->VMax, $Divisions);
+        } else $Divisions = $this->Divisions;
 
         $this->DivisionCount = $Divisions;
 
         $DataRange = $this->VMax - $this->VMin;
-        if($DataRange == 0) {
+        if ($DataRange == 0) {
             $DataRange = .1;
         }
 
@@ -698,8 +729,8 @@ class pChart {
         $this->DivisionRatio  = ($this->GArea_Y2 - $this->GArea_Y1) / $DataRange;
 
         $YPos = $this->GArea_Y2;
-        $XMin = NULL;
-        for($i = 1; $i <= $Divisions + 1; $i++) {
+        $XMin = null;
+        for ($i = 1; $i <= $Divisions + 1; $i++) {
             $this->canvas->drawLine(
                 new Point($this->GArea_X1, $YPos),
                 new Point($this->GArea_X1 - 5, $YPos),
@@ -709,59 +740,52 @@ class pChart {
                 $this->shadowProperties
             );
             $Value = $this->VMin + ($i - 1) * (($this->VMax - $this->VMin) / $Divisions);
-            $Value = round($Value * pow(10, $Decimals)) / pow(10, $Decimals);
-            $Value = $this->convertValueForDisplay(
-                $Value,
-                $Data->getDataDescription()->getYFormat(),
-                $Data->getDataDescription()->getYUnit()
-            );
+            $Value = round($Value * 10 ** $Decimals) / 10 ** $Decimals;
+            $Value = $this->convertValueForDisplay($Value, $Data->getDataDescription()->getYFormat(), $Data->getDataDescription()->getYUnit());
 
             $Position  = imageftbbox($this->FontSize, 0, $this->FontName, $Value);
             $TextWidth = $Position [2] - $Position [0];
             $this->canvas->drawText(
                 $this->FontSize,
                 0,
-                new Point($this->GArea_X1 - 10 - $TextWidth,
-                          $YPos + ($this->FontSize / 2)),
+                new Point(
+                    $this->GArea_X1 - 10 - $TextWidth,
+                    $YPos + ($this->FontSize / 2)
+                ),
                 $style->getColor(),
                 $this->FontName,
                 $Value,
                 $this->shadowProperties
             );
 
-            if($XMin > $this->GArea_X1 - 10 - $TextWidth || $XMin == NULL) {
+            if ($XMin > $this->GArea_X1 - 10 - $TextWidth || $XMin == null) {
                 $XMin = $this->GArea_X1 - 10 - $TextWidth;
             }
 
-            $YPos = $YPos - $this->DivisionHeight;
+            $YPos -= $this->DivisionHeight;
         }
 
         /* Process X scale */
-        if($this->VXMin == NULL && $this->VXMax == NULL) {
+        if ($this->VXMin == null && $this->VXMax == null) {
             $this->VXMax = $Data->getSeriesMax($XSerieName);
             $this->VXMin = $Data->getSeriesMin($XSerieName);
 
             $this->VXMax = ceil($this->VXMax);
 
             $DataRange = $this->VMax - $this->VMin;
-            if($DataRange == 0) {
+            if ($DataRange == 0) {
                 $DataRange = .1;
             }
 
             /* Compute automatic scaling */
-            self::computeAutomaticScaling(
-                $this->GArea_X1, $this->GArea_X2,
-                $this->VXMin, $this->VXMax,
-                $XDivisions
-            );
-        } else
-            $XDivisions = $this->XDivisions;
+            $this->computeAutomaticScaling($this->GArea_X1, $this->GArea_X2, $this->VXMin, $this->VXMax, $XDivisions);
+        } else $XDivisions = $this->XDivisions;
 
         $this->XDivisionCount = $Divisions;
         $this->DataCount      = $Divisions + 2;
 
         $XDataRange = $this->VXMax - $this->VXMin;
-        if($XDataRange == 0) {
+        if ($XDataRange == 0) {
             $XDataRange = .1;
         }
 
@@ -769,8 +793,8 @@ class pChart {
         $this->XDivisionRatio = ($this->GArea_X2 - $this->GArea_X1) / $XDataRange;
 
         $XPos = $this->GArea_X1;
-        $YMax = NULL;
-        for($i = 1; $i <= $XDivisions + 1; $i++) {
+        $YMax = null;
+        for ($i = 1; $i <= $XDivisions + 1; $i++) {
             $this->canvas->drawLine(
                 new Point($XPos, $this->GArea_Y2),
                 new Point($XPos, $this->GArea_Y2 + 5),
@@ -781,25 +805,23 @@ class pChart {
             );
 
             $Value = $this->VXMin + ($i - 1) * (($this->VXMax - $this->VXMin) / $XDivisions);
-            $Value = round($Value * pow(10, $Decimals)) / pow(10, $Decimals);
+            $Value = round($Value * 10 ** $Decimals) / 10 ** $Decimals;
 
-            $Value = $this->convertValueForDisplay(
-                $Value,
-                $Data->getDataDescription()->getYFormat(),
-                $Data->getDataDescription()->getYUnit()
-            );
+            $Value = $this->convertValueForDisplay($Value, $Data->getDataDescription()->getYFormat(), $Data->getDataDescription()->getYUnit());
 
             $Position   = imageftbbox($this->FontSize, $Angle, $this->FontName, $Value);
             $TextWidth  = abs($Position [2]) + abs($Position [0]);
             $TextHeight = abs($Position [1]) + abs($Position [3]);
 
-            if($Angle == 0) {
+            if ($Angle == 0) {
                 $YPos = $this->GArea_Y2 + 18;
                 $this->canvas->drawText(
                     $this->FontSize,
                     $Angle,
-                    new Point(floor($XPos) - floor($TextWidth / 2),
-                              $YPos),
+                    new Point(
+                        floor($XPos) - floor($TextWidth / 2),
+                        $YPos
+                    ),
                     $style->getColor(),
                     $this->FontName,
                     $Value,
@@ -807,12 +829,14 @@ class pChart {
                 );
             } else {
                 $YPos = $this->GArea_Y2 + 10 + $TextHeight;
-                if($Angle <= 90) {
+                if ($Angle <= 90) {
                     $this->canvas->drawText(
                         $this->FontSize,
                         $Angle,
-                        new Point(floor($XPos) - $TextWidth + 5,
-                                  $YPos),
+                        new Point(
+                            floor($XPos) - $TextWidth + 5,
+                            $YPos
+                        ),
                         $style->getColor(),
                         $this->FontName,
                         $Value,
@@ -822,8 +846,10 @@ class pChart {
                     $this->canvas->drawText(
                         $this->FontSize,
                         $Angle,
-                        new Point(floor($XPos) + $TextWidth + 5,
-                                  $YPos),
+                        new Point(
+                            floor($XPos) + $TextWidth + 5,
+                            $YPos
+                        ),
                         $style->getColor(),
                         $this->FontName,
                         $Value,
@@ -832,17 +858,19 @@ class pChart {
                 }
             }
 
-            if($YMax < $YPos || $YMax == NULL) {
+            if ($YMax < $YPos || $YMax == null) {
                 $YMax = $YPos;
             }
 
-            $XPos = $XPos + $this->DivisionWidth;
+            $XPos += $this->DivisionWidth;
         }
 
         /* Write the Y Axis caption if set */
-        if($Data->getDataDescription()->getYAxisName() != '') {
+        if ($Data->getDataDescription()->getYAxisName() != '') {
             $Position   = imageftbbox(
-                $this->FontSize, 90, $this->FontName,
+                $this->FontSize,
+                90,
+                $this->FontName,
                 $Data->getDataDescription()->getYAxisName()
             );
             $TextHeight = abs($Position [1]) + abs($Position [3]);
@@ -850,8 +878,10 @@ class pChart {
             $this->canvas->drawText(
                 $this->FontSize,
                 90,
-                new Point($XMin - $this->FontSize,
-                          $TextTop),
+                new Point(
+                    $XMin - $this->FontSize,
+                    $TextTop
+                ),
                 $style->getColor(),
                 $this->FontName,
                 $Data->getDataDescription()->getYAxisName(),
@@ -863,26 +893,31 @@ class pChart {
         $this->writeScaleXAxisCaption($Data, $style, $YMax);
     }
 
-    private function drawGridMosaic(GridStyle $style, $divisionCount, $divisionHeight) {
+    private function drawGridMosaic(GridStyle $style, $divisionCount, $divisionHeight)
+    {
         $LayerHeight = $this->GArea_Y2 - $this->GArea_Y1;
 
         $YPos  = $LayerHeight - 1; //$this->GArea_Y2-1;
         $LastY = $YPos;
 
-        for($i = 0; $i < $divisionCount; $i++) {
+        for ($i = 0; $i < $divisionCount; $i++) {
             $LastY = $YPos;
-            $YPos  = $YPos - $divisionHeight;
+            $YPos -= $divisionHeight;
 
-            if($YPos <= 0) {
+            if ($YPos <= 0) {
                 $YPos = 1;
             }
 
-            if($i % 2 == 0) {
+            if ($i % 2 == 0) {
                 $this->canvas->drawFilledRectangle(
-                    new Point($this->GArea_X1 + 1,
-                              $this->GArea_Y1 + $YPos),
-                    new Point($this->GArea_X2 - 1,
-                              $this->GArea_Y1 + $LastY),
+                    new Point(
+                        $this->GArea_X1 + 1,
+                        $this->GArea_Y1 + $YPos
+                    ),
+                    new Point(
+                        $this->GArea_X2 - 1,
+                        $this->GArea_Y1 + $LastY
+                    ),
                     new Color(250, 250, 250),
                     ShadowProperties::NoShadow(),
                     false,
@@ -895,38 +930,41 @@ class pChart {
     /**
      * Write the X Axis caption on the scale, if set
      */
-    private function writeScaleXAxisCaption(pData $data, ScaleStyle $style, $YMax) {
-        if($data->getDataDescription()->getXAxisName() != '') {
+    private function writeScaleXAxisCaption(pData $data, ScaleStyle $style, $YMax)
+    {
+        if ($data->getDataDescription()->getXAxisName() != '') {
             $Position  = imageftbbox($this->FontSize, 90, $this->FontName, $data->getDataDescription()->getXAxisName());
             $TextWidth = abs($Position [2]) + abs($Position [0]);
             $TextLeft  = (($this->GArea_X2 - $this->GArea_X1) / 2) + $this->GArea_X1 + ($TextWidth / 2);
             $this->canvas->drawText(
                 $this->FontSize,
                 0,
-                new Point($TextLeft,
-                          $YMax + $this->FontSize + 5),
+                new Point(
+                    $TextLeft,
+                    $YMax + $this->FontSize + 5
+                ),
                 $style->getColor(),
                 $this->FontName,
                 $data->getDataDescription()->getXAxisName(),
                 $this->shadowProperties
             );
         }
-
     }
 
     /**
      * Compute and draw the scale
      */
-    function drawGrid(GridStyle $style) {
+    public function drawGrid(GridStyle $style)
+    {
         /* Draw mosaic */
-        if($style->getMosaic()) {
+        if ($style->getMosaic()) {
             $this->drawGridMosaic($style, $this->DivisionCount, $this->DivisionHeight);
         }
 
         /* Horizontal lines */
         $YPos = $this->GArea_Y2 - $this->DivisionHeight;
-        for($i = 1; $i <= $this->DivisionCount; $i++) {
-            if($YPos > $this->GArea_Y1 && $YPos < $this->GArea_Y2)
+        for ($i = 1; $i <= $this->DivisionCount; $i++) {
+            if ($YPos > $this->GArea_Y1 && $YPos < $this->GArea_Y2)
                 $this->canvas->drawDottedLine(
                     new Point($this->GArea_X1, $YPos),
                     new Point($this->GArea_X2, $YPos),
@@ -941,11 +979,11 @@ class pChart {
              * been done, although now it's more obvious that there's
              * a problem. */
 
-            $YPos = $YPos - $this->DivisionHeight;
+            $YPos -= $this->DivisionHeight;
         }
 
         /* Vertical lines */
-        if($this->GAreaXOffset == 0) {
+        if ($this->GAreaXOffset == 0) {
             $XPos     = $this->GArea_X1 + $this->DivisionWidth + $this->GAreaXOffset;
             $ColCount = $this->DataCount - 2;
         } else {
@@ -953,8 +991,8 @@ class pChart {
             $ColCount = floor(($this->GArea_X2 - $this->GArea_X1) / $this->DivisionWidth);
         }
 
-        for($i = 1; $i <= $ColCount; $i++) {
-            if($XPos > $this->GArea_X1 && $XPos < $this->GArea_X2)
+        for ($i = 1; $i <= $ColCount; $i++) {
+            if ($XPos > $this->GArea_X1 && $XPos < $this->GArea_X2)
                 $this->canvas->drawDottedLine(
                     new Point(floor($XPos), $this->GArea_Y1),
                     new Point(floor($XPos), $this->GArea_Y2),
@@ -963,74 +1001,79 @@ class pChart {
                     $style->getcolor(),
                     $this->shadowProperties
                 );
-            $XPos = $XPos + $this->DivisionWidth;
+            $XPos += $this->DivisionWidth;
         }
     }
 
     /**
      * retrieve the legends size
      */
-    public function getLegendBoxSize($DataDescription) {
-        if(!isset ($DataDescription->description))
+    public function getLegendBoxSize($DataDescription)
+    {
+        if (!isset($DataDescription->description))
             return (-1);
 
         /* <-10->[8]<-4->Text<-10-> */
         $MaxWidth  = 0;
         $MaxHeight = 8;
-        foreach($DataDescription->description as $Value) {
+        foreach ($DataDescription->description as $Value) {
             $Position   = imageftbbox($this->FontSize, 0, $this->FontName, $Value);
             $TextWidth  = $Position [2] - $Position [0];
             $TextHeight = $Position [1] - $Position [7];
-            if($TextWidth > $MaxWidth) {
+            if ($TextWidth > $MaxWidth) {
                 $MaxWidth = $TextWidth;
             }
             $MaxHeight = $MaxHeight + $TextHeight + 4;
         }
-        $MaxHeight = $MaxHeight - 3;
-        $MaxWidth  = $MaxWidth + 32;
+        $MaxHeight -= 3;
+        $MaxWidth += 32;
 
-        return (array($MaxWidth, $MaxHeight));
+        return ([$MaxWidth, $MaxHeight]);
     }
 
     /**
      * Draw the data legends
      */
-    public function drawLegend($XPos, $YPos, $DataDescription, Color $color, Color $color2 = null, Color $color3 = null, $Border = TRUE) {
-        if($color2 == null) {
+    public function drawLegend($XPos, $YPos, $DataDescription, Color $color, Color $color2 = null, Color $color3 = null, $Border = true)
+    {
+        if ($color2 == null) {
             $color2 = $color->addRGBIncrement(-30);
         }
 
-        if($color3 == null) {
+        if ($color3 == null) {
             $color3 = new Color(0, 0, 0);
         }
 
         /* Validate the Data and DataDescription array */
         $this->validateDataDescription("drawLegend", $DataDescription);
 
-        if(!isset ($DataDescription->description))
+        if (!isset($DataDescription->description))
             return (-1);
 
         /* <-10->[8]<-4->Text<-10-> */
         $MaxWidth  = 0;
         $MaxHeight = 8;
-        foreach($DataDescription->description as $Key => $Value) {
+        foreach ($DataDescription->description as $Key => $Value) {
             $Position   = imageftbbox($this->FontSize, 0, $this->FontName, $Value);
             $TextWidth  = $Position [2] - $Position [0];
             $TextHeight = $Position [1] - $Position [7];
-            if($TextWidth > $MaxWidth) {
+            if ($TextWidth > $MaxWidth) {
                 $MaxWidth = $TextWidth;
             }
             $MaxHeight = $MaxHeight + $TextHeight + 4;
         }
-        $MaxHeight = $MaxHeight - 5;
-        $MaxWidth  = $MaxWidth + 32;
+        $MaxHeight -= 5;
+        $MaxWidth += 32;
 
-        if($Border) {
+        if ($Border) {
             $this->canvas->drawFilledRoundedRectangle(
                 new Point($XPos + 1, $YPos + 1),
-                new Point($XPos + $MaxWidth + 1,
-                          $YPos + $MaxHeight + 1),
-                5, $color2,
+                new Point(
+                    $XPos + $MaxWidth + 1,
+                    $YPos + $MaxHeight + 1
+                ),
+                5,
+                $color2,
                 $this->LineWidth,
                 $this->LineDotSize,
                 $this->shadowProperties
@@ -1038,9 +1081,12 @@ class pChart {
 
             $this->canvas->drawFilledRoundedRectangle(
                 new Point($XPos, $YPos),
-                new Point($XPos + $MaxWidth,
-                          $YPos + $MaxHeight),
-                5, $color,
+                new Point(
+                    $XPos + $MaxWidth,
+                    $YPos + $MaxHeight
+                ),
+                5,
+                $color,
                 $this->LineWidth,
                 $this->LineDotSize,
                 $this->shadowProperties
@@ -1049,12 +1095,16 @@ class pChart {
 
         $YOffset = 4 + $this->FontSize;
         $ID      = 0;
-        foreach($DataDescription->description as $Key => $Value) {
+        foreach ($DataDescription->description as $Value) {
             $this->canvas->drawFilledRoundedRectangle(
-                new Point($XPos + 10,
-                          $YPos + $YOffset - 4),
-                new Point($XPos + 14,
-                          $YPos + $YOffset - 4),
+                new Point(
+                    $XPos + 10,
+                    $YPos + $YOffset - 4
+                ),
+                new Point(
+                    $XPos + 14,
+                    $YPos + $YOffset - 4
+                ),
                 2,
                 $this->palette->getColor($ID),
                 $this->LineWidth,
@@ -1064,8 +1114,10 @@ class pChart {
             $this->canvas->drawText(
                 $this->FontSize,
                 0,
-                new Point($XPos + 22,
-                          $YPos + $YOffset),
+                new Point(
+                    $XPos + 22,
+                    $YPos + $YOffset
+                ),
                 $color3,
                 $this->FontName,
                 $Value,
@@ -1086,18 +1138,19 @@ class pChart {
      * @todo Should we pass in a ShadowProperties object here? Or is
      * this a public function?
      */
-    public function drawTitle($XPos, $YPos, $Value, Color $color, $XPos2 = -1, $YPos2 = -1, ShadowProperties $shadowProperties = null) {
-        if($shadowProperties == null) {
+    public function drawTitle($XPos, $YPos, $Value, Color $color, $XPos2 = -1, $YPos2 = -1, ShadowProperties $shadowProperties = null)
+    {
+        if ($shadowProperties == null) {
             $shadowProperties = ShadowProperties::NoShadow();
         }
 
-        if($XPos2 != -1) {
+        if ($XPos2 != -1) {
             $Position  = imageftbbox($this->FontSize, 0, $this->FontName, $Value);
             $TextWidth = $Position [2] - $Position [0];
             $XPos      = floor(($XPos2 - $XPos - $TextWidth) / 2) + $XPos;
         }
 
-        if($YPos2 != -1) {
+        if ($YPos2 != -1) {
             $Position   = imageftbbox($this->FontSize, 0, $this->FontName, $Value);
             $TextHeight = $Position [5] - $Position [3];
             $YPos       = floor(($YPos2 - $YPos - $TextHeight) / 2) + $YPos;
@@ -1124,12 +1177,13 @@ class pChart {
      * interface, since it doesn't have anything specifically to do
      * with graphs
      */
-    public function drawTextBox(Point $point1, Point $point2, $Text, $Angle = 0, Color $color = null, $Align = ALIGN_LEFT, ShadowProperties $shadowProperties = null, Color $backgroundColor = null, $Alpha = 100) {
-        if($color == null) {
+    public function drawTextBox(Point $point1, Point $point2, $Text, $Angle = 0, Color $color = null, $Align = ALIGN_LEFT, ShadowProperties $shadowProperties = null, Color $backgroundColor = null, $Alpha = 100)
+    {
+        if ($color == null) {
             $color = new Color(255, 255, 255);
         }
 
-        if($shadowProperties == null) {
+        if ($shadowProperties == null) {
             $shadowProperties = ShadowProperties::NoShadow();
         }
 
@@ -1139,52 +1193,62 @@ class pChart {
         $AreaWidth  = $point2->getX() - $point1->getX();
         $AreaHeight = $point2->getY() - $point1->getY();
 
-        if($backgroundColor != null)
+        if ($backgroundColor != null)
             $this->canvas->drawFilledRectangle(
                 $point1,
                 $point2,
                 $backgroundColor,
-                $shadowProperties, FALSE, $Alpha
+                $shadowProperties,
+                false,
+                $Alpha
             );
 
-        if($Align == ALIGN_TOP_LEFT) {
+        if ($Align == ALIGN_TOP_LEFT) {
             $newPosition = $point1->addIncrement(1, $this->FontSize + 1);
         }
-        if($Align == ALIGN_TOP_CENTER) {
+        if ($Align == ALIGN_TOP_CENTER) {
             $newPosition = $point1->addIncrement(
                 ($AreaWidth / 2) - ($TextWidth / 2),
                 $this->FontSize + 1
             );
         }
-        if($Align == ALIGN_TOP_RIGHT) {
-            $newPosition = new Point($point2->getX() - $TextWidth - 1,
-                                     $point1->getY() + $this->FontSize + 1);
+        if ($Align == ALIGN_TOP_RIGHT) {
+            $newPosition = new Point(
+                $point2->getX() - $TextWidth - 1,
+                $point1->getY() + $this->FontSize + 1
+            );
         }
-        if($Align == ALIGN_LEFT) {
+        if ($Align == ALIGN_LEFT) {
             $newPosition = $point1->addIncrement(
                 1,
                 ($AreaHeight / 2) - ($TextHeight / 2)
             );
         }
-        if($Align == ALIGN_CENTER) {
+        if ($Align == ALIGN_CENTER) {
             $newPosition = $point1->addIncrement(
                 ($AreaWidth / 2) - ($TextWidth / 2),
                 ($AreaHeight / 2) - ($TextHeight / 2)
             );
         }
-        if($Align == ALIGN_RIGHT) {
-            $newPosition = new Point($point2->getX() - $TextWidth - 1,
-                                     $point1->getY() + ($AreaHeight / 2) - ($TextHeight / 2));
+        if ($Align == ALIGN_RIGHT) {
+            $newPosition = new Point(
+                $point2->getX() - $TextWidth - 1,
+                $point1->getY() + ($AreaHeight / 2) - ($TextHeight / 2)
+            );
         }
-        if($Align == ALIGN_BOTTOM_LEFT) {
-            $newPosition = new Point($point1->getX() + 1,
-                                     $point2->getY() - 1);
+        if ($Align == ALIGN_BOTTOM_LEFT) {
+            $newPosition = new Point(
+                $point1->getX() + 1,
+                $point2->getY() - 1
+            );
         }
-        if($Align == ALIGN_BOTTOM_CENTER) {
-            $newPosition = new Point($point1->getX() + ($AreaWidth / 2) - ($TextWidth / 2),
-                                     $point2->getY() - 1);
+        if ($Align == ALIGN_BOTTOM_CENTER) {
+            $newPosition = new Point(
+                $point1->getX() + ($AreaWidth / 2) - ($TextWidth / 2),
+                $point2->getY() - 1
+            );
         }
-        if($Align == ALIGN_BOTTOM_RIGHT) {
+        if ($Align == ALIGN_BOTTOM_RIGHT) {
             $newPosition = $point2->addIncrement(
                 -$TextWidth - 1,
                 -1
@@ -1199,13 +1263,14 @@ class pChart {
      *
      * @todo What is the method name a typo for? Threshold?
      */
-    function drawTreshold($Value, Color $color, $ShowLabel = FALSE, $ShowOnRight = FALSE, $TickWidth = 4, $FreeText = NULL) {
+    public function drawTreshold($Value, Color $color, $ShowLabel = false, $ShowOnRight = false, $TickWidth = 4, $FreeText = null)
+    {
         $Y = $this->GArea_Y2 - ($Value - $this->VMin) * $this->DivisionRatio;
 
-        if($Y <= $this->GArea_Y1 || $Y >= $this->GArea_Y2)
+        if ($Y <= $this->GArea_Y1 || $Y >= $this->GArea_Y2)
             return (-1);
 
-        if($TickWidth == 0)
+        if ($TickWidth == 0)
             $this->canvas->drawLine(
                 new Point($this->GArea_X1, $Y),
                 new Point($this->GArea_X2, $Y),
@@ -1214,33 +1279,37 @@ class pChart {
                 $this->LineDotSize,
                 $this->shadowProperties
             );
-        else
-            $this->canvas->drawDottedLine(
-                new Point($this->GArea_X1, $Y),
-                new Point($this->GArea_X2, $Y),
-                $TickWidth,
-                $this->LineWidth,
-                $color,
-                $this->shadowProperties
-            );
+        else $this->canvas->drawDottedLine(
+            new Point($this->GArea_X1, $Y),
+            new Point($this->GArea_X2, $Y),
+            $TickWidth,
+            $this->LineWidth,
+            $color,
+            $this->shadowProperties
+        );
 
-        if($ShowLabel) {
-            if($FreeText == NULL) {
+        if ($ShowLabel) {
+            if ($FreeText == null) {
                 $Label = $Value;
             } else {
                 $Label = $FreeText;
             }
 
-            if($ShowOnRight) {
-                $position = new Point($this->GArea_X2 + 2,
-                                      $Y + ($this->FontSize / 2));
+            if ($ShowOnRight) {
+                $position = new Point(
+                    $this->GArea_X2 + 2,
+                    $Y + ($this->FontSize / 2)
+                );
             } else {
-                $position = new Point($this->GArea_X1 + 2,
-                                      $Y - ($this->FontSize / 2));
+                $position = new Point(
+                    $this->GArea_X1 + 2,
+                    $Y - ($this->FontSize / 2)
+                );
             }
 
             $this->canvas->drawText(
-                $this->FontSize, 0,
+                $this->FontSize,
+                0,
                 $position,
                 $color,
                 $this->FontName,
@@ -1253,8 +1322,9 @@ class pChart {
     /**
      * This function put a label on a specific point
      */
-    function setLabel($Data, $DataDescription, $SerieName, $ValueName, $Caption, Color $color = null) {
-        if($color == null) {
+    public function setLabel($Data, $DataDescription, $SerieName, $ValueName, $Caption, Color $color = null)
+    {
+        if ($color == null) {
             $color = new Color(210, 210, 210);
         }
 
@@ -1264,13 +1334,13 @@ class pChart {
         $ShadowFactor = 100;
 
         $Cp    = 0;
-        $Found = FALSE;
-        foreach($Data as $Value) {
-            if($Value[$DataDescription->getPosition()] == $ValueName) {
+        $Found = false;
+        foreach ($Data as $Value) {
+            if ($Value[$DataDescription->getPosition()] == $ValueName) {
                 $NumericalValue = $Value[$SerieName];
-                $Found          = TRUE;
+                $Found          = true;
             }
-            if(!$Found)
+            if (!$Found)
                 $Cp++;
         }
 
@@ -1283,7 +1353,7 @@ class pChart {
         $TextOffset = floor($TextHeight / 2);
 
         // Shadow
-        $Poly = array($XPos + 1, $YPos + 1, $XPos + 9, $YPos - $TextOffset, $XPos + 8, $YPos + $TextOffset + 2);
+        $Poly = [$XPos + 1, $YPos + 1, $XPos + 9, $YPos - $TextOffset, $XPos + 8, $YPos + $TextOffset + 2];
 
         $this->canvas->drawFilledPolygon(
             $Poly,
@@ -1310,16 +1380,20 @@ class pChart {
         );
 
         $this->canvas->drawFilledRectangle(
-            new Point($XPos + 9,
-                      $YPos - $TextOffset - .2),
-            new Point($XPos + 13 + $TextWidth,
-                      $YPos + $TextOffset + 2.2),
+            new Point(
+                $XPos + 9,
+                $YPos - $TextOffset - .2
+            ),
+            new Point(
+                $XPos + 13 + $TextWidth,
+                $YPos + $TextOffset + 2.2
+            ),
             $color->addRGBIncrement(-$ShadowFactor),
             $this->shadowProperties
         );
 
         // Label background
-        $Poly = array($XPos, $YPos, $XPos + 8, $YPos - $TextOffset - 1, $XPos + 8, $YPos + $TextOffset + 1);
+        $Poly = [$XPos, $YPos, $XPos + 8, $YPos - $TextOffset - 1, $XPos + 8, $YPos + $TextOffset + 1];
 
         $this->canvas->drawFilledPolygon($Poly, 3, $color);
 
@@ -1343,10 +1417,14 @@ class pChart {
             $this->shadowProperties
         );
         $this->canvas->drawFilledRectangle(
-            new Point($XPos + 8,
-                      $YPos - $TextOffset - 1.2),
-            new Point($XPos + 12 + $TextWidth,
-                      $YPos + $TextOffset + 1.2),
+            new Point(
+                $XPos + 8,
+                $YPos - $TextOffset - 1.2
+            ),
+            new Point(
+                $XPos + 12 + $TextWidth,
+                $YPos + $TextOffset + 1.2
+            ),
             $color,
             $this->shadowProperties
         );
@@ -1367,16 +1445,18 @@ class pChart {
      *
      * using it's own minima/maxima and the desired output minima/maxima
      */
-    function linearScale($value, $istart, $istop, $ostart, $ostop) {
+    public function linearScale($value, $istart, $istop, $ostart, $ostop)
+    {
         $div = ($istop - $istart);
-        if($div == 0.0) $div = 1;
+        if ($div == 0.0) $div = 1;
         return $ostart + ($ostop - $ostart) * (($value - $istart) / $div);
     }
 
     /**
      * This function draw a plot graph
      */
-    function drawPlotGraph($Data, $DataDescription, $BigRadius = 5, $SmallRadius = 2, Color $color2 = null, $Shadow = FALSE) {
+    public function drawPlotGraph($Data, $DataDescription, $BigRadius = 5, $SmallRadius = 2, Color $color2 = null, $Shadow = false)
+    {
         /* Validate the Data and DataDescription array */
         $this->validateDataDescription("drawPlotGraph", $DataDescription);
         $this->validateData("drawPlotGraph", $Data);
@@ -1384,13 +1464,13 @@ class pChart {
         $GraphID = 0;
         $colorO  = $color2;
 
-        foreach($DataDescription->values as $ColName) {
+        foreach ($DataDescription->values as $ColName) {
             $ColorID = $DataDescription->getColumnIndex($ColName);
 
             $color  = $this->palette->getColor($ColorID);
             $color2 = $colorO;
 
-            if(isset ($DataDescription->seriesSymbols[$ColName])) {
+            if (isset($DataDescription->seriesSymbols[$ColName])) {
                 $Infos       = getimagesize($DataDescription->seriesSymbols[$ColName]);
                 $ImageWidth  = $Infos [0];
                 $ImageHeight = $Infos [1];
@@ -1401,22 +1481,23 @@ class pChart {
             $Hsize = round($BigRadius / 2);
 
             $color3 = null;
-            foreach($Data as $Values) {
+            foreach ($Data as $Values) {
                 $Value = $Values[$ColName];
                 $YPos  = $this->GArea_Y2 - (($Value - $this->VMin) * $this->DivisionRatio);
 
                 /* Save point into the image map if option activated */
-                if($this->BuildMap)
-                    $this->addToImageMap($XPos - $Hsize, $YPos - $Hsize, $XPos + 1 + $Hsize, $YPos + $Hsize + 1, $DataDescription->description[$ColName], $Values[$ColName].$DataDescription->getYUnit(), "Plot");
+                if ($this->BuildMap)
+                    $this->addToImageMap($XPos - $Hsize, $YPos - $Hsize, $XPos + 1 + $Hsize, $YPos + $Hsize + 1, $DataDescription->description[$ColName], $Values[$ColName] . $DataDescription->getYUnit(), "Plot");
 
-                if(is_numeric($Value)) {
-                    if(!isset ($DataDescription->seriesSymbols[$ColName])) {
-
-                        if($Shadow) {
-                            if($color3 != null) {
+                if (is_numeric($Value)) {
+                    if (!isset($DataDescription->seriesSymbols[$ColName])) {
+                        if ($Shadow) {
+                            if ($color3 != null) {
                                 $this->canvas->drawFilledCircle(
-                                    new Point($XPos + 2,
-                                              $YPos + 2),
+                                    new Point(
+                                        $XPos + 2,
+                                        $YPos + 2
+                                    ),
                                     $BigRadius,
                                     $color3,
                                     $this->shadowProperties
@@ -1425,8 +1506,10 @@ class pChart {
                                 $color3 = $this->palette->getColor($ColorID)->addRGBIncrement(-20);
 
                                 $this->canvas->drawFilledCircle(
-                                    new Point($XPos + 2,
-                                              $YPos + 2),
+                                    new Point(
+                                        $XPos + 2,
+                                        $YPos + 2
+                                    ),
                                     $BigRadius,
                                     $color3,
                                     $this->shadowProperties
@@ -1435,18 +1518,22 @@ class pChart {
                         }
 
                         $this->canvas->drawFilledCircle(
-                            new Point($XPos + 1,
-                                      $YPos + 1),
+                            new Point(
+                                $XPos + 1,
+                                $YPos + 1
+                            ),
                             $BigRadius,
                             $color,
                             $this->shadowProperties
                         );
 
-                        if($SmallRadius != 0) {
-                            if($color2 != null) {
+                        if ($SmallRadius != 0) {
+                            if ($color2 != null) {
                                 $this->canvas->drawFilledCircle(
-                                    new Point($XPos + 1,
-                                              $YPos + 1),
+                                    new Point(
+                                        $XPos + 1,
+                                        $YPos + 1
+                                    ),
                                     $SmallRadius,
                                     $color2,
                                     $this->shadowProperties
@@ -1455,8 +1542,10 @@ class pChart {
                                 $color2 = $this->palette->getColor($ColorID)->addRGBIncrement(-15);
 
                                 $this->canvas->drawFilledCircle(
-                                    new Point($XPos + 1,
-                                              $YPos + 1),
+                                    new Point(
+                                        $XPos + 1,
+                                        $YPos + 1
+                                    ),
                                     $SmallRadius,
                                     $color2,
                                     $this->shadowProperties
@@ -1468,7 +1557,7 @@ class pChart {
                     }
                 }
 
-                $XPos = $XPos + $this->DivisionWidth;
+                $XPos += $this->DivisionWidth;
             }
             $GraphID++;
         }
@@ -1477,21 +1566,22 @@ class pChart {
     /**
      * @brief This function draw a plot graph in an X/Y space
      */
-    function drawXYPlotGraph(pData $DataSet, $YSerieName, $XSerieName, $PaletteID = 0, $BigRadius = 5, $SmallRadius = 2, Color $color2 = null, $Shadow = TRUE, $SizeSerieName = '') {
+    public function drawXYPlotGraph(pData $DataSet, $YSerieName, $XSerieName, $PaletteID = 0, $BigRadius = 5, $SmallRadius = 2, Color $color2 = null, $Shadow = true, $SizeSerieName = '')
+    {
         $color = $this->palette->getColor($PaletteID);
 
         $color3 = null;
 
         $Data = $DataSet->getData();
-        foreach($Data as $Values) {
-            if(isset($Values[$YSerieName]) && isset ($Values[$XSerieName])) {
+        foreach ($Data as $Values) {
+            if (isset($Values[$YSerieName]) && isset($Values[$XSerieName])) {
                 $X = $Values[$XSerieName];
                 $Y = $Values[$YSerieName];
 
                 $Y = $this->GArea_Y2 - (($Y - $this->VMin) * $this->DivisionRatio);
                 $X = $this->GArea_X1 + (($X - $this->VXMin) * $this->XDivisionRatio);
 
-                if(isset($Values[$SizeSerieName])) {
+                if (isset($Values[$SizeSerieName])) {
                     $br = $this->linearScale(
                         $Values[$SizeSerieName],
                         $DataSet->getSeriesMin($SizeSerieName),
@@ -1505,8 +1595,8 @@ class pChart {
                     $sr = $SmallRadius;
                 }
 
-                if($Shadow) {
-                    if($color3 != null) {
+                if ($Shadow) {
+                    if ($color3 != null) {
                         $this->canvas->drawFilledCircle(
                             new Point($X + 2, $Y + 2),
                             $br,
@@ -1531,7 +1621,7 @@ class pChart {
                     $this->shadowProperties
                 );
 
-                if($color2 != null) {
+                if ($color2 != null) {
                     $this->canvas->drawFilledCircle(
                         new Point($X + 1, $Y + 1),
                         $sr,
@@ -1550,13 +1640,13 @@ class pChart {
                 }
             }
         }
-
     }
 
     /**
      * This function draw an area between two series
      */
-    function drawArea($Data, $Serie1, $Serie2, Color $color, $Alpha = 50) {
+    public function drawArea($Data, $Serie1, $Serie2, Color $color, $Alpha = 50)
+    {
         /* Validate the Data and DataDescription array */
         $this->validateData("drawArea", $Data);
 
@@ -1566,14 +1656,14 @@ class pChart {
         $LastXPos  = -1;
         $LastYPos1 = 0;
         $LastYPos2 = 0;
-        foreach($Data as $Values) {
+        foreach ($Data as $Values) {
             $Value1 = $Values[$Serie1];
             $Value2 = $Values[$Serie2];
             $YPos1  = $LayerHeight - (($Value1 - $this->VMin) * $this->DivisionRatio);
             $YPos2  = $LayerHeight - (($Value2 - $this->VMin) * $this->DivisionRatio);
 
-            if($LastXPos != -1) {
-                $Points    = array();
+            if ($LastXPos != -1) {
+                $Points    = [];
                 $Points [] = $LastXPos + $this->GArea_X1;
                 $Points [] = $LastYPos1 + $this->GArea_Y1;
                 $Points [] = $LastXPos + $this->GArea_X1;
@@ -1595,29 +1685,30 @@ class pChart {
             $LastYPos2 = $YPos2;
             $LastXPos  = $XPos;
 
-            $XPos = $XPos + $this->DivisionWidth;
+            $XPos += $this->DivisionWidth;
         }
     }
 
     /**
      * This function write the values of the specified series
      */
-    function writeValues($Data, $DataDescription, $Series) {
+    public function writeValues($Data, $DataDescription, $Series)
+    {
         /* Validate the Data and DataDescription array */
         $this->validateDataDescription("writeValues", $DataDescription);
         $this->validateData("writeValues", $Data);
 
-        if(!is_array($Series)) {
-            $Series = array($Series);
+        if (!is_array($Series)) {
+            $Series = [$Series];
         }
 
-        foreach($Series as $Serie) {
+        foreach ($Series as $Serie) {
             $ColorID = $DataDescription->getColumnIndex($Serie);
 
             $XPos = $this->GArea_X1 + $this->GAreaXOffset;
 
-            foreach($Data as $Values) {
-                if(isset ($Values[$Serie]) && is_numeric($Values[$Serie])) {
+            foreach ($Data as $Values) {
+                if (isset($Values[$Serie]) && is_numeric($Values[$Serie])) {
                     $Value = $Values[$Serie];
                     $YPos  = $this->GArea_Y2 - (($Value - $this->VMin) * $this->DivisionRatio);
 
@@ -1636,9 +1727,8 @@ class pChart {
                         ShadowProperties::NoShadow()
                     );
                 }
-                $XPos = $XPos + $this->DivisionWidth;
+                $XPos += $this->DivisionWidth;
             }
-
         }
     }
 
@@ -1646,32 +1736,33 @@ class pChart {
      * @brief Draws a line graph where the data gives Y values for a
      * series of regular positions along the X axis
      */
-    function drawLineGraph($Data, $DataDescription, $SerieName = "") {
+    public function drawLineGraph($Data, $DataDescription, $SerieName = "")
+    {
         /* Validate the Data and DataDescription array */
         $this->validateDataDescription("drawLineGraph", $DataDescription);
         $this->validateData("drawLineGraph", $Data);
 
         $GraphID = 0;
-        foreach($DataDescription->values as $ColName) {
+        foreach ($DataDescription->values as $ColName) {
             $ColorID = $DataDescription->getColumnIndex($ColName);
 
-            if($SerieName == "" || $SerieName == $ColName) {
+            if ($SerieName == "" || $SerieName == $ColName) {
                 $XPos  = $this->GArea_X1 + $this->GAreaXOffset;
                 $XLast = -1;
                 $YLast = 0;
-                foreach($Data as $Values) {
-                    if(isset ($Values[$ColName])) {
+                foreach ($Data as $Values) {
+                    if (isset($Values[$ColName])) {
                         $Value = $Values[$ColName];
                         $YPos  = $this->GArea_Y2 - (($Value - $this->VMin) * $this->DivisionRatio);
 
                         /* Save point into the image map if option activated */
-                        if($this->BuildMap)
-                            $this->addToImageMap($XPos - 3, $YPos - 3, $XPos + 3, $YPos + 3, $DataDescription->description[$ColName], $Values[$ColName].$DataDescription->getYUnit(), "Line");
+                        if ($this->BuildMap)
+                            $this->addToImageMap($XPos - 3, $YPos - 3, $XPos + 3, $YPos + 3, $DataDescription->description[$ColName], $Values[$ColName] . $DataDescription->getYUnit(), "Line");
 
-                        if(!is_numeric($Value)) {
+                        if (!is_numeric($Value)) {
                             $XLast = -1;
                         }
-                        if($XLast != -1)
+                        if ($XLast != -1)
                             $this->canvas->drawLine(
                                 new Point($XLast, $YLast),
                                 new Point($XPos, $YPos),
@@ -1679,19 +1770,23 @@ class pChart {
                                 $this->LineWidth,
                                 $this->LineDotSize,
                                 $this->shadowProperties,
-                                new Point($this->GArea_X1,
-                                          $this->GArea_Y1),
-                                new Point($this->GArea_X2,
-                                          $this->GArea_Y2)
+                                new Point(
+                                    $this->GArea_X1,
+                                    $this->GArea_Y1
+                                ),
+                                new Point(
+                                    $this->GArea_X2,
+                                    $this->GArea_Y2
+                                )
                             );
 
                         $XLast = $XPos;
                         $YLast = $YPos;
-                        if(!is_numeric($Value)) {
+                        if (!is_numeric($Value)) {
                             $XLast = -1;
                         }
                     }
-                    $XPos = $XPos + $this->DivisionWidth;
+                    $XPos += $this->DivisionWidth;
                 }
                 $GraphID++;
             }
@@ -1702,14 +1797,15 @@ class pChart {
      * @brief Draws a line graph where one series of data defines the
      * X position and another the Y position
      */
-    function drawXYGraph($Data, $YSerieName, $XSerieName, $PaletteID = 0) {
+    public function drawXYGraph($Data, $YSerieName, $XSerieName, $PaletteID = 0)
+    {
         $graphAreaMin = new Point($this->GArea_X1, $this->GArea_Y1);
         $graphAreaMax = new Point($this->GArea_X2, $this->GArea_Y2);
 
         $lastPoint = null;
 
-        foreach($Data as $Values) {
-            if(isset ($Values[$YSerieName]) && isset ($Values[$XSerieName])) {
+        foreach ($Data as $Values) {
+            if (isset($Values[$YSerieName]) && isset($Values[$XSerieName])) {
                 $X = $Values[$XSerieName];
                 $Y = $Values[$YSerieName];
 
@@ -1718,7 +1814,7 @@ class pChart {
 
                 $currentPoint = new Point($X, $Y);
 
-                if($lastPoint != null) {
+                if ($lastPoint != null) {
                     $this->canvas->drawLine(
                         $lastPoint,
                         $currentPoint,
@@ -1739,7 +1835,8 @@ class pChart {
     /**
      * This function draw a cubic curve
      */
-    function drawCubicCurve(pData $data, $Accuracy = .1, $SerieName = "") {
+    public function drawCubicCurve(pData $data, $Accuracy = .1, $SerieName = "")
+    {
         /* Validate the Data and DataDescription array */
         $this->validateDataDescription(
             "drawCubicCurve",
@@ -1751,12 +1848,12 @@ class pChart {
         $graphAreaMax = new Point($this->GArea_X2, $this->GArea_Y2);
 
         $GraphID = 0;
-        foreach($data->getDataDescription()->values as $ColName) {
-            if($SerieName == "" || $SerieName == $ColName) {
+        foreach ($data->getDataDescription()->values as $ColName) {
+            if ($SerieName == "" || $SerieName == $ColName) {
                 /** @todo The next section of code has been duplicated by
                  * copy & paste */
-                $XIn = array();
-                $YIn = array();
+                $XIn = [];
+                $YIn = [];
                 $Yt  = "";
                 $U   = "";
 
@@ -1765,7 +1862,7 @@ class pChart {
                 $Index   = 1;
                 $XLast   = -1;
                 $YLast   = 0;
-                $Missing = array();
+                $Missing = [];
 
                 $data->getXYMap($ColName, $XIn, $YIn, $Missing, $Index);
 
@@ -1780,30 +1877,28 @@ class pChart {
 
                 $Yt [$Index] = 0;
 
-                for($k = $Index - 1; $k >= 1; $k--)
+                for ($k = $Index - 1; $k >= 1; $k--)
                     $Yt [$k] = $Yt [$k] * $Yt [$k + 1] + $U [$k];
 
                 $XPos = $this->GArea_X1 + $this->GAreaXOffset;
-                for($X = 1; $X <= $Index; $X = $X + $Accuracy) {
-
+                for ($X = 1; $X <= $Index; $X += $Accuracy) {
                     /* I believe here we're searching for the integral
-					 * value k such that $X lies between $XIn[k] and
-					 * $XIn[k-1] */
+                     * value k such that $X lies between $XIn[k] and
+                     * $XIn[k-1] */
                     $klo = 1;
                     $khi = $Index;
                     $k   = $khi - $klo;
-                    while($k > 1) {
+                    while ($k > 1) {
                         $k = $khi - $klo;
-                        If($XIn [$k] >= $X)
+                        if ($XIn [$k] >= $X)
                             $khi = $k;
-                        else
-                            $klo = $k;
+                        else $klo = $k;
                     }
                     $klo = $khi - 1;
 
                     /* These assertions are to check my understanding
-					 * of the code. If they fail, it is my fault and
-					 * not a bug */
+                     * of the code. If they fail, it is my fault and
+                     * not a bug */
                     assert($khi = $klo + 1);
                     assert($XIn[$klo] < $X);
                     assert($X <= $XIn[$khi]);
@@ -1825,12 +1920,16 @@ class pChart {
 
                     $YPos = $this->GArea_Y2 - (($Value - $this->VMin) * $this->DivisionRatio);
 
-                    if($XLast != -1 && !isset ($Missing [floor($X)]) && !isset ($Missing [floor($X + 1)]))
+                    if ($XLast != -1 && !isset($Missing [floor($X)]) && !isset($Missing [floor($X + 1)]))
                         $this->canvas->drawLine(
-                            new Point($XLast,
-                                      $YLast),
-                            new Point($XPos,
-                                      $YPos),
+                            new Point(
+                                $XLast,
+                                $YLast
+                            ),
+                            new Point(
+                                $XPos,
+                                $YPos
+                            ),
                             $this->palette->getColor($ColorID),
                             $this->LineWidth,
                             $this->LineDotSize,
@@ -1841,18 +1940,22 @@ class pChart {
 
                     $XLast = $XPos;
                     $YLast = $YPos;
-                    $XPos  = $XPos + $this->DivisionWidth * $Accuracy;
+                    $XPos += $this->DivisionWidth * $Accuracy;
                 }
 
                 // Add potentialy missing values
-                $XPos = $XPos - $this->DivisionWidth * $Accuracy;
-                if($XPos < ($this->GArea_X2 - $this->GAreaXOffset)) {
+                $XPos -= $this->DivisionWidth * $Accuracy;
+                if ($XPos < ($this->GArea_X2 - $this->GAreaXOffset)) {
                     $YPos = $this->GArea_Y2 - (($YIn [$Index] - $this->VMin) * $this->DivisionRatio);
                     $this->canvas->drawLine(
-                        new Point($XLast,
-                                  $YLast),
-                        new Point($this->GArea_X2 - $this->GAreaXOffset,
-                                  $YPos),
+                        new Point(
+                            $XLast,
+                            $YLast
+                        ),
+                        new Point(
+                            $this->GArea_X2 - $this->GAreaXOffset,
+                            $YPos
+                        ),
                         $this->palette->getColor($ColorID),
                         $this->LineWidth,
                         $this->LineDotSize,
@@ -1871,17 +1974,18 @@ class pChart {
      * @todo I haven't figured out exactly what this bit of code does,
      * it's just an attempt to reduce code duplication
      */
-    private function calculateCubicCurve(array & $Yt, array $XIn, array $YIn, array & $U, $Index) {
-        for($i = 2; $i <= $Index - 1; $i++) {
+    private function calculateCubicCurve(array &$Yt, array $XIn, array $YIn, array &$U, $Index)
+    {
+        for ($i = 2; $i <= $Index - 1; $i++) {
             /* Typically $Sig will be 0.5, since each X value will be
-			 * one unit past the last. If there is missing data then
-			 * this ratio will change */
+             * one unit past the last. If there is missing data then
+             * this ratio will change */
             $Sig = ($XIn [$i] - $XIn [$i - 1]) / ($XIn [$i + 1] - $XIn [$i - 1]);
 
             $p = $Sig * $Yt [$i - 1] + 2;
 
             /* This Y value will nearly always be negative, thanks to
-			 * $Sig being 0.5 */
+             * $Sig being 0.5 */
             $Yt [$i] = ($Sig - 1) / $p;
 
             /** @todo No idea what the following code is doing */
@@ -1894,7 +1998,8 @@ class pChart {
     /**
      * This function draw a filled cubic curve
      */
-    function drawFilledCubicCurve(pData $data, $Accuracy = .1, $Alpha = 100, $AroundZero = FALSE) {
+    public function drawFilledCubicCurve(pData $data, $Accuracy = .1, $Alpha = 100, $AroundZero = false)
+    {
         /* Validate the Data and DataDescription array */
         $this->validateDataDescription(
             "drawFilledCubicCurve",
@@ -1905,22 +2010,22 @@ class pChart {
         $LayerWidth  = $this->GArea_X2 - $this->GArea_X1;
         $LayerHeight = $this->GArea_Y2 - $this->GArea_Y1;
         $YZero       = $LayerHeight - ((0 - $this->VMin) * $this->DivisionRatio);
-        if($YZero > $LayerHeight) {
+        if ($YZero > $LayerHeight) {
             $YZero = $LayerHeight;
         }
 
         $GraphID = 0;
-        foreach($data->getDataDescription()->values as $ColName) {
-            $XIn = array();
-            $YIn = array();
-            $Yt  = array();
-            $U   = array();
+        foreach ($data->getDataDescription()->values as $ColName) {
+            $XIn = [];
+            $YIn = [];
+            $Yt  = [];
+            $U   = [];
 
             $ColorID = $data->getDataDescription()->getColumnIndex($ColName);
 
             $numElements = 1;
             $XLast       = -1;
-            $Missing     = array();
+            $Missing     = [];
 
             $data->getXYMap($ColName, $XIn, $YIn, $Missing, $numElements);
 
@@ -1932,26 +2037,25 @@ class pChart {
 
             $Yt [$numElements] = 0;
 
-            for($k = $numElements - 1; $k >= 1; $k--)
+            for ($k = $numElements - 1; $k >= 1; $k--)
                 $Yt [$k] = $Yt [$k] * $Yt [$k + 1] + $U [$k];
 
             $Points    = "";
             $Points [] = $this->GAreaXOffset + $this->GArea_X1;
             $Points [] = $LayerHeight + $this->GArea_Y1;
 
-            $YLast       = NULL;
+            $YLast       = null;
             $XPos        = $this->GAreaXOffset;
             $PointsCount = 2;
-            for($X = 1; $X <= $numElements; $X = $X + $Accuracy) {
+            for ($X = 1; $X <= $numElements; $X += $Accuracy) {
                 $klo = 1;
                 $khi = $numElements;
                 $k   = $khi - $klo;
-                while($k > 1) {
+                while ($k > 1) {
                     $k = $khi - $klo;
-                    If($XIn [$k] >= $X)
+                    if ($XIn [$k] >= $X)
                         $khi = $k;
-                    else
-                        $klo = $k;
+                    else $klo = $k;
                 }
                 $klo = $khi - 1;
 
@@ -1962,7 +2066,7 @@ class pChart {
 
                 $YPos = $LayerHeight - (($Value - $this->VMin) * $this->DivisionRatio);
 
-                if($YLast != NULL && $AroundZero && !isset ($Missing [floor($X)]) && !isset ($Missing [floor($X + 1)])) {
+                if ($YLast != null && $AroundZero && !isset($Missing [floor($X)]) && !isset($Missing [floor($X + 1)])) {
                     $aPoints = "";
 
                     $aPoints [] = $XLast + $this->GArea_X1;
@@ -1982,7 +2086,7 @@ class pChart {
                     );
                 }
 
-                if(!isset ($Missing [floor($X)]) || $YLast == NULL) {
+                if (!isset($Missing [floor($X)]) || $YLast == null) {
                     $PointsCount++;
                     $Points [] = $XPos + $this->GArea_X1;
                     $Points [] = min($YPos + $this->GArea_Y1, $this->GArea_Y2);
@@ -1998,14 +2102,14 @@ class pChart {
 
                 $YLast = $YPos;
                 $XLast = $XPos;
-                $XPos  = $XPos + $this->DivisionWidth * $Accuracy;
+                $XPos += $this->DivisionWidth * $Accuracy;
             }
 
             // Add potentialy missing values
-            $XPos = $XPos - $this->DivisionWidth * $Accuracy;
-            if($XPos < ($LayerWidth - $this->GAreaXOffset)) {
+            $XPos -= $this->DivisionWidth * $Accuracy;
+            if ($XPos < ($LayerWidth - $this->GAreaXOffset)) {
                 $YPos = $LayerHeight - (($YIn [$numElements] - $this->VMin) * $this->DivisionRatio);
-                if($YLast != NULL && $AroundZero) {
+                if ($YLast != null && $AroundZero) {
                     $aPoints    = "";
                     $aPoints [] = $XLast + $this->GArea_X1;
                     $aPoints [] = max($YLast + $this->GArea_Y1, $this->GArea_Y1);
@@ -2024,7 +2128,7 @@ class pChart {
                     );
                 }
 
-                if($YIn [$klo] != "" && $YIn [$khi] != "" || $YLast == NULL) {
+                if ($YIn [$klo] != "" && $YIn [$khi] != "" || $YLast == null) {
                     $PointsCount++;
                     $Points [] = $LayerWidth
                         - $this->GAreaXOffset
@@ -2036,7 +2140,7 @@ class pChart {
             $Points [] = $LayerWidth - $this->GAreaXOffset + $this->GArea_X1;
             $Points [] = $LayerHeight + $this->GArea_Y1;
 
-            if(!$AroundZero) {
+            if (!$AroundZero) {
                 $this->canvas->drawFilledPolygon(
                     $Points,
                     $PointsCount,
@@ -2054,7 +2158,8 @@ class pChart {
     /**
      * This function draw a filled line graph
      */
-    function drawFilledLineGraph($Data, $DataDescription, $Alpha = 100, $AroundZero = FALSE) {
+    public function drawFilledLineGraph($Data, $DataDescription, $Alpha = 100, $AroundZero = false)
+    {
         $Empty = -2147483647;
 
         /* Validate the Data and DataDescription array */
@@ -2065,10 +2170,10 @@ class pChart {
         $LayerHeight = $this->GArea_Y2 - $this->GArea_Y1;
 
         $GraphID = 0;
-        foreach($DataDescription->values as $ColName) {
+        foreach ($DataDescription->values as $ColName) {
             $ColorID = $DataDescription->getColumnIndex($ColName);
 
-            $aPoints    = array();
+            $aPoints    = [];
             $aPoints [] = $this->GAreaXOffset + $this->GArea_X1;
             $aPoints [] = $LayerHeight + $this->GArea_Y1;
 
@@ -2076,20 +2181,20 @@ class pChart {
             $XLast       = -1;
             $PointsCount = 2;
             $YZero       = $LayerHeight - ((0 - $this->VMin) * $this->DivisionRatio);
-            if($YZero > $LayerHeight) {
+            if ($YZero > $LayerHeight) {
                 $YZero = $LayerHeight;
             }
 
             $YLast = $Empty;
-            foreach(array_keys($Data) as $Key) {
+            foreach (array_keys($Data) as $Key) {
                 $Value = $Data [$Key] [$ColName];
                 $YPos  = $LayerHeight - (($Value - $this->VMin) * $this->DivisionRatio);
 
                 /* Save point into the image map if option activated */
-                if($this->BuildMap)
-                    $this->addToImageMap($XPos - 3, $YPos - 3, $XPos + 3, $YPos + 3, $DataDescription->description[$ColName], $Data [$Key] [$ColName].$DataDescription->getYUnit(), "FLine");
+                if ($this->BuildMap)
+                    $this->addToImageMap($XPos - 3, $YPos - 3, $XPos + 3, $YPos + 3, $DataDescription->description[$ColName], $Data [$Key] [$ColName] . $DataDescription->getYUnit(), "FLine");
 
-                if(!is_numeric($Value)) {
+                if (!is_numeric($Value)) {
                     $PointsCount++;
                     $aPoints [] = $XLast + $this->GArea_X1;
                     $aPoints [] = $LayerHeight + $this->GArea_Y1;
@@ -2097,7 +2202,7 @@ class pChart {
                     $YLast = $Empty;
                 } else {
                     $PointsCount++;
-                    if($YLast != $Empty) {
+                    if ($YLast != $Empty) {
                         $aPoints [] = $XPos + $this->GArea_X1;
                         $aPoints [] = $YPos + $this->GArea_Y1;
                     } else {
@@ -2109,8 +2214,8 @@ class pChart {
                         $aPoints [] = $YPos + $this->GArea_Y1;
                     }
 
-                    if($YLast != $Empty && $AroundZero) {
-                        $Points    = "";
+                    if ($YLast != $Empty && $AroundZero) {
+                        $Points    = [];
                         $Points [] = $XLast + $this->GArea_X1;
                         $Points [] = $YLast + $this->GArea_Y1;
                         $Points [] = $XPos + $this->GArea_X1;
@@ -2131,12 +2236,12 @@ class pChart {
                 }
 
                 $XLast = $XPos;
-                $XPos  = $XPos + $this->DivisionWidth;
+                $XPos += $this->DivisionWidth;
             }
             $aPoints [] = $LayerWidth - $this->GAreaXOffset + $this->GArea_X1;
             $aPoints [] = $LayerHeight + $this->GArea_Y1;
 
-            if($AroundZero == FALSE) {
+            if ($AroundZero == false) {
                 $this->canvas->drawFilledPolygon(
                     $aPoints,
                     $PointsCount,
@@ -2153,7 +2258,8 @@ class pChart {
     /**
      * This function draws a bar graph
      */
-    function drawOverlayBarGraph($Data, $DataDescription, $Alpha = 50) {
+    public function drawOverlayBarGraph($Data, $DataDescription, $Alpha = 50)
+    {
         /* Validate the Data and DataDescription array */
         $this->validateDataDescription("drawOverlayBarGraph", $DataDescription);
         $this->validateData("drawOverlayBarGraph", $Data);
@@ -2161,23 +2267,27 @@ class pChart {
         $LayerHeight = $this->GArea_Y2 - $this->GArea_Y1;
 
         $GraphID = 0;
-        foreach($DataDescription->values as $ColName) {
+        foreach ($DataDescription->values as $ColName) {
             $ColorID = $DataDescription->getColumnIndex($ColName);
 
             $XWidth = $this->DivisionWidth / 4;
             $XPos   = $this->GAreaXOffset;
             $YZero  = $LayerHeight - ((0 - $this->VMin) * $this->DivisionRatio);
-            foreach(array_keys($Data) as $Key) {
-                if(isset ($Data [$Key] [$ColName])) {
+            foreach (array_keys($Data) as $Key) {
+                if (isset($Data [$Key] [$ColName])) {
                     $Value = $Data [$Key] [$ColName];
-                    if(is_numeric($Value)) {
+                    if (is_numeric($Value)) {
                         $YPos = $LayerHeight - (($Value - $this->VMin) * $this->DivisionRatio);
 
                         $this->canvas->drawFilledRectangle(
-                            new Point(floor($XPos - $XWidth + $this->GArea_X1),
-                                      floor($YPos + $this->GArea_Y1)),
-                            new Point(floor($XPos + $XWidth + $this->GArea_X1),
-                                      floor($YZero + $this->GArea_Y1)),
+                            new Point(
+                                floor($XPos - $XWidth + $this->GArea_X1),
+                                floor($YPos + $this->GArea_Y1)
+                            ),
+                            new Point(
+                                floor($XPos + $XWidth + $this->GArea_X1),
+                                floor($YZero + $this->GArea_Y1)
+                            ),
                             $this->palette->getColor($GraphID),
                             ShadowProperties::NoShadow(),
                             false,
@@ -2188,34 +2298,42 @@ class pChart {
                         $Y1 = floor($YPos + $this->GArea_Y1) + .2;
                         $X2 = floor($XPos + $XWidth + $this->GArea_X1);
                         $Y2 = $this->GArea_Y2 - ((0 - $this->VMin) * $this->DivisionRatio);
-                        if($X1 <= $this->GArea_X1) {
+                        if ($X1 <= $this->GArea_X1) {
                             $X1 = $this->GArea_X1 + 1;
                         }
-                        if($X2 >= $this->GArea_X2) {
+                        if ($X2 >= $this->GArea_X2) {
                             $X2 = $this->GArea_X2 - 1;
                         }
 
                         /* Save point into the image map if option activated */
-                        if($this->BuildMap)
-                            $this->addToImageMap($X1, min($Y1, $Y2), $X2, max($Y1, $Y2), $DataDescription->description[$ColName], $Data [$Key] [$ColName].$DataDescription->getYUnit(), "oBar");
+                        if ($this->BuildMap)
+                            $this->addToImageMap($X1, min($Y1, $Y2), $X2, max($Y1, $Y2), $DataDescription->description[$ColName], $Data [$Key] [$ColName] . $DataDescription->getYUnit(), "oBar");
 
                         $this->canvas->drawLine(
-                            new Point($X1,
-                                      $Y1),
-                            new Point($X2,
-                                      $Y1),
+                            new Point(
+                                $X1,
+                                $Y1
+                            ),
+                            new Point(
+                                $X2,
+                                $Y1
+                            ),
                             $this->palette->getColor($ColorID),
                             $this->LineWidth,
                             $this->LineDotSize,
                             $this->shadowProperties,
-                            new Point($this->GArea_X1,
-                                      $this->GArea_Y1),
-                            new Point($this->GArea_X2,
-                                      $this->GArea_Y2)
+                            new Point(
+                                $this->GArea_X1,
+                                $this->GArea_Y1
+                            ),
+                            new Point(
+                                $this->GArea_X2,
+                                $this->GArea_Y2
+                            )
                         );
                     }
                 }
-                $XPos = $XPos + $this->DivisionWidth;
+                $XPos += $this->DivisionWidth;
             }
 
             $GraphID++;
@@ -2225,7 +2343,8 @@ class pChart {
     /**
      * This function draw a bar graph
      */
-    function drawBarGraph($Data, $DataDescription, $Alpha = 100) {
+    public function drawBarGraph($Data, $DataDescription, $Alpha = 100)
+    {
         /* Validate the Data and DataDescription array */
         $this->validateDataDescription("drawBarGraph", $DataDescription);
         $this->validateData("drawBarGraph", $Data);
@@ -2235,32 +2354,34 @@ class pChart {
         $SerieXOffset = $this->DivisionWidth / 2 - $SeriesWidth / 2;
 
         $YZero = $this->GArea_Y2 - ((0 - $this->VMin) * $this->DivisionRatio);
-        if($YZero > $this->GArea_Y2) {
+        if ($YZero > $this->GArea_Y2) {
             $YZero = $this->GArea_Y2;
         }
 
         $SerieID = 0;
 
-        foreach($DataDescription->values as $ColName) {
+        foreach ($DataDescription->values as $ColName) {
             $ColorID = $DataDescription->getColumnIndex($ColName);
 
             $XPos = $this->GArea_X1 + $this->GAreaXOffset - $SerieXOffset + $SeriesWidth * $SerieID;
-            foreach(array_keys($Data) as $Key) {
-                if(isset ($Data [$Key] [$ColName])) {
-                    if(is_numeric($Data [$Key] [$ColName])) {
+            foreach (array_keys($Data) as $Key) {
+                if (isset($Data [$Key] [$ColName])) {
+                    if (is_numeric($Data [$Key] [$ColName])) {
                         $Value = $Data [$Key] [$ColName];
                         $YPos  = $this->GArea_Y2 - (($Value - $this->VMin) * $this->DivisionRatio);
 
                         /* Save point into the image map if option activated */
-                        if($this->BuildMap) {
-                            $this->addToImageMap($XPos + 1, min($YZero, $YPos), $XPos + $SeriesWidth - 1, max($YZero, $YPos), $DataDescription->description[$ColName], $Data [$Key] [$ColName].$DataDescription->getYUnit(), "Bar");
+                        if ($this->BuildMap) {
+                            $this->addToImageMap($XPos + 1, min($YZero, $YPos), $XPos + $SeriesWidth - 1, max($YZero, $YPos), $DataDescription->description[$ColName], $Data [$Key] [$ColName] . $DataDescription->getYUnit(), "Bar");
                         }
 
-                        if($Alpha == 100) {
+                        if ($Alpha == 100) {
                             $this->canvas->drawRectangle(
                                 new Point($XPos + 1, $YZero),
-                                new Point($XPos + $SeriesWidth - 1,
-                                          $YPos),
+                                new Point(
+                                    $XPos + $SeriesWidth - 1,
+                                    $YPos
+                                ),
                                 new Color(25, 25, 25),
                                 $this->LineWidth,
                                 $this->LineDotSize,
@@ -2269,17 +2390,22 @@ class pChart {
                         }
 
                         $this->canvas->drawFilledRectangle(
-                            new Point($XPos + 1,
-                                      $YZero),
-                            new Point($XPos + $SeriesWidth - 1,
-                                      $YPos),
+                            new Point(
+                                $XPos + 1,
+                                $YZero
+                            ),
+                            new Point(
+                                $XPos + $SeriesWidth - 1,
+                                $YPos
+                            ),
                             $this->palette->getColor($ColorID),
                             $this->shadowProperties,
-                            TRUE, $Alpha
+                            true,
+                            $Alpha
                         );
                     }
                 }
-                $XPos = $XPos + $this->DivisionWidth;
+                $XPos += $this->DivisionWidth;
             }
             $SerieID++;
         }
@@ -2288,33 +2414,33 @@ class pChart {
     /**
      * This function draw a stacked bar graph
      */
-    function drawStackedBarGraph($Data, $DataDescription, $Alpha = 50, $Contiguous = FALSE) {
+    public function drawStackedBarGraph($Data, $DataDescription, $Alpha = 50, $Contiguous = false)
+    {
         /* Validate the Data and DataDescription array */
         $this->validateDataDescription("drawBarGraph", $DataDescription);
         $this->validateData("drawBarGraph", $Data);
 
-        if($Contiguous)
+        if ($Contiguous)
             $SeriesWidth = $this->DivisionWidth;
-        else
-            $SeriesWidth = $this->DivisionWidth * .8;
+        else $SeriesWidth = $this->DivisionWidth * .8;
 
         $YZero = $this->GArea_Y2 - ((0 - $this->VMin) * $this->DivisionRatio);
-        if($YZero > $this->GArea_Y2) {
+        if ($YZero > $this->GArea_Y2) {
             $YZero = $this->GArea_Y2;
         }
 
         $SerieID   = 0;
         $LastValue = "";
-        foreach($DataDescription->values as $ColName) {
+        foreach ($DataDescription->values as $ColName) {
             $ColorID = $DataDescription->getColumnIndex($ColName);
 
             $XPos = $this->GArea_X1 + $this->GAreaXOffset - $SeriesWidth / 2;
-            foreach(array_keys($Data) as $Key) {
-                if(isset ($Data [$Key] [$ColName])) {
-                    if(is_numeric($Data [$Key] [$ColName])) {
+            foreach (array_keys($Data) as $Key) {
+                if (isset($Data [$Key] [$ColName])) {
+                    if (is_numeric($Data [$Key] [$ColName])) {
                         $Value = $Data [$Key] [$ColName];
 
-                        if(isset ($LastValue [$Key])) {
+                        if (isset($LastValue [$Key])) {
                             $YPos    = $this->GArea_Y2 - ((($Value + $LastValue [$Key]) - $this->VMin) * $this->DivisionRatio);
                             $YBottom = $this->GArea_Y2 - (($LastValue [$Key] - $this->VMin) * $this->DivisionRatio);
                             $LastValue [$Key] += $Value;
@@ -2325,22 +2451,26 @@ class pChart {
                         }
 
                         /* Save point into the image map if option activated */
-                        if($this->BuildMap)
-                            $this->addToImageMap($XPos + 1, min($YBottom, $YPos), $XPos + $SeriesWidth - 1, max($YBottom, $YPos), $DataDescription->description[$ColName], $Data [$Key] [$ColName].$DataDescription->getYUnit(), "sBar");
+                        if ($this->BuildMap)
+                            $this->addToImageMap($XPos + 1, min($YBottom, $YPos), $XPos + $SeriesWidth - 1, max($YBottom, $YPos), $DataDescription->description[$ColName], $Data [$Key] [$ColName] . $DataDescription->getYUnit(), "sBar");
 
                         $this->canvas->drawFilledRectangle(
-                            new Point($XPos + 1,
-                                      $YBottom),
-                            new Point($XPos + $SeriesWidth - 1,
-                                      $YPos),
+                            new Point(
+                                $XPos + 1,
+                                $YBottom
+                            ),
+                            new Point(
+                                $XPos + $SeriesWidth - 1,
+                                $YPos
+                            ),
                             $this->palette->getColor($ColorID),
                             $this->shadowProperties,
-                            TRUE,
+                            true,
                             $Alpha
                         );
                     }
                 }
-                $XPos = $XPos + $this->DivisionWidth;
+                $XPos += $this->DivisionWidth;
             }
             $SerieID++;
         }
@@ -2349,8 +2479,9 @@ class pChart {
     /**
      * This function draw a limits bar graphs
      */
-    function drawLimitsGraph($Data, $DataDescription, Color $color = null) {
-        if($color == null) {
+    public function drawLimitsGraph($Data, $DataDescription, Color $color = null)
+    {
+        if ($color == null) {
             $color = new Color(0, 0, 0);
         }
 
@@ -2364,21 +2495,21 @@ class pChart {
         $graphAreaMin = new Point($this->GArea_X1, $this->GArea_Y1);
         $graphAreaMax = new Point($this->GArea_X2, $this->GArea_Y2);
 
-        foreach(array_keys($Data) as $Key) {
+        foreach (array_keys($Data) as $Key) {
             $Min     = $Data [$Key] [$DataDescription->values[0]];
             $Max     = $Data [$Key] [$DataDescription->values[0]];
             $GraphID = 0;
             $MaxID   = 0;
             $MinID   = 0;
-            foreach($DataDescription->values as $ColName) {
-                if(isset ($Data [$Key] [$ColName])) {
-                    if($Data [$Key] [$ColName] > $Max && is_numeric($Data [$Key] [$ColName])) {
+            foreach ($DataDescription->values as $ColName) {
+                if (isset($Data [$Key] [$ColName])) {
+                    if ($Data [$Key] [$ColName] > $Max && is_numeric($Data [$Key] [$ColName])) {
                         $Max   = $Data [$Key] [$ColName];
                         $MaxID = $GraphID;
                     }
                 }
-                if(isset ($Data [$Key] [$ColName]) && is_numeric($Data [$Key] [$ColName])) {
-                    if($Data [$Key] [$ColName] < $Min) {
+                if (isset($Data [$Key] [$ColName]) && is_numeric($Data [$Key] [$ColName])) {
+                    if ($Data [$Key] [$ColName] < $Min) {
                         $Min   = $Data [$Key] [$ColName];
                         $MinID = $GraphID;
                     }
@@ -2390,10 +2521,10 @@ class pChart {
             $X1   = floor($XPos - $XWidth);
             $Y1   = floor($YPos) - .2;
             $X2   = floor($XPos + $XWidth);
-            if($X1 <= $this->GArea_X1) {
+            if ($X1 <= $this->GArea_X1) {
                 $X1 = $this->GArea_X1 + 1;
             }
-            if($X2 >= $this->GArea_X2) {
+            if ($X2 >= $this->GArea_X2) {
                 $X2 = $this->GArea_X2 - 1;
             }
 
@@ -2421,39 +2552,48 @@ class pChart {
                 $graphAreaMax
             );
             $this->canvas->drawLine(
-                new Point($X1,
-                          $Y1),
-                new Point($X2,
-                          $Y1),
+                new Point(
+                    $X1,
+                    $Y1
+                ),
+                new Point(
+                    $X2,
+                    $Y1
+                ),
                 $this->palette->getColor($MaxID),
                 $this->LineWidth,
                 $this->LineDotSize,
                 $this->shadowProperties
             );
             $this->canvas->drawLine(
-                new Point($X1,
-                          $Y2),
-                new Point($X2,
-                          $Y2),
+                new Point(
+                    $X1,
+                    $Y2
+                ),
+                new Point(
+                    $X2,
+                    $Y2
+                ),
                 $this->palette->getColor($MinID),
                 $this->LineWidth,
                 $this->LineDotSize,
                 $this->shadowProperties
             );
 
-            $XPos = $XPos + $this->DivisionWidth;
+            $XPos += $this->DivisionWidth;
         }
     }
 
     /**
      * This function draw radar axis centered on the graph area
      */
-    function drawRadarAxis($Data, $DataDescription, $Mosaic = TRUE, $BorderOffset = 10, Color $colorA = null, Color $colorS = null, $MaxValue = -1) {
-        if($colorA == null) {
+    public function drawRadarAxis($Data, $DataDescription, $Mosaic = true, $BorderOffset = 10, Color $colorA = null, Color $colorS = null, $MaxValue = -1)
+    {
+        if ($colorA == null) {
             $colorA = new Color(60, 60, 60);
         }
 
-        if($colorS == null) {
+        if ($colorS == null) {
             $colorS = new Color(200, 200, 200);
         }
 
@@ -2468,13 +2608,13 @@ class pChart {
         $YCenter = ($this->GArea_Y2 - $this->GArea_Y1) / 2 + $this->GArea_Y1;
 
         /* Search for the max value */
-        if($MaxValue == -1) {
-            foreach($DataDescription->values as $ColName) {
-                foreach(array_keys($Data) as $Key) {
-                    if(isset ($Data [$Key] [$ColName]))
-                        if($Data [$Key] [$ColName] > $MaxValue) {
-                            $MaxValue = $Data [$Key] [$ColName];
-                        }
+        if ($MaxValue == -1) {
+            foreach ($DataDescription->values as $ColName) {
+                foreach (array_keys($Data) as $Key) {
+                    if (isset($Data [$Key] [$ColName]))
+                    if ($Data [$Key] [$ColName] > $MaxValue) {
+                        $MaxValue = $Data [$Key] [$ColName];
+                    }
                 }
             }
         }
@@ -2484,21 +2624,21 @@ class pChart {
         $LastY2 = 0;
 
         /* Draw the mosaic */
-        if($Mosaic) {
+        if ($Mosaic) {
             $RadiusScale = $Radius / $MaxValue;
-            for($t = 1; $t <= $MaxValue - 1; $t++) {
+            for ($t = 1; $t <= $MaxValue - 1; $t++) {
                 $TRadius = $RadiusScale * $t;
                 $LastX1  = -1;
 
-                for($i = 0; $i <= $Points; $i++) {
+                for ($i = 0; $i <= $Points; $i++) {
                     $Angle = -90 + $i * 360 / $Points;
                     $X1    = cos($Angle * M_PI / 180) * $TRadius + $XCenter;
                     $Y1    = sin($Angle * M_PI / 180) * $TRadius + $YCenter;
                     $X2    = cos($Angle * M_PI / 180) * ($TRadius + $RadiusScale) + $XCenter;
                     $Y2    = sin($Angle * M_PI / 180) * ($TRadius + $RadiusScale) + $YCenter;
 
-                    if($t % 2 == 1 && $LastX1 != -1) {
-                        $Plots    = "";
+                    if ($t % 2 == 1 && $LastX1 != -1) {
+                        $Plots    = [];
                         $Plots [] = $X1;
                         $Plots [] = $Y1;
                         $Plots [] = $X2;
@@ -2525,20 +2665,22 @@ class pChart {
 
         /* Draw the spider web */
         $LastY = 0;
-        for($t = 1; $t <= $MaxValue; $t++) {
+        for ($t = 1; $t <= $MaxValue; $t++) {
             $TRadius = ($Radius / $MaxValue) * $t;
             $LastX   = -1;
 
-            for($i = 0; $i <= $Points; $i++) {
+            for ($i = 0; $i <= $Points; $i++) {
                 $Angle = -90 + $i * 360 / $Points;
                 $X     = cos($Angle * M_PI / 180) * $TRadius + $XCenter;
                 $Y     = sin($Angle * M_PI / 180) * $TRadius + $YCenter;
 
-                if($LastX != -1)
+                if ($LastX != -1)
                     $this->canvas->drawDottedLine(
                         new Point($LastX, $LastY),
                         new Point($X, $Y),
-                        4, 1, $colorS,
+                        4,
+                        1,
+                        $colorS,
                         $this->shadowProperties
                     );
 
@@ -2548,7 +2690,7 @@ class pChart {
         }
 
         /* Draw the axis */
-        for($i = 0; $i <= $Points; $i++) {
+        for ($i = 0; $i <= $Points; $i++) {
             $Angle = -90 + $i * 360 / $Points;
             $X     = cos($Angle * M_PI / 180) * $Radius + $XCenter;
             $Y     = sin($Angle * M_PI / 180) * $Radius + $YCenter;
@@ -2564,22 +2706,22 @@ class pChart {
 
             $XOffset = 0;
             $YOffset = 0;
-            if(isset ($Data [$i] [$DataDescription->getPosition()])) {
+            if (isset($Data [$i] [$DataDescription->getPosition()])) {
                 $Label = $Data [$i] [$DataDescription->getPosition()];
 
                 $Positions = imagettfbbox($this->FontSize, 0, $this->FontName, $Label);
                 $Width     = $Positions [2] - $Positions [6];
                 $Height    = $Positions [3] - $Positions [7];
 
-                if($Angle >= 0 && $Angle <= 90)
+                if ($Angle >= 0 && $Angle <= 90)
                     $YOffset = $Height;
 
-                if($Angle > 90 && $Angle <= 180) {
+                if ($Angle > 90 && $Angle <= 180) {
                     $YOffset = $Height;
                     $XOffset = -$Width;
                 }
 
-                if($Angle > 180 && $Angle <= 270) {
+                if ($Angle > 180 && $Angle <= 270) {
                     $XOffset = -$Width;
                 }
 
@@ -2596,7 +2738,7 @@ class pChart {
         }
 
         /* Write the values */
-        for($t = 1; $t <= $MaxValue; $t++) {
+        for ($t = 1; $t <= $MaxValue; $t++) {
             $TRadius = ($Radius / $MaxValue) * $t;
 
             $Angle = -90 + 360 / $Points;
@@ -2613,10 +2755,14 @@ class pChart {
             $Y         = $YPos + $this->FontSize;
 
             $this->canvas->drawFilledRoundedRectangle(
-                new Point($X + $Positions [6] - 2,
-                          $Y + $Positions [7] - 1),
-                new Point($X + $Positions [2] + 4,
-                          $Y + $Positions [3] + 1),
+                new Point(
+                    $X + $Positions [6] - 2,
+                    $Y + $Positions [7] - 1
+                ),
+                new Point(
+                    $X + $Positions [2] + 4,
+                    $Y + $Positions [3] + 1
+                ),
                 2,
                 new Color(240, 240, 240),
                 $this->LineWidth,
@@ -2625,10 +2771,14 @@ class pChart {
             );
 
             $this->canvas->drawRoundedRectangle(
-                new Point($X + $Positions [6] - 2,
-                          $Y + $Positions [7] - 1),
-                new Point($X + $Positions [2] + 4,
-                          $Y + $Positions [3] + 1),
+                new Point(
+                    $X + $Positions [6] - 2,
+                    $Y + $Positions [7] - 1
+                ),
+                new Point(
+                    $X + $Positions [2] + 4,
+                    $Y + $Positions [3] + 1
+                ),
                 2,
                 new Color(220, 220, 220),
                 $this->LineWidth,
@@ -2647,14 +2797,15 @@ class pChart {
         }
     }
 
-    private function calculateMaxValue($Data, $DataDescription) {
+    private function calculateMaxValue($Data, $DataDescription)
+    {
         $MaxValue = -1;
-        foreach($DataDescription->values as $ColName) {
-            foreach(array_keys($Data) as $Key) {
-                if(isset ($Data [$Key] [$ColName]))
-                    if($Data [$Key] [$ColName] > $MaxValue && is_numeric($Data[$Key][$ColName])) {
-                        $MaxValue = $Data [$Key] [$ColName];
-                    }
+        foreach ($DataDescription->values as $ColName) {
+            foreach (array_keys($Data) as $Key) {
+                if (isset($Data [$Key] [$ColName]))
+                if ($Data [$Key] [$ColName] > $MaxValue && is_numeric($Data[$Key][$ColName])) {
+                    $MaxValue = $Data [$Key] [$ColName];
+                }
             }
         }
         return $MaxValue;
@@ -2663,7 +2814,8 @@ class pChart {
     /**
      * This function draw a radar graph centered on the graph area
      */
-    function drawRadar($Data, $DataDescription, $BorderOffset = 10, $MaxValue = -1) {
+    public function drawRadar($Data, $DataDescription, $BorderOffset = 10, $MaxValue = -1)
+    {
         /* Validate the Data and DataDescription array */
         $this->validateDataDescription("drawRadar", $DataDescription);
         $this->validateData("drawRadar", $Data);
@@ -2674,52 +2826,60 @@ class pChart {
         $YCenter = ($this->GArea_Y2 - $this->GArea_Y1) / 2 + $this->GArea_Y1;
 
         /* Search for the max value */
-        if($MaxValue == -1) {
+        if ($MaxValue == -1) {
             $MaxValue = $this->calculateMaxValue($Data, $DataDescription);
         }
 
         $GraphID = 0;
         $YLast = 0;
-        foreach($DataDescription->values as $ColName) {
+        foreach ($DataDescription->values as $ColName) {
             $ColorID = $DataDescription->getColumnIndex($ColName);
 
             $Angle = -90;
             $XLast = -1;
-            foreach(array_keys($Data) as $Key) {
-                if(isset ($Data [$Key] [$ColName])) {
+            foreach (array_keys($Data) as $Key) {
+                if (isset($Data [$Key] [$ColName])) {
                     $Value    = $Data [$Key] [$ColName];
                     $Strength = ($Radius / $MaxValue) * $Value;
 
                     $XPos = cos($Angle * M_PI / 180) * $Strength + $XCenter;
                     $YPos = sin($Angle * M_PI / 180) * $Strength + $YCenter;
 
-                    if($XLast != -1)
+                    if ($XLast != -1)
                         $this->canvas->drawLine(
-                            new Point($XLast,
-                                      $YLast),
-                            new Point($XPos,
-                                      $YPos),
+                            new Point(
+                                $XLast,
+                                $YLast
+                            ),
+                            new Point(
+                                $XPos,
+                                $YPos
+                            ),
                             $this->palette->getColor($ColorID),
                             $this->LineWidth,
                             $this->LineDotSize,
                             $this->shadowProperties
                         );
 
-                    if($XLast == -1) {
+                    if ($XLast == -1) {
                         $FirstX = $XPos;
                         $FirstY = $YPos;
                     }
 
-                    $Angle = $Angle + (360 / $Points);
+                    $Angle += 360 / $Points;
                     $XLast = $XPos;
                     $YLast = $YPos;
                 }
             }
             $this->canvas->drawLine(
-                new Point($XPos,
-                          $YPos),
-                new Point($FirstX,
-                          $FirstY),
+                new Point(
+                    $XPos,
+                    $YPos
+                ),
+                new Point(
+                    $FirstX,
+                    $FirstY
+                ),
                 $this->palette->getColor($ColorID),
                 $this->LineWidth,
                 $this->LineDotSize,
@@ -2732,7 +2892,8 @@ class pChart {
     /**
      * This function draw a radar graph centered on the graph area
      */
-    function drawFilledRadar($Data, $DataDescription, $Alpha = 50, $BorderOffset = 10, $MaxValue = -1) {
+    public function drawFilledRadar($Data, $DataDescription, $Alpha = 50, $BorderOffset = 10, $MaxValue = -1)
+    {
         /* Validate the Data and DataDescription array */
         $this->validateDataDescription("drawFilledRadar", $DataDescription);
         $this->validateData("drawFilledRadar", $Data);
@@ -2743,21 +2904,21 @@ class pChart {
         $YCenter = ($this->GArea_Y2 - $this->GArea_Y1) / 2;
 
         /* Search for the max value */
-        if($MaxValue == -1) {
+        if ($MaxValue == -1) {
             $MaxValue = $this->calculateMaxValue($Data, $DataDescription);
         }
 
         $GraphID = 0;
-        foreach($DataDescription->values as $ColName) {
+        foreach ($DataDescription->values as $ColName) {
             $ColorID = $DataDescription->getColumnIndex($ColName);
 
             $Angle = -90;
             $XLast = -1;
-            $Plots = array();
-            foreach(array_keys($Data) as $Key) {
-                if(isset ($Data [$Key] [$ColName])) {
+            $Plots = [];
+            foreach (array_keys($Data) as $Key) {
+                if (isset($Data [$Key] [$ColName])) {
                     $Value = $Data [$Key] [$ColName];
-                    if(!is_numeric($Value)) {
+                    if (!is_numeric($Value)) {
                         $Value = 0;
                     }
                     $Strength = ($Radius / $MaxValue) * $Value;
@@ -2768,12 +2929,12 @@ class pChart {
                     $Plots [] = $XPos + $this->GArea_X1;
                     $Plots [] = $YPos + $this->GArea_Y1;
 
-                    $Angle = $Angle + (360 / $Points);
+                    $Angle += 360 / $Points;
                     $XLast = $XPos;
                 }
             }
 
-            if(isset ($Plots [0])) {
+            if (isset($Plots [0])) {
                 $Plots [] = $Plots [0];
                 $Plots [] = $Plots [1];
 
@@ -2784,12 +2945,16 @@ class pChart {
                     $Alpha
                 );
 
-                for($i = 0; $i <= count($Plots) - 4; $i = $i + 2)
+                for ($i = 0; $i <= count($Plots) - 4; $i += 2)
                     $this->canvas->drawLine(
-                        new Point($Plots [$i],
-                                  $Plots [$i + 1]),
-                        new Point($Plots [$i + 2],
-                                  $Plots [$i + 3]),
+                        new Point(
+                            $Plots [$i],
+                            $Plots [$i + 1]
+                        ),
+                        new Point(
+                            $Plots [$i + 2],
+                            $Plots [$i + 3]
+                        ),
                         $this->palette->getColor($ColorID),
                         $this->LineWidth,
                         $this->LineDotSize,
@@ -2804,20 +2969,22 @@ class pChart {
     /**
      * This function can be used to set the background color
      */
-    function drawBackground(Color $color) {
+    public function drawBackground(Color $color)
+    {
         $C_Background = $this->canvas->allocateColor($color);
         imagefilledrectangle($this->canvas->getPicture(), 0, 0, $this->XSize, $this->YSize, $C_Background);
     }
 
-    private function drawGradient(Point $point1, Point $point2, Color $color, $decay) {
+    private function drawGradient(Point $point1, Point $point2, Color $color, $decay)
+    {
         /* Positive gradient */
-        if($decay > 0) {
+        if ($decay > 0) {
             $YStep = ($point2->getY() - $point1->getY() - 2) / $decay;
-            for($i = 0; $i <= $decay; $i++) {
+            for ($i = 0; $i <= $decay; $i++) {
                 $color = $color->addRGBIncrement(-1);
                 $Yi1   = $point1->getY() + ($i * $YStep);
                 $Yi2   = ceil($Yi1 + ($i * $YStep) + $YStep);
-                if($Yi2 >= $Yi2) {
+                if ($Yi2 >= $Yi2) {
                     $Yi2 = $point2->getY() - 1;
                 }
 
@@ -2831,11 +2998,11 @@ class pChart {
         }
 
         /* Negative gradient */
-        if($decay < 0) {
+        if ($decay < 0) {
             $YStep = ($point2->getY() - $point1->getY() - 2) / -$decay;
             $Yi1   = $point1->getY();
             $Yi2   = $point1->getY() + $YStep;
-            for($i = -$decay; $i >= 0; $i--) {
+            for ($i = -$decay; $i >= 0; $i--) {
                 $color = $color->addRGBIncrement(1);
 
                 $this->canvas->drawFilledRectangle(
@@ -2847,7 +3014,7 @@ class pChart {
 
                 $Yi1 += $YStep;
                 $Yi2 += $YStep;
-                if($Yi2 >= $Yi2) {
+                if ($Yi2 >= $Yi2) {
                     $Yi2 = $point2->getY() - 1;
                 }
             }
@@ -2857,8 +3024,9 @@ class pChart {
     /**
      * This function can be used to set the background color
      */
-    private function drawGraphAreaGradient(BackgroundStyle $style) {
-        if(!$style->useGradient()) {
+    private function drawGraphAreaGradient(BackgroundStyle $style)
+    {
+        if (!$style->useGradient()) {
             return;
         }
 
@@ -2870,7 +3038,8 @@ class pChart {
         );
     }
 
-    public function drawBackgroundGradient(Color $color, $decay) {
+    public function drawBackgroundGradient(Color $color, $decay)
+    {
         $this->drawGradient(
             new Point(0, 0),
             new Point($this->XSize, $this->YSize),
@@ -2882,53 +3051,59 @@ class pChart {
     /**
      * This function will draw an ellipse
      */
-    function drawEllipse($Xc, $Yc, $Height, $Width, Color $color) {
+    public function drawEllipse($Xc, $Yc, $Height, $Width, Color $color)
+    {
         $this->canvas->drawCircle(new Point($Xc, $Yc), $Height, $color, $this->shadowProperties, $Width);
     }
 
     /**
      * This function will draw a filled ellipse
      */
-    function drawFilledEllipse($Xc, $Yc, $Height, $Width, Color $color) {
+    public function drawFilledEllipse($Xc, $Yc, $Height, $Width, Color $color)
+    {
         $this->canvas->drawFilledCircle(new Point($Xc, $Yc), $Height, $color, $this->shadowProperties, $Width);
     }
 
     /**
      * Load a PNG file and draw it over the chart
      */
-    function drawFromPNG($FileName, $X, $Y, $Alpha = 100) {
+    public function drawFromPNG($FileName, $X, $Y, $Alpha = 100)
+    {
         $this->drawFromPicture(1, $FileName, $X, $Y, $Alpha);
     }
 
     /**
      * Load a GIF file and draw it over the chart
      */
-    function drawFromGIF($FileName, $X, $Y, $Alpha = 100) {
+    public function drawFromGIF($FileName, $X, $Y, $Alpha = 100)
+    {
         $this->drawFromPicture(2, $FileName, $X, $Y, $Alpha);
     }
 
     /**
      * Load a JPEG file and draw it over the chart
      */
-    function drawFromJPG($FileName, $X, $Y, $Alpha = 100) {
+    public function drawFromJPG($FileName, $X, $Y, $Alpha = 100)
+    {
         $this->drawFromPicture(3, $FileName, $X, $Y, $Alpha);
     }
 
     /**
      * Generic loader function for external pictures
      */
-    function drawFromPicture($PicType, $FileName, $X, $Y, $Alpha = 100) {
-        if(file_exists($FileName)) {
+    public function drawFromPicture($PicType, $FileName, $X, $Y, $Alpha = 100)
+    {
+        if (file_exists($FileName)) {
             $Infos  = getimagesize($FileName);
             $Width  = $Infos [0];
             $Height = $Infos [1];
-            if($PicType == 1) {
+            if ($PicType == 1) {
                 $Raster = imagecreatefrompng($FileName);
             }
-            if($PicType == 2) {
+            if ($PicType == 2) {
                 $Raster = imagecreatefromgif($FileName);
             }
-            if($PicType == 3) {
+            if ($PicType == 3) {
                 $Raster = imagecreatefromjpeg($FileName);
             }
 
@@ -2942,7 +3117,8 @@ class pChart {
      *
      * @todo This hasn't been updated to the new API yet
      */
-    function addBorder($Size = 3, $R = 0, $G = 0, $B = 0) {
+    public function addBorder($Size = 3, $R = 0, $G = 0, $B = 0)
+    {
         $Width  = $this->XSize + 2 * $Size;
         $Height = $this->YSize + 2 * $Size;
 
@@ -2966,15 +3142,16 @@ class pChart {
     /**
      * Render the current picture to a file
      */
-    function Render($FileName) {
-        if($this->ErrorReporting)
+    public function Render($FileName)
+    {
+        if ($this->ErrorReporting)
             $this->printErrors($this->ErrorInterface);
 
         /* Save image map if requested */
-        if($this->BuildMap)
+        if ($this->BuildMap)
             $this->SaveImageMap();
 
-        if($FileName) {
+        if ($FileName) {
             imagepng($this->canvas->getPicture(), $FileName);
         } else {
             imagepng($this->canvas->getPicture());
@@ -2984,12 +3161,13 @@ class pChart {
     /**
      * Render the current picture to STDOUT
      */
-    function Stroke() {
-        if($this->ErrorReporting)
+    public function Stroke()
+    {
+        if ($this->ErrorReporting)
             $this->printErrors("GD");
 
         /* Save image map if requested */
-        if($this->BuildMap)
+        if ($this->BuildMap)
             $this->SaveImageMap();
 
         header('Content-type: image/png');
@@ -3001,24 +3179,25 @@ class pChart {
      *
      * @todo Should this be a method on DataDescription?
      */
-    protected function validateDataDescription($FunctionName, DataDescription $DataDescription, $DescriptionRequired = TRUE) {
-        if($DataDescription->getPosition() == '') {
-            $this->Errors [] = "[Warning] ".$FunctionName." - Y Labels are not set.";
+    protected function validateDataDescription($FunctionName, DataDescription $DataDescription, $DescriptionRequired = true)
+    {
+        if ($DataDescription->getPosition() == '') {
+            $this->Errors [] = "[Warning] " . $FunctionName . " - Y Labels are not set.";
             $DataDescription->setPosition("Name");
         }
 
-        if($DescriptionRequired) {
-            if(!isset ($DataDescription->description)) {
-                $this->Errors [] = "[Warning] ".$FunctionName." - Series descriptions are not set.";
-                foreach($DataDescription->values as $key => $Value) {
+        if ($DescriptionRequired) {
+            if (!isset($DataDescription->description)) {
+                $this->Errors [] = "[Warning] " . $FunctionName . " - Series descriptions are not set.";
+                foreach ($DataDescription->values as $Value) {
                     $DataDescription->description[$Value] = $Value;
                 }
             }
 
-            if(count($DataDescription->description) < count($DataDescription->values)) {
-                $this->Errors [] = "[Warning] ".$FunctionName." - Some series descriptions are not set.";
-                foreach($DataDescription->values as $key => $Value) {
-                    if(!isset ($DataDescription->description[$Value]))
+            if (count($DataDescription->description) < count($DataDescription->values)) {
+                $this->Errors [] = "[Warning] " . $FunctionName . " - Some series descriptions are not set.";
+                foreach ($DataDescription->values as $Value) {
+                    if (!isset($DataDescription->description[$Value]))
                         $DataDescription->description[$Value] = $Value;
                 }
             }
@@ -3028,24 +3207,24 @@ class pChart {
     /**
      * Validate data contained in the data array
      */
-    protected function validateData($FunctionName, $Data) {
-        $DataSummary = array();
+    protected function validateData($FunctionName, $Data)
+    {
+        $DataSummary = [];
 
-        foreach($Data as $key => $Values) {
-            foreach($Values as $key2 => $Value) {
-                if(!isset ($DataSummary [$key2]))
+        foreach ($Data as $key => $Values) {
+            foreach ($Values as $key2 => $Value) {
+                if (!isset($DataSummary [$key2]))
                     $DataSummary [$key2] = 1;
-                else
-                    $DataSummary [$key2]++;
+                else $DataSummary [$key2]++;
             }
         }
 
-        if(empty($DataSummary))
-            $this->Errors [] = "[Warning] ".$FunctionName." - No data set.";
+        if ($DataSummary === [])
+            $this->Errors [] = "[Warning] " . $FunctionName . " - No data set.";
 
-        foreach($DataSummary as $key => $Value) {
-            if($Value < max($DataSummary)) {
-                $this->Errors [] = "[Warning] ".$FunctionName." - Missing data in serie ".$key.".";
+        foreach ($DataSummary as $key => $Value) {
+            if ($Value < max($DataSummary)) {
+                $this->Errors [] = "[Warning] " . $FunctionName . " - Missing data in serie " . $key . ".";
             }
         }
     }
@@ -3053,27 +3232,32 @@ class pChart {
     /**
      * Print all error messages on the CLI or graphically
      */
-    function printErrors($Mode = "CLI") {
-        if(count($this->Errors) == 0)
+    public function printErrors($Mode = "CLI")
+    {
+        if (count($this->Errors) == 0)
             return (0);
 
-        if($Mode == "CLI") {
-            foreach($this->Errors as $key => $Value)
-                echo $Value."\r\n";
-        } elseif($Mode == "GD") {
+        if ($Mode == "CLI") {
+            foreach ($this->Errors as $Value)
+                echo $Value . "\r\n";
+        } elseif ($Mode == "GD") {
             $MaxWidth = 0;
-            foreach($this->Errors as $key => $Value) {
+            foreach ($this->Errors as $key => $Value) {
                 $Position  = imageftbbox($this->ErrorFontSize, 0, $this->ErrorFontName, $Value);
                 $TextWidth = $Position [2] - $Position [0];
-                if($TextWidth > $MaxWidth) {
+                if ($TextWidth > $MaxWidth) {
                     $MaxWidth = $TextWidth;
                 }
             }
             $this->canvas->drawFilledRoundedRectangle(
-                new Point($this->XSize - ($MaxWidth + 20),
-                          $this->YSize - (20 + (($this->ErrorFontSize + 4) * count($this->Errors)))),
-                new Point($this->XSize - 10,
-                          $this->YSize - 10),
+                new Point(
+                    $this->XSize - ($MaxWidth + 20),
+                    $this->YSize - (20 + (($this->ErrorFontSize + 4) * count($this->Errors)))
+                ),
+                new Point(
+                    $this->XSize - 10,
+                    $this->YSize - 10
+                ),
                 6,
                 new Color(233, 185, 185),
                 $this->lineWidth,
@@ -3082,10 +3266,14 @@ class pChart {
             );
 
             $this->canvas->drawRoundedRectangle(
-                new Point($this->XSize - ($MaxWidth + 20),
-                          $this->YSize - (20 + (($this->ErrorFontSize + 4) * count($this->Errors)))),
-                new Point($this->XSize - 10,
-                          $this->YSize - 10),
+                new Point(
+                    $this->XSize - ($MaxWidth + 20),
+                    $this->YSize - (20 + (($this->ErrorFontSize + 4) * count($this->Errors)))
+                ),
+                new Point(
+                    $this->XSize - 10,
+                    $this->YSize - 10
+                ),
                 6,
                 new Color(193, 145, 145),
                 $this->LineWidth,
@@ -3094,18 +3282,20 @@ class pChart {
             );
 
             $YPos = $this->YSize - (18 + (count($this->Errors) - 1) * ($this->ErrorFontSize + 4));
-            foreach($this->Errors as $key => $Value) {
+            foreach ($this->Errors as $Value) {
                 $this->canvas->drawText(
                     $this->ErrorFontSize,
                     0,
-                    new Point($this->XSize - ($MaxWidth + 15),
-                              $YPos),
+                    new Point(
+                        $this->XSize - ($MaxWidth + 15),
+                        $YPos
+                    ),
                     new Color(133, 85, 85),
                     $this->ErrorFontName,
                     $Value,
                     ShadowProperties::NoShadow()
                 );
-                $YPos = $YPos + ($this->ErrorFontSize + 4);
+                $YPos += $this->ErrorFontSize + 4;
             }
         }
     }
@@ -3113,7 +3303,8 @@ class pChart {
     /**
      * Activate the image map creation process
      */
-    function setImageMap($Mode = TRUE, $GraphID = "MyGraph") {
+    public function setImageMap($Mode = true, $GraphID = "MyGraph")
+    {
         $this->BuildMap = $Mode;
         $this->MapID    = $GraphID;
     }
@@ -3121,9 +3312,10 @@ class pChart {
     /**
      * Add a box into the image map
      */
-    function addToImageMap($X1, $Y1, $X2, $Y2, $SerieName, $Value, $CallerFunction) {
-        if($this->MapFunction == NULL || $this->MapFunction == $CallerFunction) {
-            $this->ImageMap [] = round($X1).",".round($Y1).",".round($X2).",".round($Y2).",".$SerieName.",".$Value;
+    public function addToImageMap($X1, $Y1, $X2, $Y2, $SerieName, $Value, $CallerFunction)
+    {
+        if ($this->MapFunction == null || $this->MapFunction == $CallerFunction) {
+            $this->ImageMap [] = round($X1) . "," . round($Y1) . "," . round($X2) . "," . round($Y2) . "," . $SerieName . "," . $Value;
             $this->MapFunction = $CallerFunction;
         }
     }
@@ -3131,48 +3323,50 @@ class pChart {
     /**
      * Load and cleanup the image map from disk
      */
-    function getImageMap($MapName, $Flush = TRUE) {
+    public function getImageMap($MapName, $Flush = true)
+    {
         /* Strip HTML query strings */
-        $Values   = $this->tmpFolder.$MapName;
+        $Values   = $this->tmpFolder . $MapName;
         $Value    = explode("\?", $Values);
         $FileName = $Value [0];
 
-        if(file_exists($FileName)) {
+        if (file_exists($FileName)) {
             $Handle     = fopen($FileName, "r");
             $MapContent = fread($Handle, filesize($FileName));
             fclose($Handle);
             echo $MapContent;
 
-            if($Flush)
+            if ($Flush)
                 unlink($FileName);
 
-            exit ();
+            exit();
         } else {
             header("HTTP/1.0 404 Not Found");
-            exit ();
+            exit();
         }
     }
 
     /**
      * Save the image map to the disk
      */
-    function SaveImageMap() {
-        if(!$this->BuildMap) {
+    public function SaveImageMap()
+    {
+        if (!$this->BuildMap) {
             return (-1);
         }
 
-        if($this->ImageMap == NULL) {
+        if ($this->ImageMap == null) {
             $this->Errors [] = "[Warning] SaveImageMap - Image map is empty.";
             return (-1);
         }
 
-        $Handle = fopen($this->tmpFolder.$this->MapID, 'w');
-        if(!$Handle) {
+        $Handle = fopen($this->tmpFolder . $this->MapID, 'w');
+        if (!$Handle) {
             $this->Errors [] = "[Warning] SaveImageMap - Cannot save the image map.";
             return (-1);
         } else {
-            foreach($this->ImageMap as $Value)
-                fwrite($Handle, htmlentities($Value)."\r");
+            foreach ($this->ImageMap as $Value)
+                fwrite($Handle, htmlentities($Value) . "\r");
         }
         fclose($Handle);
     }
@@ -3180,77 +3374,81 @@ class pChart {
     /**
      * Set date format for axis labels
      */
-    function setDateFormat($Format) {
+    public function setDateFormat($Format)
+    {
         $this->DateFormat = $Format;
     }
 
     /**
      * Convert TS to a date format string
      */
-    function ToDate($Value) {
+    public function ToDate($Value)
+    {
         return (date($this->DateFormat, $Value));
     }
 
     /**
      * Check if a number is a full integer (for scaling)
      */
-    static private function isRealInt($Value) {
-        if($Value == floor($Value))
-            return (TRUE);
-        return (FALSE);
+    private static function isRealInt($Value)
+    {
+        if ($Value == floor($Value))
+            return (true);
+        return (false);
     }
 
     /**
      * @todo I don't know what this does yet, I'm refactoring...
      */
-    public function calculateScales(& $Scale, & $Divisions) {
+    public function calculateScales(&$Scale, &$Divisions)
+    {
         /* Compute automatic scaling */
-        $ScaleOk      = FALSE;
+        $ScaleOk      = false;
         $Factor       = 1;
         $MinDivHeight = 25;
         $MaxDivs      = ($this->GArea_Y2 - $this->GArea_Y1) / $MinDivHeight;
 
-        if($this->VMax <= $this->VMin) {
+        if ($this->VMax <= $this->VMin) {
             throw new Exception("Impossible to calculate scales when VMax <= VMin");
         }
 
-        if($this->VMin == 0 && $this->VMax == 0) {
+        if ($this->VMin == 0 && $this->VMax == 0) {
             $this->VMin = 0;
             $this->VMax = 2;
             $Scale      = 1;
             $Divisions  = 2;
-        } elseif($MaxDivs > 1) {
-            while(!$ScaleOk) {
+        } elseif ($MaxDivs > 1) {
+            while (!$ScaleOk) {
                 $Scale1 = ($this->VMax - $this->VMin) / $Factor;
                 $Scale2 = ($this->VMax - $this->VMin) / $Factor / 2;
 
-                if($Scale1 > 1 && $Scale1 <= $MaxDivs && !$ScaleOk) {
-                    $ScaleOk   = TRUE;
+                if ($Scale1 > 1 && $Scale1 <= $MaxDivs && !$ScaleOk) {
+                    $ScaleOk   = true;
                     $Divisions = floor($Scale1);
                     $Scale     = 1;
                 }
-                if($Scale2 > 1 && $Scale2 <= $MaxDivs && !$ScaleOk) {
-                    $ScaleOk   = TRUE;
+                if ($Scale2 > 1 && $Scale2 <= $MaxDivs && !$ScaleOk) {
+                    $ScaleOk   = true;
                     $Divisions = floor($Scale2);
                     $Scale     = 2;
                 }
-                if(!$ScaleOk) {
-                    if($Scale2 > 1) {
-                        $Factor = $Factor * 10;
+                if (!$ScaleOk) {
+                    if ($Scale2 > 1) {
+                        $Factor *= 10;
                     }
-                    if($Scale2 < 1) {
-                        $Factor = $Factor / 10;
+                    if ($Scale2 < 1) {
+                        $Factor /= 10;
                     }
                 }
             }
 
-            if(floor($this->VMax / $Scale / $Factor) != $this->VMax / $Scale / $Factor) {
+            if (floor($this->VMax / $Scale / $Factor) != $this->VMax / $Scale / $Factor) {
                 $GridID     = floor($this->VMax / $Scale / $Factor) + 1;
                 $this->VMax = $GridID * $Scale * $Factor;
                 $Divisions++;
             }
 
-            if(floor($this->VMin / $Scale / $Factor) != $this->VMin / $Scale / $Factor) {
+            if (floor($this->VMin / $Scale / $Factor) != $this->VMin / $Scale / $Factor) {
                 $GridID     = floor($this->VMin / $Scale / $Factor);
                 $this->VMin = $GridID * $Scale * $Factor;
                 $Divisions++;
@@ -3262,12 +3460,14 @@ class pChart {
     /*
          * Returns the resource
          */
-    public function getPicture() {
+    public function getPicture()
+    {
         return $this->canvas->getPicture();
     }
 
-    static private function computeAutomaticScaling($minCoord, $maxCoord, &$minVal, &$maxVal, &$Divisions) {
-        $ScaleOk      = FALSE;
+    private function computeAutomaticScaling($minCoord, $maxCoord, &$minVal, &$maxVal, &$Divisions)
+    {
+        $ScaleOk      = false;
         $Factor       = 1;
         $Scale        = 1;
         $MinDivHeight = 25;
@@ -3277,79 +3477,79 @@ class pChart {
         $maxVal = (float) $maxVal;
 
         // when min and max are the them spread out the value
-        if($minVal == $maxVal) {
+        if ($minVal == $maxVal) {
             $ispos = $minVal > 0;
-            $maxVal += $maxVal/2;
-            $minVal -= $minVal/2;
-            if($minVal < 0 && $ispos) $minVal = 0;
+            $maxVal += $maxVal / 2;
+            $minVal -= $minVal / 2;
+            if ($minVal < 0 && $ispos) $minVal = 0;
         }
 
-        if($minVal == 0 && $maxVal == 0) {
+        if ($minVal == 0 && $maxVal == 0) {
             $minVal    = 0;
             $maxVal    = 2;
             $Divisions = 2;
-        } elseif($MaxDivs > 1) {
-            while(!$ScaleOk) {
-                if($Factor == 0) throw new Exception('Division by zero whne calculating scales (should not happen)');
+        } elseif ($MaxDivs > 1) {
+            while (!$ScaleOk) {
+                if ($Factor == 0) throw new Exception('Division by zero whne calculating scales (should not happen)');
 
                 $Scale1 = ($maxVal - $minVal) / $Factor;
                 $Scale2 = ($maxVal - $minVal) / $Factor / 2;
 
-                if($Scale1 > 1 && $Scale1 <= $MaxDivs && !$ScaleOk) {
-                    $ScaleOk   = TRUE;
+                if ($Scale1 > 1 && $Scale1 <= $MaxDivs && !$ScaleOk) {
+                    $ScaleOk   = true;
                     $Divisions = floor($Scale1);
                     $Scale     = 1;
                 }
-                if($Scale2 > 1 && $Scale2 <= $MaxDivs && !$ScaleOk) {
-                    $ScaleOk   = TRUE;
+                if ($Scale2 > 1 && $Scale2 <= $MaxDivs && !$ScaleOk) {
+                    $ScaleOk   = true;
                     $Divisions = floor($Scale2);
                     $Scale     = 2;
                 }
-                if(!$ScaleOk) {
-                    if($Scale2 >= 1) {
-                        $Factor = $Factor * 10.0;
+                if (!$ScaleOk) {
+                    if ($Scale2 >= 1) {
+                        $Factor *= 10.0;
                     }
-                    if($Scale2 < 1) {
-                        $Factor = $Factor / 10.0;
+                    if ($Scale2 < 1) {
+                        $Factor /= 10.0;
                     }
                 }
             }
 
-            if(floor($maxVal / $Scale / $Factor) != $maxVal / $Scale / $Factor) {
+            if (floor($maxVal / $Scale / $Factor) != $maxVal / $Scale / $Factor) {
                 $GridID = floor($maxVal / $Scale / $Factor) + 1;
                 $maxVal = $GridID * $Scale * $Factor;
                 $Divisions++;
             }
 
-            if(floor($minVal / $Scale / $Factor) != $minVal / $Scale / $Factor) {
+            if (floor($minVal / $Scale / $Factor) != $minVal / $Scale / $Factor) {
                 $GridID = floor($minVal / $Scale / $Factor);
                 $minVal = $GridID * $Scale * $Factor;
                 $Divisions++;
             }
         }
 
-        if(!isset ($Divisions)) {
+        if (!isset($Divisions)) {
             $Divisions = 2;
         }
 
-        if(self::isRealInt(($maxVal - $minVal) / ($Divisions - 1))) {
+        if (self::isRealInt(($maxVal - $minVal) / ($Divisions - 1))) {
             $Divisions--;
-        }
-        elseif(self::isRealInt(($maxVal - $minVal) / ($Divisions + 1))) {
+        } elseif (self::isRealInt(($maxVal - $minVal) / ($Divisions + 1))) {
             $Divisions++;
         }
     }
 
-    static private function convertValueForDisplay($value, $format, $unit) {
-        if($format == "number")
-            return $value.$unit;
-        if($format == "time")
+    private function convertValueForDisplay($value, $format, $unit)
+    {
+        if ($format == "number")
+            return $value . $unit;
+        if ($format == "time")
             return ConversionHelpers::ToTime($value);
-        if($format == "date")
+        if ($format == "date")
             return date('Y-m-d', $value); //todo: might be wrong, needs to go into converseion helper and needs a test
-        if($format == "metric")
+        if ($format == "metric")
             return ConversionHelpers::ToMetric($value);
-        if($format == "currency")
+        if ($format == "currency")
             return ConversionHelpers::ToCurrency($value);
     }
 }
@@ -3358,7 +3558,8 @@ class pChart {
  *
  * @param $Message
  */
-function RaiseFatal($Message) {
-    echo "[FATAL] ".$Message."\r\n";
-    exit ();
+function RaiseFatal($Message)
+{
+    echo "[FATAL] " . $Message . "\r\n";
+    exit();
 }

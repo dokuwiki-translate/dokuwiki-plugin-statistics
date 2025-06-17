@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Statistics plugin - image creator
  *
@@ -6,7 +7,7 @@
  * @author     Andreas Gohr <gohr@cosmocode.de>
  */
 
-if(!defined('DOKU_INC')) define('DOKU_INC', realpath(dirname(__FILE__) . '/../../../') . '/');
+if (!defined('DOKU_INC')) define('DOKU_INC', realpath(__DIR__ . '/../../../') . '/');
 define('DOKU_DISABLE_GZIP_OUTPUT', 1);
 require_once(DOKU_INC . 'inc/init.php');
 session_write_close();
@@ -14,9 +15,9 @@ session_write_close();
 /** @var helper_plugin_statistics $plugin */
 $plugin = plugin_load('helper', 'statistics');
 try {
-    if(!auth_ismanager()) throw new Exception('Access denied');
+    if (!auth_ismanager()) throw new Exception('Access denied');
     $plugin->Graph()->render($_REQUEST['img'], $_REQUEST['f'], $_REQUEST['t'], $_REQUEST['s']);
-} catch(Exception $e) {
+} catch (Exception $e) {
     $plugin->sendGIF(false);
 }
 

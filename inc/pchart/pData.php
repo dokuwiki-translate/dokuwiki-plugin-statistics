@@ -1,4 +1,5 @@
 <?php
+
 /**
  * pData - Simplifying data population for pChart
  *
@@ -22,38 +23,45 @@
  */
 
 
-class pData {
-    private $Data = array();
-    private $dataDescription = array();
+class pData
+{
+    private $Data = [];
+    private $dataDescription = [];
 
     /**
      * An entry for each series giving the maximum value in that
      * series, if we've previously calculated it
      */
-    private $seriesMinimums = array();
+    private $seriesMinimums = [];
 
     /**
      * An entry for each series giving the minimum value in that
      * series, if we've previously calculated it
      */
-    private $seriesMaximums = array();
+    private $seriesMaximums = [];
 
-    public function __construct() {
-        $this->dataDescription = new DataDescription('Name',
-                                                     'number', 'number',
-                                                     null, null);
+    public function __construct()
+    {
+        $this->dataDescription = new DataDescription(
+            'Name',
+            'number',
+            'number',
+            null,
+            null
+        );
     }
 
     /**
      * Add a single point to the data set
      */
-    public function addPoint($value, $series = "Series1", $Description = "") {
-        if(is_array($value)) {
+    public function addPoint($value, $series = "Series1", $Description = "")
+    {
+        if (is_array($value)) {
             throw new InvalidArgumentException("Can't pass an array to addPoint()");
         }
 
         return $this->addPoints(
-            array($value),
+            [$value],
             $series,
             $Description
         );
@@ -67,107 +75,122 @@ class pData {
      * the data set, taking on auto-incremented ID values based on the
      * current state of the data set.
      */
-    public function addPoints(array $Value, $Serie = "Series1", $Description = "") {
+    public function addPoints(array $Value, $Serie = "Series1", $Description = "")
+    {
         $ID = 0;
-        for($i = 0; $i < count($this->Data); $i++) {
-            if(isset ($this->Data [$i] [$Serie])) {
+        $counter = count($this->Data);
+        for ($i = 0; $i < $counter; $i++) {
+            if (isset($this->Data [$i] [$Serie])) {
                 $ID = $i + 1;
             }
         }
 
-        foreach($Value as $Val) {
+        foreach ($Value as $Val) {
             $this->Data [$ID] [$Serie] = $Val;
-            if($Description != "") {
+            if ($Description != "") {
                 $this->Data[$ID]["Name"] = $Description;
-            } elseif(!isset ($this->Data [$ID] ["Name"])) {
+            } elseif (!isset($this->Data [$ID] ["Name"])) {
                 $this->Data [$ID] ["Name"] = $ID;
             }
             $ID++;
         }
     }
 
-    public function addSeries($SerieName = "Series1") {
-        if(!isset($this->dataDescription->values)) {
+    public function addSeries($SerieName = "Series1")
+    {
+        if (!isset($this->dataDescription->values)) {
             $this->dataDescription->values[] = $SerieName;
         } else {
-            $Found = FALSE;
-            foreach($this->dataDescription->values as $Value)
-                if($Value == $SerieName) {
-                    $Found = TRUE;
-                }
+            $Found = false;
+            foreach ($this->dataDescription->values as $Value)
+            if ($Value == $SerieName) {
+                $Found = true;
+            }
 
-            if(!$Found)
+            if (!$Found)
                 $this->dataDescription->values[] = $SerieName;
         }
     }
 
-    public function addAllSeries() {
+    public function addAllSeries()
+    {
         unset($this->dataDescription->values);
 
-        if(isset ($this->Data [0])) {
-            foreach(array_keys($this->Data [0]) as $Key) {
-                if($Key != "Name") {
+        if (isset($this->Data [0])) {
+            foreach (array_keys($this->Data [0]) as $Key) {
+                if ($Key != "Name") {
                     $this->dataDescription->values[] = $Key;
                 }
             }
         }
     }
 
-    public function removeSeries($SerieName = "Series1") {
-        if(!isset($this->dataDescription->values))
+    public function removeSeries($SerieName = "Series1")
+    {
+        if (!isset($this->dataDescription->values))
             return;
 
-        foreach($this->dataDescription->values as $key => $Value) {
-            if($Value == $SerieName)
-                unset ($this->dataDescription->values[$key]);
+        foreach ($this->dataDescription->values as $key => $Value) {
+            if ($Value == $SerieName)
+                unset($this->dataDescription->values[$key]);
         }
     }
 
-    public function setAbscissaLabelSeries($seriesName = "Name") {
+    public function setAbscissaLabelSeries($seriesName = "Name")
+    {
         $this->dataDescription->setPosition($seriesName);
     }
 
-    public function setSeriesName($Name, $SeriesName = "Series1") {
+    public function setSeriesName($Name, $SeriesName = "Series1")
+    {
         $this->dataDescription->description[$SeriesName] = $Name;
     }
 
-    public function setXAxisName($Name) {
+    public function setXAxisName($Name)
+    {
         $this->dataDescription->setXAxisName($Name);
     }
 
-    public function setYAxisName($Name) {
+    public function setYAxisName($Name)
+    {
         $this->dataDescription->setYAxisName($Name);
     }
 
-    public function setSeriesSymbol($Name, $Symbol) {
+    public function setSeriesSymbol($Name, $Symbol)
+    {
         $this->dataDescription->seriesSymbols[$Name] = $Symbol;
     }
 
     /**
      * @param unknown_type $SerieName
      */
-    public function removeSeriesName($SerieName) {
-        if(isset ($this->dataDescription->description[$SerieName]))
-            unset ($this->dataDescription->description[$SerieName]);
+    public function removeSeriesName($SerieName)
+    {
+        if (isset($this->dataDescription->description[$SerieName]))
+            unset($this->dataDescription->description[$SerieName]);
     }
 
-    public function removeAllSeries() {
-        $this->dataDescription->values = array();
+    public function removeAllSeries()
+    {
+        $this->dataDescription->values = [];
     }
 
-    public function getData() {
+    public function getData()
+    {
         return $this->Data;
     }
 
-    public function getDataDescription() {
+    public function getDataDescription()
+    {
         return $this->dataDescription;
     }
 
     /**
      * @brief Get the minimum data value in the specified series
      */
-    public function getSeriesMin($seriesName) {
-        if(isset($this->seriesMinimums[$seriesName])) {
+    public function getSeriesMin($seriesName)
+    {
+        if (isset($this->seriesMinimums[$seriesName])) {
             return $this->seriesMinimums[$seriesName];
         }
 
@@ -178,8 +201,8 @@ class pData {
          */
         $this->seriesMinimums[$seriesName] = $this->Data[0][$seriesName];
 
-        foreach($this->Data as $valueSet) {
-            if(isset($valueSet[$seriesName])) {
+        foreach ($this->Data as $valueSet) {
+            if (isset($valueSet[$seriesName])) {
                 $this->seriesMinimums[$seriesName] =
                     min(
                         $this->seriesMinimums[$seriesName],
@@ -194,11 +217,12 @@ class pData {
     /**
      * @brief Get the maximum data value in the specified series
      */
-    public function getSeriesMax($seriesName) {
+    public function getSeriesMax($seriesName)
+    {
         $this->seriesMaximums[$seriesName] = $this->Data[0][$seriesName];
 
-        foreach($this->Data as $valueSet) {
-            if(isset($valueSet[$seriesName])) {
+        foreach ($this->Data as $valueSet) {
+            if (isset($valueSet[$seriesName])) {
                 $this->seriesMaximums[$seriesName] =
                     max(
                         $this->seriesMaximums[$seriesName],
@@ -235,19 +259,20 @@ class pData {
      *
      * @return Null
      */
-    public function getXYMap($colName, array &$xIn, array & $yIn, array & $missing, & $index) {
+    public function getXYMap($colName, array &$xIn, array &$yIn, array &$missing, &$index)
+    {
         $xIn [0] = 0;
         $yIn [0] = 0;
 
         $index = 1;
 
-        foreach(array_keys($this->Data) as $Key) {
-            if(isset ($this->Data[$Key] [$colName])) {
+        foreach (array_keys($this->Data) as $Key) {
+            if (isset($this->Data[$Key] [$colName])) {
                 $Value        = $this->Data[$Key] [$colName];
                 $xIn [$index] = $index;
                 $yIn [$index] = $Value;
-                if(!is_numeric($Value)) {
-                    $missing [$index] = TRUE;
+                if (!is_numeric($Value)) {
+                    $missing [$index] = true;
                 }
                 $index++;
             }

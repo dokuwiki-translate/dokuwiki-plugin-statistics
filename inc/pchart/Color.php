@@ -27,7 +27,8 @@
  * components are public. This is a transitional detail that should
  * eventually be done away with.
  */
-class Color {
+class Color
+{
     /**
      * The members r, g and b are still public since they are used
      * within GDCanvas. Since we don't have any GDCanvas unit tests
@@ -45,23 +46,24 @@ class Color {
      * @param int $blue
      * @throws InvalidArgumentException
      */
-    public function __construct($red, $green = null, $blue = null) {
-        if(!is_numeric($red)) {
+    public function __construct($red, $green = null, $blue = null)
+    {
+        if (!is_numeric($red)) {
             // we assume it's hex
-            list($red, $green, $blue) = $this->Hex2RGB($red);
+            [$red, $green, $blue] = $this->Hex2RGB($red);
         }
-        if(is_null($green)) $green = $red;
-        if(is_null($blue)) $blue = $red;
+        if (is_null($green)) $green = $red;
+        if (is_null($blue)) $blue = $red;
 
-        if($red < 0 || $red > 255) {
+        if ($red < 0 || $red > 255) {
             throw new InvalidArgumentException("Invalid Red component");
         }
 
-        if($green < 0 || $green > 255) {
+        if ($green < 0 || $green > 255) {
             throw new InvalidArgumentException("Invalid Green component");
         }
 
-        if($blue < 0 || $blue > 255) {
+        if ($blue < 0 || $blue > 255) {
             throw new InvalidArgumentException("Invalid Blue component");
         }
 
@@ -78,10 +80,11 @@ class Color {
      * @param mixed $rand optional externally created random value
      * @return Color
      */
-    public static function random($rand = null) {
-        if(!$rand) $rand = rand();
+    public static function random($rand = null)
+    {
+        if (!$rand) $rand = random_int(0, mt_getrandmax());
 
-        return new Color('#'.substr(md5($rand),0,6));
+        return new Color('#' . substr(md5($rand), 0, 6));
     }
 
     /**
@@ -89,7 +92,8 @@ class Color {
      *
      * @return string
      */
-    public function getHex() {
+    public function getHex()
+    {
         return sprintf('#%02x%02x%02x', $this->r, $this->g, $this->b);
     }
 
@@ -100,37 +104,31 @@ class Color {
      * @return array
      * @throws InvalidArgumentException
      */
-    private function Hex2RGB($color) {
-        if(substr($color,0,1) == '#') $color = substr($color, 1);
+    private function Hex2RGB($color)
+    {
+        if (str_starts_with($color, '#')) $color = substr($color, 1);
 
-        if(strlen($color) == 6) {
-            list($r, $g, $b) = array(
-                $color[0].$color[1],
-                $color[2].$color[3],
-                $color[4].$color[5]
-            );
-        } elseif(strlen($color) == 3) {
-            list($r, $g, $b) = array(
-                $color[0].$color[0],
-                $color[1].$color[1],
-                $color[2].$color[2]
-            );
+        if (strlen($color) == 6) {
+            [$r, $g, $b] = [$color[0] . $color[1], $color[2] . $color[3], $color[4] . $color[5]];
+        } elseif (strlen($color) == 3) {
+            [$r, $g, $b] = [$color[0] . $color[0], $color[1] . $color[1], $color[2] . $color[2]];
         } else {
-            throw new InvalidArgumentException("Invalid hex color: ".$color);
+            throw new InvalidArgumentException("Invalid hex color: " . $color);
         }
 
         $r = hexdec($r);
         $g = hexdec($g);
         $b = hexdec($b);
 
-        return array($r, $g, $b);
+        return [$r, $g, $b];
     }
 
     /**
      * Return a new color formed by adding the specified increment to
      * the R, G and B values
      */
-    public function addRGBIncrement($increment) {
+    public function addRGBIncrement($increment)
+    {
         $incremented = new Color($this->r, $this->g, $this->b);
 
         $incremented->r = $this->truncateColorComponentRange($incremented->r + $increment);
@@ -145,7 +143,8 @@ class Color {
      *
      * @return string
      */
-    public function __toString() {
+    public function __toString()
+    {
         return sprintf("Color<%d, %d, %d>", $this->r, $this->g, $this->b);
     }
 
@@ -155,10 +154,11 @@ class Color {
      * @param $input
      * @return int
      */
-    private function truncateColorComponentRange($input) {
-        if($input > 255) {
+    private function truncateColorComponentRange($input)
+    {
+        if ($input > 255) {
             return 255;
-        } elseif($input < 0) {
+        } elseif ($input < 0) {
             return 0;
         } else {
             return $input;
@@ -170,7 +170,8 @@ class Color {
      *
      * @return int
      */
-    public function getR() {
+    public function getR()
+    {
         return $this->r;
     }
 
@@ -179,7 +180,8 @@ class Color {
      *
      * @return int
      */
-    public function getG() {
+    public function getG()
+    {
         return $this->g;
     }
 
@@ -188,7 +190,8 @@ class Color {
      *
      * @return int
      */
-    public function getB() {
+    public function getB()
+    {
         return $this->b;
     }
 }

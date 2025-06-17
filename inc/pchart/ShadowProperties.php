@@ -17,21 +17,24 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-class ShadowProperties {
-    private function __construct() {
-
+class ShadowProperties
+{
+    private function __construct()
+    {
     }
 
-    static public function FromDefaults() {
-        $properties = new ShadowProperties;
+    public static function FromDefaults()
+    {
+        $properties = new ShadowProperties();
 
         $properties->active = false;
 
         return $properties;
     }
 
-    static public function FromSettings($xDistance, $yDistance, Color $color, $alpha = 50, $blur = 0) {
-        $properties = new ShadowProperties;
+    public static function FromSettings($xDistance, $yDistance, Color $color, $alpha = 50, $blur = 0)
+    {
+        $properties = new ShadowProperties();
 
         $properties->active    = true;
         $properties->xDistance = $xDistance;
@@ -51,7 +54,8 @@ class ShadowProperties {
      * actually any special clone functionality? I can't RTFM at the
      * moment as the internet connection is down.
      */
-    static public function Copy(ShadowProperties $other) {
+    public static function Copy(ShadowProperties $other)
+    {
         $copy         = ShadowProperties::FromSettings(
             $other->xDistance,
             $other->yDistance,
@@ -64,15 +68,21 @@ class ShadowProperties {
         return $copy;
     }
 
-    static public function NoShadow() {
+    public static function NoShadow()
+    {
         return self::FromDefaults();
     }
 
-    public function __toString() {
+    public function __toString()
+    {
         return sprintf(
             "ShadowProperties<%d, %d, %d, %s, %d, %d>",
-            $this->active, $this->xDistance, $this->yDistance,
-            $this->color, $this->alpha, $this->blur
+            $this->active,
+            $this->xDistance,
+            $this->yDistance,
+            $this->color,
+            $this->alpha,
+            $this->blur
         );
     }
 

@@ -1,32 +1,35 @@
 <?php
 
-require dirname(__FILE__) . '/pchart/pData.php';
-require dirname(__FILE__) . '/pchart/pChart.php';
-require dirname(__FILE__) . '/pchart/GDCanvas.php';
-require dirname(__FILE__) . '/pchart/PieChart.php';
+require __DIR__ . '/pchart/pData.php';
+require __DIR__ . '/pchart/pChart.php';
+require __DIR__ . '/pchart/GDCanvas.php';
+require __DIR__ . '/pchart/PieChart.php';
 
-class StatisticsGraph {
+class StatisticsGraph
+{
     private $hlp;
     private $tlimit;
     private $start;
     private $from;
     private $to;
 
-    public function __construct(helper_plugin_statistics $hlp) {
+    public function __construct(helper_plugin_statistics $hlp)
+    {
         $this->hlp = $hlp;
     }
 
-    public function render($call, $from, $to, $start) {
+    public function render($call, $from, $to, $start)
+    {
         $from = preg_replace('/[^\d\-]+/', '', $from);
         $to   = preg_replace('/[^\d\-]+/', '', $to);
-        if(!$from) $from = date('Y-m-d');
-        if(!$to) $to = date('Y-m-d');
+        if (!$from) $from = date('Y-m-d');
+        if (!$to) $to = date('Y-m-d');
         $this->tlimit = "A.dt >= '$from 00:00:00' AND A.dt <= '$to 23:59:59'";
         $this->start  = (int) $start;
         $this->from   = $from;
         $this->to     = $to;
 
-        if(method_exists($this, $call)) {
+        if (method_exists($this, $call)) {
             $this->$call();
         } else {
             $this->hlp->sendGIF();
@@ -38,11 +41,12 @@ class StatisticsGraph {
      *
      * @param array $data associative array contianing label and values
      */
-    protected function PieChart($data) {
-        $DataSet = new pData;
+    protected function PieChart($data)
+    {
+        $DataSet = new pData();
         $Canvas  = new GDCanvas(400, 200, false);
         $Chart   = new PieChart(400, 200, $Canvas);
-        $Chart->setFontProperties(dirname(__FILE__) . '/pchart/Fonts/DroidSans.ttf', 8);
+        $Chart->setFontProperties(__DIR__ . '/pchart/Fonts/DroidSans.ttf', 8);
 
         $DataSet->AddPoints(array_values($data), 'Serie1');
         $DataSet->AddPoints(array_keys($data), 'Serie2');
@@ -52,10 +56,14 @@ class StatisticsGraph {
         $Chart->drawBasicPieGraph(
             $DataSet->getData(),
             $DataSet->GetDataDescription(),
-            120, 100, 60, PIE_PERCENTAGE
+            120,
+            100,
+            60,
+            PIE_PERCENTAGE
         );
         $Chart->drawPieLegend(
-            230, 15,
+            230,
+            15,
             $DataSet->GetData(),
             $DataSet->GetDataDescription(),
             new Color(250)
@@ -72,12 +80,13 @@ class StatisticsGraph {
      * @param string $key The key containing the label
      * @param int $max How many discrete values to show before summarizing under "other"
      */
-    protected function sumUpPieChart($query, $key, $max=4){
+    protected function sumUpPieChart($query, $key, $max = 4)
+    {
         $result = $this->hlp->Query()->$query($this->tlimit, $this->start, 0, false);
-        $data   = array();
+        $data   = [];
         $top    = 0;
-        foreach($result as $row) {
-            if($top < $max) {
+        foreach ($result as $row) {
+            if ($top < $max) {
                 $data[$row[$key]] = $row['cnt'];
             } else {
                 $data['other'] += $row['cnt'];
@@ -92,11 +101,12 @@ class StatisticsGraph {
      *
      * @param $info
      */
-    protected function history($info) {
+    protected function history($info)
+    {
         $diff = abs(strtotime($this->from) - strtotime($this->to));
-        $days = floor($diff / (60*60*24));
+        $days = floor($diff / (60 * 60 * 24));
         if ($days > 365) {
-            $interval= 'months';
+            $interval = 'months';
         } elseif ($days > 56) {
             $interval = 'weeks';
         } else {
@@ -105,15 +115,15 @@ class StatisticsGraph {
 
         $result = $this->hlp->Query()->history($this->tlimit, $info, $interval);
 
-        $data = array();
-        $times = array();
-        foreach($result as $row) {
+        $data = [];
+        $times = [];
+        foreach ($result as $row) {
             $data[] = $row['cnt'];
-            if($interval == 'months') {
+            if ($interval == 'months') {
                 $times[] = substr($row['time'], 0, 4) . '-' . substr($row['time'], 4, 2);
             } elseif ($interval == 'weeks') {
                 $times[] = $row['EXTRACT(YEAR FROM dt)'] . '-' . $row['time'];
-            }else {
+            } else {
                 $times[] = substr($row['time'], -5);
             }
         }
@@ -125,16 +135,20 @@ class StatisticsGraph {
         $DataSet->SetAbscissaLabelSeries('Times');
 
         $DataSet->setXAxisName($this->hlp->getLang($interval));
-        $DataSet->setYAxisName($this->hlp->getLang('graph_'.$info));
+        $DataSet->setYAxisName($this->hlp->getLang('graph_' . $info));
 
         $Canvas = new GDCanvas(600, 200, false);
         $Chart  = new pChart(600, 200, $Canvas);
 
-        $Chart->setFontProperties(dirname(__FILE__) . '/pchart/Fonts/DroidSans.ttf', 8);
+        $Chart->setFontProperties(__DIR__ . '/pchart/Fonts/DroidSans.ttf', 8);
         $Chart->setGraphArea(70, 15, 580, 140);
         $Chart->drawScale(
-            $DataSet, new ScaleStyle(SCALE_NORMAL, new Color(127)),
-            45, 1, false, ceil(count($times) / 12)
+            $DataSet,
+            new ScaleStyle(SCALE_NORMAL, new Color(127)),
+            45,
+            1,
+            false,
+            ceil(count($times) / 12)
         );
         $Chart->drawLineGraph($DataSet->GetData(), $DataSet->GetDataDescription());
 
@@ -148,51 +162,60 @@ class StatisticsGraph {
 
     #region Graphbuilding functions
 
-    public function countries() {
+    public function countries()
+    {
         $this->sumUpPieChart('countries', 'country');
     }
 
-    public function searchengines() {
+    public function searchengines()
+    {
         $this->sumUpPieChart('searchengines', 'engine', 3);
     }
 
-    public function browsers() {
+    public function browsers()
+    {
         $this->sumUpPieChart('browsers', 'ua_info');
     }
 
-    public function os() {
+    public function os()
+    {
         $this->sumUpPieChart('os', 'os');
     }
 
-    public function topuser() {
+    public function topuser()
+    {
         $this->sumUpPieChart('topuser', 'user');
     }
 
-    public function topeditor() {
+    public function topeditor()
+    {
         $this->sumUpPieChart('topeditor', 'user');
     }
 
-    public function topgroup() {
+    public function topgroup()
+    {
         $this->sumUpPieChart('topgroup', 'group');
     }
 
-    public function topgroupedit() {
+    public function topgroupedit()
+    {
         $this->sumUpPieChart('topgroupedit', 'group');
     }
 
-    public function viewport() {
+    public function viewport()
+    {
         $result = $this->hlp->Query()->viewport($this->tlimit, 0, 100);
-        $data1  = array();
-        $data2  = array();
-        $data3  = array();
+        $data1  = [];
+        $data2  = [];
+        $data3  = [];
 
-        foreach($result as $row) {
+        foreach ($result as $row) {
             $data1[] = $row['res_x'];
             $data2[] = $row['res_y'];
             $data3[] = $row['cnt'];
         }
 
-        $DataSet = new pData;
+        $DataSet = new pData();
         $DataSet->AddPoints($data1, 'Serie1');
         $DataSet->AddPoints($data2, 'Serie2');
         $DataSet->AddPoints($data3, 'Serie3');
@@ -201,11 +224,13 @@ class StatisticsGraph {
         $Canvas = new GDCanvas(650, 490, false);
         $Chart  = new pChart(650, 490, $Canvas);
 
-        $Chart->setFontProperties(dirname(__FILE__) . '/pchart/Fonts/DroidSans.ttf', 8);
+        $Chart->setFontProperties(__DIR__ . '/pchart/Fonts/DroidSans.ttf', 8);
         $Chart->setGraphArea(50, 30, 630, 470);
         $Chart->drawXYScale(
-            $DataSet, new ScaleStyle(SCALE_NORMAL, new Color(127)),
-            'Serie2', 'Serie1'
+            $DataSet,
+            new ScaleStyle(SCALE_NORMAL, new Color(127)),
+            'Serie2',
+            'Serie1'
         );
 
         $Chart->drawXYPlotGraph($DataSet, 'Serie2', 'Serie1', 0, 20, 2, null, false, 'Serie3');
@@ -213,19 +238,20 @@ class StatisticsGraph {
         $Chart->Render('');
     }
 
-    public function resolution() {
+    public function resolution()
+    {
         $result = $this->hlp->Query()->resolution($this->tlimit, 0, 100);
-        $data1  = array();
-        $data2  = array();
-        $data3  = array();
+        $data1  = [];
+        $data2  = [];
+        $data3  = [];
 
-        foreach($result as $row) {
+        foreach ($result as $row) {
             $data1[] = $row['res_x'];
             $data2[] = $row['res_y'];
             $data3[] = $row['cnt'];
         }
 
-        $DataSet = new pData;
+        $DataSet = new pData();
         $DataSet->AddPoints($data1, 'Serie1');
         $DataSet->AddPoints($data2, 'Serie2');
         $DataSet->AddPoints($data3, 'Serie3');
@@ -234,11 +260,13 @@ class StatisticsGraph {
         $Canvas = new GDCanvas(650, 490, false);
         $Chart  = new pChart(650, 490, $Canvas);
 
-        $Chart->setFontProperties(dirname(__FILE__) . '/pchart/Fonts/DroidSans.ttf', 8);
+        $Chart->setFontProperties(__DIR__ . '/pchart/Fonts/DroidSans.ttf', 8);
         $Chart->setGraphArea(50, 30, 630, 470);
         $Chart->drawXYScale(
-            $DataSet, new ScaleStyle(SCALE_NORMAL, new Color(127)),
-            'Serie2', 'Serie1'
+            $DataSet,
+            new ScaleStyle(SCALE_NORMAL, new Color(127)),
+            'Serie2',
+            'Serie1'
         );
 
         $Chart->drawXYPlotGraph($DataSet, 'Serie2', 'Serie1', 0, 20, 2, null, false, 'Serie3');
@@ -247,32 +275,37 @@ class StatisticsGraph {
     }
 
 
-    public function history_page_count() {
+    public function history_page_count()
+    {
         $this->history('page_count');
     }
 
-    public function history_page_size() {
+    public function history_page_size()
+    {
         $this->history('page_size');
     }
 
-    public function history_media_count() {
+    public function history_media_count()
+    {
         $this->history('media_count');
     }
 
-    public function history_media_size() {
+    public function history_media_size()
+    {
         $this->history('media_size');
     }
 
 
-    public function dashboardviews() {
+    public function dashboardviews()
+    {
         $hours  = ($this->from == $this->to);
         $result = $this->hlp->Query()->dashboardviews($this->tlimit, $hours);
-        $data1  = array();
-        $data2  = array();
-        $data3  = array();
-        $times  = array();
+        $data1  = [];
+        $data2  = [];
+        $data3  = [];
+        $times  = [];
 
-        foreach($result as $time => $row) {
+        foreach ($result as $time => $row) {
             $data1[] = (int) $row['pageviews'];
             $data2[] = (int) $row['sessions'];
             $data3[] = (int) $row['visitors'];
@@ -294,18 +327,24 @@ class StatisticsGraph {
         $Canvas = new GDCanvas(700, 280, false);
         $Chart  = new pChart(700, 280, $Canvas);
 
-        $Chart->setFontProperties(dirname(__FILE__) . '/pchart/Fonts/DroidSans.ttf', 8);
+        $Chart->setFontProperties(__DIR__ . '/pchart/Fonts/DroidSans.ttf', 8);
         $Chart->setGraphArea(50, 10, 680, 200);
         $Chart->drawScale(
-            $DataSet, new ScaleStyle(SCALE_NORMAL, new Color(127)),
-            ($hours ? 0 : 45), 1, false, ceil(count($times) / 12)
+            $DataSet,
+            new ScaleStyle(SCALE_NORMAL, new Color(127)),
+            ($hours ? 0 : 45),
+            1,
+            false,
+            ceil(count($times) / 12)
         );
         $Chart->drawLineGraph($DataSet->GetData(), $DataSet->GetDataDescription());
 
         $DataSet->removeSeries('Times');
         $DataSet->removeSeriesName('Times');
+
         $Chart->drawLegend(
-            550, 15,
+            550,
+            15,
             $DataSet->GetDataDescription(),
             new Color(250)
         );
@@ -314,15 +353,16 @@ class StatisticsGraph {
         $Chart->Render('');
     }
 
-    public function dashboardwiki() {
+    public function dashboardwiki()
+    {
         $hours  = ($this->from == $this->to);
         $result = $this->hlp->Query()->dashboardwiki($this->tlimit, $hours);
-        $data1  = array();
-        $data2  = array();
-        $data3  = array();
-        $times  = array();
+        $data1  = [];
+        $data2  = [];
+        $data3  = [];
+        $times  = [];
 
-        foreach($result as $time => $row) {
+        foreach ($result as $time => $row) {
             $data1[] = (int) $row['E'];
             $data2[] = (int) $row['C'];
             $data3[] = (int) $row['D'];
@@ -344,18 +384,24 @@ class StatisticsGraph {
         $Canvas = new GDCanvas(700, 280, false);
         $Chart  = new pChart(700, 280, $Canvas);
 
-        $Chart->setFontProperties(dirname(__FILE__) . '/pchart/Fonts/DroidSans.ttf', 8);
+        $Chart->setFontProperties(__DIR__ . '/pchart/Fonts/DroidSans.ttf', 8);
         $Chart->setGraphArea(50, 10, 680, 200);
         $Chart->drawScale(
-            $DataSet, new ScaleStyle(SCALE_NORMAL, new Color(127)),
-            ($hours ? 0 : 45), 1, false, ceil(count($times) / 12)
+            $DataSet,
+            new ScaleStyle(SCALE_NORMAL, new Color(127)),
+            ($hours ? 0 : 45),
+            1,
+            false,
+            ceil(count($times) / 12)
         );
         $Chart->drawLineGraph($DataSet->GetData(), $DataSet->GetDataDescription());
 
         $DataSet->removeSeries('Times');
         $DataSet->removeSeriesName('Times');
+
         $Chart->drawLegend(
-            550, 15,
+            550,
+            15,
             $DataSet->GetDataDescription(),
             new Color(250)
         );

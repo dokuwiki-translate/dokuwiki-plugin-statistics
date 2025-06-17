@@ -19,13 +19,15 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-class BackgroundStyle {
+class BackgroundStyle
+{
     /**
      * @todo I suspect using stripe and gradient are mutually
      * exclusive, so it would be possible to simplify this interface
      * somewhat.
      */
-    public function __construct(Color $backgroundColor, $stripe = false, Color $gradientStartColor = null, $gradientDecay = null, $borderWidth = 1, $borderDotSize = 0) {
+    public function __construct(Color $backgroundColor, $stripe = false, Color $gradientStartColor = null, $gradientDecay = null, $borderWidth = 1, $borderDotSize = 0)
+    {
         $this->backgroundColor    = $backgroundColor;
         $this->stripe             = $stripe;
         $this->gradientStartColor = $gradientStartColor;
@@ -34,39 +36,46 @@ class BackgroundStyle {
         $this->borderDotSize      = $borderDotSize;
     }
 
-    public function getBackgroundColor() {
+    public function getBackgroundColor()
+    {
         return $this->backgroundColor;
     }
 
-    public function useStripe() {
+    public function useStripe()
+    {
         return $this->stripe;
     }
 
-    public function useGradient() {
+    public function useGradient()
+    {
         return $this->gradientStartColor != null;
     }
 
-    public function getGradientStartColor() {
-        if($this->gradientStartColor == null) {
+    public function getGradientStartColor()
+    {
+        if ($this->gradientStartColor == null) {
             throw new Exception("Requested gradient start color, but gradient is not enabled");
         }
 
         return $this->gradientStartColor;
     }
 
-    public function getGradientDecay() {
-        if($this->gradientStartColor == null) {
+    public function getGradientDecay()
+    {
+        if ($this->gradientStartColor == null) {
             throw new Exception("Requested gradient decay, but gradient is not enabled");
         }
 
         return $this->gradientDecay;
     }
 
-    public function getBorderWidth() {
+    public function getBorderWidth()
+    {
         return $this->borderWidth;
     }
 
-    public function getBorderDotSize() {
+    public function getBorderDotSize()
+    {
         return $this->borderDotSize;
     }
 
