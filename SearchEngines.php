@@ -100,19 +100,8 @@ class SearchEngines
         ];
         
         if ($referrer !== null) {
-            $this->setReferrer($referrer);
+            $this->referrer = $referrer;
         }
-    }
-
-    /**
-     * Set the referrer URL to analyze
-     *
-     * @param string $referrer The HTTP referrer URL
-     */
-    public function setReferrer(string $referrer): void
-    {
-        $this->referrer = $referrer;
-        $this->analysisResult = null; // Clear cache
     }
 
     /**
@@ -122,8 +111,7 @@ class SearchEngines
      */
     public function isSearchEngine(): bool
     {
-        $this->analyze();
-        return $this->analysisResult !== null;
+        return $this->getAnalysis() !== null;
     }
 
     /**
@@ -133,8 +121,8 @@ class SearchEngines
      */
     public function getName(): ?string
     {
-        $this->analyze();
-        return $this->analysisResult['name'] ?? null;
+        $analysis = $this->getAnalysis();
+        return $analysis['name'] ?? null;
     }
 
     /**
@@ -144,13 +132,12 @@ class SearchEngines
      */
     public function getUrl(): ?string
     {
-        $this->analyze();
-        if (!$this->analysisResult) {
+        $analysis = $this->getAnalysis();
+        if (!$analysis) {
             return null;
         }
         
-        $engineKey = $this->analysisResult['engine'];
-        return $this->searchEngines[$engineKey]['url'] ?? null;
+        return $this->searchEngines[$analysis['engine']]['url'] ?? null;
     }
 
     /**
@@ -160,20 +147,22 @@ class SearchEngines
      */
     public function getQuery(): ?string
     {
-        $this->analyze();
-        return $this->analysisResult['query'] ?? null;
+        $analysis = $this->getAnalysis();
+        return $analysis['query'] ?? null;
     }
 
     /**
-     * Analyze the current referrer
+     * Get or perform analysis of the current referrer
+     *
+     * @return array|null Analysis result or null if not a search engine
      */
-    protected function analyze(): void
+    protected function getAnalysis(): ?array
     {
-        if ($this->analysisResult !== null || $this->referrer === null) {
-            return; // Already analyzed or no referrer set
+        if ($this->analysisResult === null && $this->referrer !== null) {
+            $this->analysisResult = $this->analyzeReferrer($this->referrer);
         }
         
-        $this->analysisResult = $this->analyzeReferrer($this->referrer);
+        return $this->analysisResult;
     }
 
     /**
@@ -182,105 +171,124 @@ class SearchEngines
      * @param string $referer The HTTP referer URL
      * @return array|null Array with 'engine', 'name', 'query' keys or null if not a search engine
      */
-    public function analyzeReferrer(string $referer): ?array
+    protected function analyzeReferrer(string $referer): ?array
     {
-        $referer = strtolower($referer);
-        
-        // parse the referer
-        $urlparts = parse_url($referer);
+        $urlparts = parse_url(strtolower($referer));
         if (!isset($urlparts['host'])) {
             return null;
         }
         
         $domain = $urlparts['host'];
-        $qpart = $urlparts['query'] ?? '';
-        if (!$qpart && isset($urlparts['fragment'])) {
-            $qpart = $urlparts['fragment']; // google does this
-        }
-
-        $params = [];
-        if ($qpart) {
-            parse_str($qpart, $params);
-        }
-
-        $query = '';
-        $engineKey = '';
-        $engineName = '';
-
-        // check domain against known search engines
-        foreach ($this->searchEngines as $key => $engine) {
-            if (!$engine['regex']) continue; // skip engines without regex (like dokuwiki)
-            
-            if (preg_match('/' . $engine['regex'] . '/', $domain)) {
-                $engineKey = $key;
-                $engineName = $engine['name'];
-                
-                // check the known parameters for content
-                foreach ($engine['params'] as $param) {
-                    if (!empty($params[$param])) {
-                        $query = $params[$param];
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-
-        // try some generic search engine parameters if no specific engine matched
-        if (!$engineKey) {
-            foreach (['search', 'query', 'q', 'keywords', 'keyword'] as $param) {
-                if (!empty($params[$param])) {
-                    $query = $params[$param];
-                    // generate name from domain
-                    $engineName = preg_replace('/(\.co)?\.([a-z]{2,5})$/', '', $domain); // strip tld
-                    $engineName = explode('.', $engineName);
-                    $engineName = array_pop($engineName);
-                    $engineKey = 'generic_' . $engineName;
-                    break;
-                }
-            }
-        }
-
-        // still no hit? not a search engine
-        if (!$engineKey || !$query) {
+        $queryString = $urlparts['query'] ?? $urlparts['fragment'] ?? '';
+        
+        if (!$queryString) {
             return null;
         }
 
-        // clean the query
-        $query = preg_replace('/^(cache|related):[^\+]+/', '', $query); // non-search queries
-        $query = preg_replace('/ +/', ' ', $query); // ws compact
-        $query = trim($query);
+        parse_str($queryString, $params);
+
+        // Try to match against known search engines
+        $result = $this->matchKnownEngine($domain, $params);
+        if ($result) {
+            return $result;
+        }
+
+        // Try generic search parameters
+        return $this->matchGenericEngine($domain, $params);
+    }
+
+    /**
+     * Try to match against known search engines
+     *
+     * @param string $domain The domain to check
+     * @param array $params URL parameters
+     * @return array|null Match result or null
+     */
+    protected function matchKnownEngine(string $domain, array $params): ?array
+    {
+        foreach ($this->searchEngines as $key => $engine) {
+            if (!$engine['regex']) {
+                continue; // skip engines without regex (like dokuwiki)
+            }
+            
+            if (preg_match('/' . $engine['regex'] . '/', $domain)) {
+                $query = $this->extractQuery($params, $engine['params']);
+                if ($query) {
+                    return [
+                        'engine' => $key,
+                        'name' => $engine['name'],
+                        'query' => $query
+                    ];
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Try to match against generic search parameters
+     *
+     * @param string $domain The domain to check
+     * @param array $params URL parameters
+     * @return array|null Match result or null
+     */
+    protected function matchGenericEngine(string $domain, array $params): ?array
+    {
+        $genericParams = ['search', 'query', 'q', 'keywords', 'keyword'];
+        $query = $this->extractQuery($params, $genericParams);
         
         if (!$query) {
             return null;
         }
 
+        // Generate engine name from domain
+        $engineName = preg_replace('/(\.co)?\.([a-z]{2,5})$/', '', $domain);
+        $engineName = array_pop(explode('.', $engineName));
+        
         return [
-            'engine' => $engineKey,
-            'name' => $engineName,
+            'engine' => 'generic_' . $engineName,
+            'name' => ucfirst($engineName),
             'query' => $query
         ];
     }
 
     /**
-     * Get search engine information by key
+     * Extract and clean search query from parameters
      *
-     * @param string $key The search engine key
-     * @return array|null The search engine data or null if not found
+     * @param array $params URL parameters
+     * @param array $paramNames Parameter names to check
+     * @return string|null Cleaned query or null
      */
-    public function getSearchEngine(string $key): ?array
+    protected function extractQuery(array $params, array $paramNames): ?string
     {
-        return $this->searchEngines[$key] ?? null;
+        foreach ($paramNames as $param) {
+            if (!empty($params[$param])) {
+                $query = $this->cleanQuery($params[$param]);
+                if ($query) {
+                    return $query;
+                }
+            }
+        }
+        
+        return null;
     }
 
     /**
-     * Get all search engines
+     * Clean and validate search query
      *
-     * @return array All search engine definitions
+     * @param string $query Raw query string
+     * @return string|null Cleaned query or null if invalid
      */
-    public function getAllSearchEngines(): array
+    protected function cleanQuery(string $query): ?string
     {
-        return $this->searchEngines;
+        // Remove non-search queries
+        $query = preg_replace('/^(cache|related):[^\+]+/', '', $query);
+        // Compact whitespace
+        $query = preg_replace('/ +/', ' ', $query);
+        $query = trim($query);
+        
+        return $query ?: null;
     }
 
 }
