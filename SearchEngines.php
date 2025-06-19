@@ -7,41 +7,91 @@ namespace dokuwiki\plugin\statistics;
  */
 class SearchEngines
 {
-
-
-    protected $SEARCHENGINEINFO = [
-        'google' => ['Google', 'http://www.google.com'],
-        'yahoo' => ['Yahoo!', 'http://www.yahoo.com'],
-        'yandex' => ['Яндекс (Yandex)', 'http://www.yandex.ru'],
-        'naver' => ['네이버 (Naver)', 'http://www.naver.com'],
-        'baidu' => ['百度 (Baidu)', 'http://www.baidu.com'],
-        'ask' => ['Ask', 'http://www.ask.com'],
-        'babylon' => ['Babylon', 'http://search.babylon.com'],
-        'aol' => ['AOL Search', 'http://search.aol.com'],
-        'duckduckgo' => ['DuckDuckGo', 'http://duckduckgo.com'],
-        'bing' => ['Bing', 'http://www.bing.com']
+    /** @var array Search engine definitions with regex patterns and metadata */
+    protected array $searchEngines = [
+        'google' => [
+            'name' => 'Google',
+            'url' => 'http://www.google.com',
+            'regex' => '^(\w+\.)*google(\.co)?\.([a-z]{2,5})$',
+            'params' => ['q']
+        ],
+        'bing' => [
+            'name' => 'Bing',
+            'url' => 'http://www.bing.com',
+            'regex' => '^(\w+\.)*bing(\.co)?\.([a-z]{2,5})$',
+            'params' => ['q']
+        ],
+        'yandex' => [
+            'name' => 'Яндекс (Yandex)',
+            'url' => 'http://www.yandex.ru',
+            'regex' => '^(\w+\.)*yandex(\.co)?\.([a-z]{2,5})$',
+            'params' => ['query']
+        ],
+        'yahoo' => [
+            'name' => 'Yahoo!',
+            'url' => 'http://www.yahoo.com',
+            'regex' => '^(\w+\.)*yahoo\.com$',
+            'params' => ['p']
+        ],
+        'naver' => [
+            'name' => '네이버 (Naver)',
+            'url' => 'http://www.naver.com',
+            'regex' => '^search\.naver\.com$',
+            'params' => ['query']
+        ],
+        'baidu' => [
+            'name' => '百度 (Baidu)',
+            'url' => 'http://www.baidu.com',
+            'regex' => '^(\w+\.)*baidu\.com$',
+            'params' => ['wd', 'word', 'kw']
+        ],
+        'ask' => [
+            'name' => 'Ask',
+            'url' => 'http://www.ask.com',
+            'regex' => '^(\w+\.)*ask\.com$',
+            'params' => ['ask', 'q', 'searchfor']
+        ],
+        'ask_search_results' => [
+            'name' => 'Ask',
+            'url' => 'http://www.ask.com',
+            'regex' => '^(\w+\.)*search-results\.com$',
+            'params' => ['ask', 'q', 'searchfor']
+        ],
+        'babylon' => [
+            'name' => 'Babylon',
+            'url' => 'http://search.babylon.com',
+            'regex' => '^search\.babylon\.com$',
+            'params' => ['q']
+        ],
+        'aol' => [
+            'name' => 'AOL Search',
+            'url' => 'http://search.aol.com',
+            'regex' => '^(\w+\.)*(aol)?((search|recherches?|images|suche|alicesuche)\.)aol(\.co)?\.([a-z]{2,5})$',
+            'params' => ['query', 'q']
+        ],
+        'duckduckgo' => [
+            'name' => 'DuckDuckGo',
+            'url' => 'http://duckduckgo.com',
+            'regex' => '^duckduckgo\.com$',
+            'params' => ['q']
+        ],
+        'google_avg' => [
+            'name' => 'Google',
+            'url' => 'http://www.google.com',
+            'regex' => '^search\.avg\.com$',
+            'params' => ['q']
+        ]
     ];
-
-    protected $SEARCHENGINES = ['^(\w+\.)*google(\.co)?\.([a-z]{2,5})$' => ['google', 'q'],
-        '^(\w+\.)*bing(\.co)?\.([a-z]{2,5})$' => ['bing', 'q'],
-        '^(\w+\.)*yandex(\.co)?\.([a-z]{2,5})$' => ['yandex', 'query'],
-        '^(\w+\.)*yahoo\.com$' => ['yahoo', 'p'],
-        '^search\.naver\.com$' => ['naver', 'query'],
-        '^(\w+\.)*baidu\.com$' => ['baidu', 'wd', 'word', 'kw'],
-        '^search\.avg\.com$' => ['google', 'q'],
-        '^(\w+\.)*ask\.com$' => ['ask', 'ask', 'q', 'searchfor'],
-        '^(\w+\.)*search-results\.com$' => ['ask', 'ask', 'q', 'searchfor'],
-        '^search\.babylon\.com$' => ['babylon', 'q'],
-        '^(\w+\.)*(aol)?((search|recherches?|images|suche|alicesuche)\.)aol(\.co)?\.([a-z]{2,5})$' => ['aol', 'query', 'q'],
-        '^duckduckgo\.com$' => ['duckduckgo', 'q']];
-
 
     public function __construct()
     {
-        // add the internal DokuWiki search engine
-        'dokuwiki' => ['DokuWiki Internal Search', wl()],
-
-
+        // Add the internal DokuWiki search engine
+        $this->searchEngines['dokuwiki'] = [
+            'name' => 'DokuWiki Internal Search',
+            'url' => wl(),
+            'regex' => '',
+            'params' => ['q']
+        ];
     }
 
 }
