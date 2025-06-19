@@ -207,25 +207,18 @@ class Logger
      */
     public function log_search($page, $query, $words, $engine)
     {
-        $page = addslashes($page);
-        $query = addslashes($query);
-        $engine = addslashes($engine);
-
-        $sql = "INSERT INTO " . $this->hlp->prefix . "search
-                    SET dt       = NOW(),
-                        page     = '$page',
-                        query    = '$query',
-                        engine   = '$engine'";
-        $id = $this->hlp->runSQL($sql);
-        if (is_null($id)) return;
+        $id = $this->db->exec(
+            'INSERT INTO search (dt, page, query, engine) VALUES (CURRENT_TIMESTAMP, ?, ?, ?)',
+            $page, $query, $engine
+        );
+        if (!$id) return;
 
         foreach ($words as $word) {
             if (!$word) continue;
-            $word = addslashes($word);
-            $sql = "INSERT DELAYED INTO " . $this->hlp->prefix . "searchwords
-                       SET sid  = $id,
-                           word = '$word'";
-            $this->hlp->runSQL($sql);
+            $this->db->exec(
+                'INSERT INTO searchwords (sid, word) VALUES (?, ?)',
+                $id, $word
+            );
         }
     }
 
@@ -244,20 +237,11 @@ class Logger
         // only log browser sessions
         if ($this->uaType != 'browser') return;
 
-        $addview = addslashes($addview);
-        $session = addslashes($this->getSession());
-        $uid = addslashes($this->uid);
-        $sql = "INSERT DELAYED INTO " . $this->hlp->prefix . "session
-                   SET session = '$session',
-                       dt      = NOW(),
-                       end     = NOW(),
-                       views   = $addview,
-                       uid     = '$uid'
-                ON DUPLICATE KEY UPDATE
-                       end     = NOW(),
-                       views   = views + $addview,
-                       uid     = '$uid'";
-        $this->hlp->runSQL($sql);
+        $session = $this->getSession();
+        $this->db->exec(
+            'INSERT OR REPLACE INTO session (session, dt, end, views, uid) VALUES (?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, COALESCE((SELECT views FROM session WHERE session = ?) + ?, ?), ?)',
+            $session, $session, $addview, $addview, $this->uid
+        );
     }
 
     /**
@@ -266,31 +250,26 @@ class Logger
     public function log_ip($ip)
     {
         // check if IP already known and up-to-date
-        $sql = "SELECT ip
-                  FROM " . $this->hlp->prefix . "iplocation
-                 WHERE ip ='" . addslashes($ip) . "'
-                   AND lastupd > DATE_SUB(CURDATE(),INTERVAL 30 DAY)";
-        $result = $this->hlp->runSQL($sql);
-        if ($result[0]['ip']) return;
+        $result = $this->db->queryValue(
+            "SELECT ip FROM iplocation WHERE ip = ? AND lastupd > date('now', '-30 days')",
+            $ip
+        );
+        if ($result) return;
 
         $http = new DokuHTTPClient();
         $http->timeout = 10;
         $data = $http->get('http://api.hostip.info/get_html.php?ip=' . $ip);
 
         if (preg_match('/^Country: (.*?) \((.*?)\)\nCity: (.*?)$/s', $data, $match)) {
-            $country = addslashes(ucwords(strtolower(trim($match[1]))));
-            $code = addslashes(strtolower(trim($match[2])));
-            $city = addslashes(ucwords(strtolower(trim($match[3]))));
-            $host = addslashes(gethostbyaddr($ip));
-            $ip = addslashes($ip);
+            $country = ucwords(strtolower(trim($match[1])));
+            $code = strtolower(trim($match[2]));
+            $city = ucwords(strtolower(trim($match[3])));
+            $host = gethostbyaddr($ip);
 
-            $sql = "REPLACE INTO " . $this->hlp->prefix . "iplocation
-                        SET ip = '$ip',
-                            country = '$country',
-                            code    = '$code',
-                            city    = '$city',
-                            host    = '$host'";
-            $this->hlp->runSQL($sql);
+            $this->db->exec(
+                'INSERT OR REPLACE INTO iplocation (ip, country, code, city, host, lastupd) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)',
+                $ip, $country, $code, $city, $host
+            );
         }
     }
 
@@ -303,22 +282,15 @@ class Logger
     {
         if (!$_REQUEST['ol']) return;
 
-        $link = addslashes($_REQUEST['ol']);
+        $link = $_REQUEST['ol'];
         $link_md5 = md5($link);
-        $session = addslashes($this->getSession());
-        $page = addslashes($_REQUEST['p']);
+        $session = $this->getSession();
+        $page = $_REQUEST['p'];
 
-        $sql = "INSERT DELAYED INTO " . $this->hlp->prefix . "outlinks
-                    SET dt       = NOW(),
-                        session  = '$session',
-                        page     = '$page',
-                        link_md5 = '$link_md5',
-                        link     = '$link'";
-        $ok = $this->hlp->runSQL($sql);
-        if (is_null($ok)) {
-            global $MSG;
-            print_r($MSG);
-        }
+        $this->db->exec(
+            'INSERT INTO outlinks (dt, session, page, link_md5, link) VALUES (CURRENT_TIMESTAMP, ?, ?, ?, ?)',
+            $session, $page, $link_md5, $link
+        );
     }
 
     /**
@@ -336,8 +308,8 @@ class Logger
         // handle referer
         $referer = trim($_REQUEST['r']);
         if ($referer) {
-            $ref = addslashes($referer);
-            $ref_md5 = ($ref) ? md5($referer) : '';
+            $ref = $referer;
+            $ref_md5 = md5($referer);
             if (str_starts_with($referer, DOKU_URL)) {
                 $ref_type = 'internal';
             } else {
@@ -350,57 +322,26 @@ class Logger
             $ref_type = '';
         }
 
-        // handle user agent
-        $ua = addslashes($this->uaAgent);
-        $ua_type = addslashes($this->uaType);
-        $ua_ver = addslashes($this->uaVersion);
-        $os = addslashes($this->uaPlatform);
-        $ua_info = addslashes($this->uaName);
-
-        $page = addslashes($_REQUEST['p']);
-        $ip = addslashes(clientIP(true));
+        $page = $_REQUEST['p'];
+        $ip = clientIP(true);
         $sx = (int)$_REQUEST['sx'];
         $sy = (int)$_REQUEST['sy'];
         $vx = (int)$_REQUEST['vx'];
         $vy = (int)$_REQUEST['vy'];
         $js = (int)$_REQUEST['js'];
-        $uid = addslashes($this->uid);
-        $user = addslashes($_SERVER['REMOTE_USER']);
-        $session = addslashes($this->getSession());
+        $user = $_SERVER['REMOTE_USER'] ?? '';
+        $session = $this->getSession();
 
-        $sql = "INSERT DELAYED INTO " . $this->hlp->prefix . "access
-                    SET dt       = NOW(),
-                        page     = '$page',
-                        ip       = '$ip',
-                        ua       = '$ua',
-                        ua_info  = '$ua_info',
-                        ua_type  = '$ua_type',
-                        ua_ver   = '$ua_ver',
-                        os       = '$os',
-                        ref      = '$ref',
-                        ref_md5  = '$ref_md5',
-                        ref_type = '$ref_type',
-                        screen_x = '$sx',
-                        screen_y = '$sy',
-                        view_x   = '$vx',
-                        view_y   = '$vy',
-                        js       = '$js',
-                        user     = '$user',
-                        session  = '$session',
-                        uid      = '$uid'";
-        $ok = $this->hlp->runSQL($sql);
-        if (is_null($ok)) {
-            global $MSG;
-            print_r($MSG);
-        }
+        $this->db->exec(
+            'INSERT INTO access (dt, page, ip, ua, ua_info, ua_type, ua_ver, os, ref, ref_md5, ref_type, screen_x, screen_y, view_x, view_y, js, user, session, uid) VALUES (CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            $page, $ip, $this->uaAgent, $this->uaName, $this->uaType, $this->uaVersion, $this->uaPlatform, $ref, $ref_md5, $ref_type, $sx, $sy, $vx, $vy, $js, $user, $session, $this->uid
+        );
 
-        $sql = "INSERT DELAYED IGNORE INTO " . $this->hlp->prefix . "refseen
-                   SET ref_md5  = '$ref_md5',
-                       dt       = NOW()";
-        $ok = $this->hlp->runSQL($sql);
-        if (is_null($ok)) {
-            global $MSG;
-            print_r($MSG);
+        if ($ref_md5) {
+            $this->db->exec(
+                'INSERT OR IGNORE INTO refseen (ref_md5, dt) VALUES (?, CURRENT_TIMESTAMP)',
+                $ref_md5
+            );
         }
 
         // log group access
@@ -424,47 +365,18 @@ class Logger
      */
     public function log_media($media, $mime, $inline, $size)
     {
-        // handle user agent
-        $ua = addslashes($this->uaAgent);
-        $ua_type = addslashes($this->uaType);
-        $ua_ver = addslashes($this->uaVersion);
-        $os = addslashes($this->uaPlatform);
-        $ua_info = addslashes($this->uaName);
-
-        $media = addslashes($media);
         [$mime1, $mime2] = explode('/', strtolower($mime));
-        $mime1 = addslashes($mime1);
-        $mime2 = addslashes($mime2);
         $inline = $inline ? 1 : 0;
         $size = (int)$size;
 
-        $ip = addslashes(clientIP(true));
-        $uid = addslashes($this->uid);
-        $user = addslashes($_SERVER['REMOTE_USER']);
-        $session = addslashes($this->getSession());
+        $ip = clientIP(true);
+        $user = $_SERVER['REMOTE_USER'] ?? '';
+        $session = $this->getSession();
 
-        $sql = "INSERT DELAYED INTO " . $this->hlp->prefix . "media
-                    SET dt       = NOW(),
-                        media    = '$media',
-                        ip       = '$ip',
-                        ua       = '$ua',
-                        ua_info  = '$ua_info',
-                        ua_type  = '$ua_type',
-                        ua_ver   = '$ua_ver',
-                        os       = '$os',
-                        user     = '$user',
-                        session  = '$session',
-                        uid      = '$uid',
-                        size     = $size,
-                        mime1    = '$mime1',
-                        mime2    = '$mime2',
-                        inline   = $inline
-                        ";
-        $ok = $this->hlp->runSQL($sql);
-        if (is_null($ok)) {
-            global $MSG;
-            dbglog($MSG);
-        }
+        $this->db->exec(
+            'INSERT INTO media (dt, media, ip, ua, ua_info, ua_type, ua_ver, os, user, session, uid, size, mime1, mime2, inline) VALUES (CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            $media, $ip, $this->uaAgent, $this->uaName, $this->uaType, $this->uaVersion, $this->uaPlatform, $user, $session, $this->uid, $size, $mime1, $mime2, $inline
+        );
     }
 
     /**
@@ -474,22 +386,14 @@ class Logger
     {
         global $USERINFO;
 
-        $ip = addslashes(clientIP(true));
-        $user = addslashes($_SERVER['REMOTE_USER']);
-        $session = addslashes($this->getSession());
-        $uid = addslashes($this->uid);
-        $page = addslashes($page);
-        $type = addslashes($type);
+        $ip = clientIP(true);
+        $user = $_SERVER['REMOTE_USER'] ?? '';
+        $session = $this->getSession();
 
-        $sql = "INSERT DELAYED INTO " . $this->hlp->prefix . "edits
-                    SET dt       = NOW(),
-                        page     = '$page',
-                        type     = '$type',
-                        ip       = '$ip',
-                        user     = '$user',
-                        session  = '$session',
-                        uid      = '$uid'";
-        $this->hlp->runSQL($sql);
+        $this->db->exec(
+            'INSERT INTO edits (dt, page, type, ip, user, session, uid) VALUES (CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?)',
+            $page, $type, $ip, $user, $session, $this->uid
+        );
 
         // log group access
         if (isset($USERINFO['grps'])) {
@@ -502,22 +406,15 @@ class Logger
      */
     public function log_login($type, $user = '')
     {
-        if (!$user) $user = $_SERVER['REMOTE_USER'];
+        if (!$user) $user = $_SERVER['REMOTE_USER'] ?? '';
 
-        $ip = addslashes(clientIP(true));
-        $user = addslashes($user);
-        $session = addslashes($this->getSession());
-        $uid = addslashes($this->uid);
-        $type = addslashes($type);
+        $ip = clientIP(true);
+        $session = $this->getSession();
 
-        $sql = "INSERT DELAYED INTO " . $this->hlp->prefix . "logins
-                    SET dt       = NOW(),
-                        type     = '$type',
-                        ip       = '$ip',
-                        user     = '$user',
-                        session  = '$session',
-                        uid      = '$uid'";
-        $this->hlp->runSQL($sql);
+        $this->db->exec(
+            'INSERT INTO logins (dt, type, ip, user, session, uid) VALUES (CURRENT_TIMESTAMP, ?, ?, ?, ?, ?)',
+            $type, $ip, $user, $session, $this->uid
+        );
     }
 
     /**
@@ -535,19 +432,14 @@ class Logger
         $page_count = $list['file_count'];
         $page_size = $list['file_size'];
 
-        print_r($list);
-
-        $sql = "REPLACE INTO " . $this->hlp->prefix . "history
-                        (`info`, `value`, `dt`)
-                        VALUES
-                        ( 'page_count', $page_count, DATE(NOW()) ),
-                        ( 'page_size',  $page_size, DATE(NOW()) )
-                        ";
-        $ok = $this->hlp->runSQL($sql);
-        if (is_null($ok)) {
-            global $MSG;
-            print_r($MSG);
-        }
+        $this->db->exec(
+            'INSERT OR REPLACE INTO history (info, value, dt) VALUES (?, ?, date("now"))',
+            'page_count', $page_count
+        );
+        $this->db->exec(
+            'INSERT OR REPLACE INTO history (info, value, dt) VALUES (?, ?, date("now"))',
+            'page_size', $page_size
+        );
     }
 
     /**
@@ -565,16 +457,13 @@ class Logger
         $media_count = $list['file_count'];
         $media_size = $list['file_size'];
 
-        $sql = "REPLACE INTO " . $this->hlp->prefix . "history
-                        (`info`, `value`, `dt`)
-                        VALUES
-                        ( 'media_count', $media_count, DATE(NOW()) ),
-                        ( 'media_size',  $media_size, DATE(NOW()) )
-                        ";
-        $ok = $this->hlp->runSQL($sql);
-        if (is_null($ok)) {
-            global $MSG;
-            print_r($MSG);
-        }
+        $this->db->exec(
+            'INSERT OR REPLACE INTO history (info, value, dt) VALUES (?, ?, date("now"))',
+            'media_count', $media_count
+        );
+        $this->db->exec(
+            'INSERT OR REPLACE INTO history (info, value, dt) VALUES (?, ?, date("now"))',
+            'media_size', $media_size
+        );
     }
 }
