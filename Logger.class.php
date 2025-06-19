@@ -187,65 +187,25 @@ class Logger
      */
     public function logExternalSearch(string $referer, string &$type): void
     {
-        $referer = PhpString::strtolower($referer);
-        include(__DIR__ . '/searchengines.php');
-        /** @var array $SEARCHENGINES */
-
-        $query = '';
-        $name = '';
-
-        // parse the referer
-        $urlparts = parse_url($referer);
-        $domain = $urlparts['host'];
-        $qpart = $urlparts['query'];
-        if (!$qpart) $qpart = $urlparts['fragment']; //google does this
-
-        $params = [];
-        parse_str($qpart, $params);
-
-        // check domain against common search engines
-        foreach ($SEARCHENGINES as $regex => $info) {
-            if (preg_match('/' . $regex . '/', $domain)) {
-                $type = 'search';
-                $name = array_shift($info);
-                // check the known parameters for content
-                foreach ($info as $k) {
-                    if (empty($params[$k])) continue;
-                    $query = $params[$k];
-                    break;
-                }
-                break;
-            }
+        $searchEngines = new SearchEngines();
+        $searchInfo = $searchEngines->analyzeReferrer($referer);
+        
+        if (!$searchInfo) {
+            return; // not a search engine
         }
-
-        // try some generic search engin parameters
-        if ($type != 'search') foreach (['search', 'query', 'q', 'keywords', 'keyword'] as $k) {
-            if (empty($params[$k])) continue;
-            $query = $params[$k];
-            // we seem to have found some generic search, generate name from domain
-            $name = preg_replace('/(\.co)?\.([a-z]{2,5})$/', '', $domain); //strip tld
-            $name = explode('.', $name);
-            $name = array_pop($name);
-            $type = 'search';
-            break;
+        
+        $type = 'search';
+        $query = $searchInfo['query'];
+        
+        // ensure UTF-8 encoding
+        if (!Clean::isUtf8($query)) {
+            $query = utf8_encode($query); // assume latin1 if not utf8
         }
-
-        // still no hit? return
-        if ($type != 'search') return;
-
-        // clean the query
-        $query = preg_replace('/^(cache|related):[^\+]+/', '', $query); // non-search queries
-        $query = preg_replace('/ +/', ' ', $query); // ws compact
-        $query = trim($query);
-        if (!Clean::isUtf8($query)) $query = utf8_encode($query); // assume latin1 if not utf8
-
-        // no query? no log
-        if (!$query) return;
 
         // log it!
         global $INPUT;
         $words = explode(' ', Clean::stripspecials($query, ' ', '\._\-:\*'));
-        $this->logSearch($INPUT->str('p'), $query, $words, $name);
+        $this->logSearch($INPUT->str('p'), $query, $words, $searchInfo['name']);
     }
 
     /**
