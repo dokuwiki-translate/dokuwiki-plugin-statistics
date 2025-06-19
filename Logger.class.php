@@ -71,7 +71,7 @@ class Logger
      *
      * This starts a transaction, so all logging is done in one go
      */
-    public function begin()
+    public function begin(): void
     {
         $this->hlp->getDB()->getPdo()->beginTransaction();
     }
@@ -81,15 +81,17 @@ class Logger
      *
      * This commits the transaction started in begin()
      */
-    public function end()
+    public function end(): void
     {
         $this->hlp->getDB()->getPdo()->commit();
     }
 
     /**
-     * get the unique user ID
+     * Get the unique user ID
+     *
+     * @return string The unique user identifier
      */
-    protected function getUID()
+    protected function getUID(): string
     {
         global $INPUT;
 
@@ -122,7 +124,7 @@ class Logger
      * This is called directly from the constructor and thus logs always,
      * regardless from where the log is initiated
      */
-    public function logLastseen()
+    public function logLastseen(): void
     {
         global $INPUT;
 
@@ -140,7 +142,7 @@ class Logger
      * @param string $type The type of access to log ('view','edit')
      * @param array $groups The groups to log
      */
-    public function logGroups($type, $groups)
+    public function logGroups(string $type, array $groups): void
     {
         if (!is_array($groups)) {
             return;
@@ -168,8 +170,11 @@ class Logger
      * Log external search queries
      *
      * Will not write anything if the referer isn't a search engine
+     *
+     * @param string $referer The HTTP referer URL
+     * @param string $type Reference to the type variable that will be modified
      */
-    public function logExternalSearch($referer, &$type)
+    public function logExternalSearch(string $referer, string &$type): void
     {
         $referer = PhpString::strtolower($referer);
         include(__DIR__ . '/searchengines.php');
@@ -233,9 +238,14 @@ class Logger
     }
 
     /**
-     * The given data to the search related tables
+     * Log search data to the search related tables
+     *
+     * @param string $page The page being searched from
+     * @param string $query The search query
+     * @param array $words Array of search words
+     * @param string $engine The search engine name
      */
-    public function logSearch($page, $query, $words, $engine)
+    public function logSearch(string $page, string $query, array $words, string $engine): void
     {
         $sid = $this->db->exec(
             'INSERT INTO search (dt, page, query, engine) VALUES (CURRENT_TIMESTAMP, ?, ?, ?)',
@@ -262,7 +272,7 @@ class Logger
      *
      * @param int $addview set to 1 to count a view
      */
-    public function logSession($addview = 0)
+    public function logSession(int $addview = 0): void
     {
         // only log browser sessions
         if ($this->uaType != 'browser') return;
@@ -283,9 +293,11 @@ class Logger
     }
 
     /**
-     * Resolve IP to country/city
+     * Resolve IP to country/city and store in database
+     *
+     * @param string $ip The IP address to resolve
      */
-    public function logIp($ip)
+    public function logIp(string $ip): void
     {
         // check if IP already known and up-to-date
         $result = $this->db->queryValue(
@@ -320,11 +332,11 @@ class Logger
     }
 
     /**
-     * log a click on an external link
+     * Log a click on an external link
      *
-     * called from log.php
+     * Called from log.php
      */
-    public function logOutgoing()
+    public function logOutgoing(): void
     {
         global $INPUT;
 
@@ -346,11 +358,11 @@ class Logger
     }
 
     /**
-     * log a page access
+     * Log a page access
      *
-     * called from log.php
+     * Called from log.php
      */
-    public function logAccess()
+    public function logAccess(): void
     {
         global $INPUT, $USERINFO;
 
@@ -453,9 +465,12 @@ class Logger
     }
 
     /**
-     * Log edits
+     * Log page edits
+     *
+     * @param string $page The page that was edited
+     * @param string $type The type of edit (create, edit, etc.)
      */
-    public function logEdit($page, $type)
+    public function logEdit(string $page, string $type): void
     {
         global $INPUT, $USERINFO;
 
@@ -480,8 +495,11 @@ class Logger
 
     /**
      * Log login/logoffs and user creations
+     *
+     * @param string $type The type of login event (login, logout, create)
+     * @param string $user The username (optional, will use current user if empty)
      */
-    public function logLogin($type, $user = '')
+    public function logLogin(string $type, string $user = ''): void
     {
         global $INPUT;
 
@@ -503,7 +521,7 @@ class Logger
     /**
      * Log the current page count and size as today's history entry
      */
-    public function logHistoryPages()
+    public function logHistoryPages(): void
     {
         global $conf;
 
@@ -534,9 +552,9 @@ class Logger
     }
 
     /**
-     * Log the current page count and size as today's history entry
+     * Log the current media count and size as today's history entry
      */
-    public function logHistoryMedia()
+    public function logHistoryMedia(): void
     {
         global $conf;
 
