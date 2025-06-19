@@ -40,9 +40,9 @@ class action_plugin_statistics extends ActionPlugin
      */
     public function putpixel()
     {
-        global $ID;
+        global $ID, $INPUT;
         $url = DOKU_BASE . 'lib/plugins/statistics/log.php?p=' . rawurlencode($ID) .
-            '&amp;r=' . rawurlencode($_SERVER['HTTP_REFERER']) . '&rnd=' . time();
+            '&amp;r=' . rawurlencode($INPUT->server->str('HTTP_REFERER')) . '&rnd=' . time();
 
         echo '<noscript><img alt="" src="' . $url . '" width="1" height="1" /></noscript>';
     }
@@ -83,17 +83,19 @@ class action_plugin_statistics extends ActionPlugin
      */
     public function loglogins(Event $event, $param)
     {
+        global $INPUT;
+        
         $type = '';
         $act  = $this->_act_clean($event->data);
         if ($act == 'logout') {
             $type = 'o';
-        } elseif ($_SERVER['REMOTE_USER'] && $act == 'login') {
-            if ($_REQUEST['r']) {
+        } elseif ($INPUT->server->str('REMOTE_USER') && $act == 'login') {
+            if ($INPUT->str('r')) {
                 $type = 'p';
             } else {
                 $type = 'l';
             }
-        } elseif ($_REQUEST['u'] && !$_REQUEST['http_credentials'] && !$_SERVER['REMOTE_USER']) {
+        } elseif ($INPUT->str('u') && !$INPUT->str('http_credentials') && !$INPUT->server->str('REMOTE_USER')) {
             $type = 'f';
         }
         if (!$type) return;
