@@ -83,7 +83,13 @@ class SearchEngines
         ]
     ];
 
-    public function __construct()
+    /** @var string|null The referrer URL being analyzed */
+    protected ?string $referrer = null;
+    
+    /** @var array|null Cached analysis result */
+    protected ?array $analysisResult = null;
+
+    public function __construct(?string $referrer = null)
     {
         // Add the internal DokuWiki search engine
         $this->searchEngines['dokuwiki'] = [
@@ -92,6 +98,82 @@ class SearchEngines
             'regex' => '',
             'params' => ['q']
         ];
+        
+        if ($referrer !== null) {
+            $this->setReferrer($referrer);
+        }
+    }
+
+    /**
+     * Set the referrer URL to analyze
+     *
+     * @param string $referrer The HTTP referrer URL
+     */
+    public function setReferrer(string $referrer): void
+    {
+        $this->referrer = $referrer;
+        $this->analysisResult = null; // Clear cache
+    }
+
+    /**
+     * Check if the referrer is from a search engine
+     *
+     * @return bool True if the referrer is from a search engine
+     */
+    public function isSearchEngine(): bool
+    {
+        $this->analyze();
+        return $this->analysisResult !== null;
+    }
+
+    /**
+     * Get the search engine name
+     *
+     * @return string|null The search engine name or null if not a search engine
+     */
+    public function getName(): ?string
+    {
+        $this->analyze();
+        return $this->analysisResult['name'] ?? null;
+    }
+
+    /**
+     * Get the search engine URL
+     *
+     * @return string|null The search engine URL or null if not a search engine
+     */
+    public function getUrl(): ?string
+    {
+        $this->analyze();
+        if (!$this->analysisResult) {
+            return null;
+        }
+        
+        $engineKey = $this->analysisResult['engine'];
+        return $this->searchEngines[$engineKey]['url'] ?? null;
+    }
+
+    /**
+     * Get the search query
+     *
+     * @return string|null The search query or null if not a search engine
+     */
+    public function getQuery(): ?string
+    {
+        $this->analyze();
+        return $this->analysisResult['query'] ?? null;
+    }
+
+    /**
+     * Analyze the current referrer
+     */
+    protected function analyze(): void
+    {
+        if ($this->analysisResult !== null || $this->referrer === null) {
+            return; // Already analyzed or no referrer set
+        }
+        
+        $this->analysisResult = $this->analyzeReferrer($this->referrer);
     }
 
     /**

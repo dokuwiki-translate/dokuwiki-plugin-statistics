@@ -187,15 +187,14 @@ class Logger
      */
     public function logExternalSearch(string $referer, string &$type): void
     {
-        $searchEngines = new SearchEngines();
-        $searchInfo = $searchEngines->analyzeReferrer($referer);
+        $searchEngine = new SearchEngines($referer);
         
-        if (!$searchInfo) {
+        if (!$searchEngine->isSearchEngine()) {
             return; // not a search engine
         }
         
         $type = 'search';
-        $query = $searchInfo['query'];
+        $query = $searchEngine->getQuery();
         
         // ensure UTF-8 encoding
         if (!Clean::isUtf8($query)) {
@@ -205,7 +204,7 @@ class Logger
         // log it!
         global $INPUT;
         $words = explode(' ', Clean::stripspecials($query, ' ', '\._\-:\*'));
-        $this->logSearch($INPUT->str('p'), $query, $words, $searchInfo['name']);
+        $this->logSearch($INPUT->str('p'), $query, $words, $searchEngine->getName());
     }
 
     /**
