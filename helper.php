@@ -15,9 +15,9 @@ class helper_plugin_statistics extends Plugin
     protected $dblink;
     public $prefix;
     protected $oQuery;
-    protected ?Logger $oLogger;
+    protected ?Logger $oLogger = null;
     protected $oGraph;
-    protected ?SQLiteDB $db;
+    protected ?SQLiteDB $db = null;
 
     /**
      * Constructor
@@ -34,7 +34,7 @@ class helper_plugin_statistics extends Plugin
     public function getDB()
     {
         if ($this->db === null) {
-            $this->db = new SQLiteDB('example', DOKU_PLUGIN . 'example/db/');
+            $this->db = new SQLiteDB('statistics', DOKU_PLUGIN . 'statistics/db/');
         }
         return $this->db;
     }
@@ -63,7 +63,6 @@ class helper_plugin_statistics extends Plugin
     {
         $this->prefix = $this->getConf('db_prefix');
         if (is_null($this->oLogger)) {
-            require __DIR__ . '/inc/StatisticsLogger.class.php';
             $this->oLogger = new Logger($this);
         }
         return $this->oLogger;

@@ -3,12 +3,20 @@
 namespace dokuwiki\plugin\statistics;
 
 /**
- * Defines regular expressions for the most common search engines
+ * Extract search Engine Inormation from the HTTP referer
+ *
+ * We use the HTTP specification misspelling of "referer" here
  */
 class SearchEngines
 {
     /** @var array Search engine definitions with regex patterns and metadata */
-    protected array $searchEngines = [
+    protected static array $searchEngines = [
+        'dokuwiki' => [
+            'name' => 'DokuWiki Internal Search',
+            'url' => DOKU_URL,
+            'regex' => '', // set in constructor
+            'params' => ['q']
+        ],
         'google' => [
             'name' => 'Google',
             'url' => 'http://www.google.com',
@@ -83,71 +91,49 @@ class SearchEngines
         ]
     ];
 
-    /** @var string The referrer URL being analyzed */
-    protected string $referrer;
-    
-    /** @var bool Whether the referrer is from a search engine */
-    protected bool $isSearchEngine = false;
-    
-    /** @var string|null The search engine name */
-    protected ?string $engineName = null;
-    
     /** @var string|null The search engine key */
-    protected ?string $engineKey = null;
-    
+    protected ?string $engine = null;
+
+    /** @var string|null The search engine name */
+    protected ?string $name = null;
+
     /** @var string|null The search query */
     protected ?string $query = null;
 
-    public function __construct(string $referrer)
+    /**
+     * Constructor
+     *
+     * @param string $referer The HTTP referer URL to analyze
+     */
+    public function __construct(string $referer)
     {
-        // Add the internal DokuWiki search engine
-        $this->searchEngines['dokuwiki'] = [
-            'name' => 'DokuWiki Internal Search',
-            'url' => wl(),
-            'regex' => '',
-            'params' => ['q']
-        ];
-        
-        $this->referrer = $referrer;
-        $this->analyze();
+        // Add regex matching ourselves
+        self::$searchEngines['dokuwiki']['regex'] = '^' . preg_quote(parse_url(DOKU_URL, PHP_URL_HOST), '/') . '$';
+        $this->analyze($referer);
     }
 
     /**
-     * Check if the referrer is from a search engine
+     * Check if the referer is from a search engine
      *
-     * @return bool True if the referrer is from a search engine
+     * @return bool True if the referer is from a search engine
      */
     public function isSearchEngine(): bool
     {
-        return $this->isSearchEngine;
+        return (bool)$this->engine;
     }
 
     /**
-     * Get the search engine name
+     * Get the search engine identifier from the referer
      *
-     * @return string|null The search engine name or null if not a search engine
+     * @return string The search engine
      */
-    public function getName(): ?string
+    public function getEngine(): string
     {
-        return $this->engineName;
+        return $this->engine;
     }
 
     /**
-     * Get the search engine URL
-     *
-     * @return string|null The search engine URL or null if not a search engine
-     */
-    public function getUrl(): ?string
-    {
-        if (!$this->engineKey) {
-            return null;
-        }
-        
-        return $this->searchEngines[$this->engineKey]['url'] ?? null;
-    }
-
-    /**
-     * Get the search query
+     * Get the search query from the referer
      *
      * @return string|null The search query or null if not a search engine
      */
@@ -157,36 +143,55 @@ class SearchEngines
     }
 
     /**
-     * Analyze the referrer and populate member variables
+     * Get the search engine name for the given engine identifier
+     *
+     * @return string If we have a name for the engine, return it, otherwise return $engine
      */
-    protected function analyze(): void
+    public static function getName($engine): ?string
     {
-        $result = $this->analyzeReferrer($this->referrer);
-        
+        return isset(self::$searchEngines[$engine]) ? self::$searchEngines[$engine]['name'] : $engine;
+    }
+
+    /**
+     * Get the search engine URL for the given engine identifier
+     *
+     * @return string|null The search engine URL or null if not defined
+     */
+    public static function getUrl($engine): ?string
+    {
+        return isset(self::$searchEngines[$engine]) ? self::$searchEngines[$engine]['url'] : null;
+    }
+
+    /**
+     * Analyze the referer and populate member variables
+     */
+    protected function analyze(string $referer): void
+    {
+        $result = $this->analyzereferer($referer);
+
         if ($result) {
-            $this->isSearchEngine = true;
-            $this->engineKey = $result['engine'];
-            $this->engineName = $result['name'];
+            $this->engine = $result['engine'];
+            $this->name = $result['name'];
             $this->query = $result['query'];
         }
     }
 
     /**
-     * Analyze a referrer URL to extract search engine information and query
+     * Analyze a referer URL to extract search engine information and query
      *
      * @param string $referer The HTTP referer URL
      * @return array|null Array with 'engine', 'name', 'query' keys or null if not a search engine
      */
-    protected function analyzeReferrer(string $referer): ?array
+    protected function analyzereferer(string $referer): ?array
     {
         $urlparts = parse_url(strtolower($referer));
         if (!isset($urlparts['host'])) {
             return null;
         }
-        
+
         $domain = $urlparts['host'];
         $queryString = $urlparts['query'] ?? $urlparts['fragment'] ?? '';
-        
+
         if (!$queryString) {
             return null;
         }
@@ -212,11 +217,7 @@ class SearchEngines
      */
     protected function matchKnownEngine(string $domain, array $params): ?array
     {
-        foreach ($this->searchEngines as $key => $engine) {
-            if (!$engine['regex']) {
-                continue; // skip engines without regex (like dokuwiki)
-            }
-            
+        foreach (self::$searchEngines as $key => $engine) {
             if (preg_match('/' . $engine['regex'] . '/', $domain)) {
                 $query = $this->extractQuery($params, $engine['params']);
                 if ($query) {
@@ -228,7 +229,7 @@ class SearchEngines
                 }
             }
         }
-        
+
         return null;
     }
 
@@ -243,17 +244,18 @@ class SearchEngines
     {
         $genericParams = ['search', 'query', 'q', 'keywords', 'keyword'];
         $query = $this->extractQuery($params, $genericParams);
-        
+
         if (!$query) {
             return null;
         }
 
         // Generate engine name from domain
         $engineName = preg_replace('/(\.co)?\.([a-z]{2,5})$/', '', $domain);
-        $engineName = array_pop(explode('.', $engineName));
-        
+        $domainParts = explode('.', $engineName);
+        $engineName = array_pop($domainParts);
+
         return [
-            'engine' => 'generic_' . $engineName,
+            'engine' => $engineName,
             'name' => ucfirst($engineName),
             'query' => $query
         ];
@@ -276,7 +278,7 @@ class SearchEngines
                 }
             }
         }
-        
+
         return null;
     }
 
@@ -293,7 +295,7 @@ class SearchEngines
         // Compact whitespace
         $query = preg_replace('/ +/', ' ', $query);
         $query = trim($query);
-        
+
         return $query ?: null;
     }
 

@@ -9,33 +9,40 @@
  * @author     Andreas Gohr <gohr@cosmocode.de>
  */
 
+use dokuwiki\ErrorHandler;
+
 if (!defined('DOKU_INC')) define('DOKU_INC', realpath(__DIR__ . '/../../../') . '/');
 define('DOKU_DISABLE_GZIP_OUTPUT', 1);
 require_once(DOKU_INC . 'inc/init.php');
 session_write_close();
 
+global $INPUT;
 
-/** @var helper_plugin_statistics $plugin */
-$plugin = plugin_load('helper', 'statistics');
-$plugin->sendGIF(); // browser be done
+try {
 
-$logger = $plugin->Logger();
-$logger->begin();
-$logger->logLastseen(); // refresh session
 
-switch ($_REQUEST['do']) {
-    case 'v':
-        $logger->logAccess();
-        $logger->logSession(1);
-        break;
+    /** @var helper_plugin_statistics $plugin */
+    $plugin = plugin_load('helper', 'statistics');
+    $plugin->sendGIF(); // browser be done
 
-    /** @noinspection PhpMissingBreakStatementInspection */
-    case 'o':
-        $logger->logOutgoing();
+    $logger = $plugin->Logger();
+    $logger->begin();
+    $logger->logLastseen(); // refresh session
 
-    //falltrough
-    default:
-        $logger->logSession();
+    switch ($INPUT->str('do')) {
+        case 'v':
+            $logger->logAccess();
+            $logger->logSession(1);
+            break;
+        case 'o':
+            $logger->logOutgoing();
+            $logger->logSession();
+            break;
+        default:
+            $logger->logSession();
+    }
+
+    $logger->end();
+} catch (\Exception $e) {
+    ErrorHandler::logException($e);
 }
-
-$logger->end();
