@@ -27,48 +27,12 @@ class action_plugin_statistics extends ActionPlugin
         global $ACT;
         $JSINFO['act'] = $ACT;
 
-        $controller->register_hook(
-            'IO_WIKIPAGE_WRITE',
-            'BEFORE',
-            $this,
-            'logedits',
-            []
-        );
-        $controller->register_hook(
-            'SEARCH_QUERY_FULLPAGE',
-            'AFTER',
-            $this,
-            'logsearch',
-            []
-        );
-        $controller->register_hook(
-            'ACTION_ACT_PREPROCESS',
-            'BEFORE',
-            $this,
-            'loglogins',
-            []
-        );
-        $controller->register_hook(
-            'AUTH_USER_CHANGE',
-            'AFTER',
-            $this,
-            'logregistration',
-            []
-        );
-        $controller->register_hook(
-            'FETCH_MEDIA_STATUS',
-            'BEFORE',
-            $this,
-            'logmedia',
-            []
-        );
-        $controller->register_hook(
-            'INDEXER_TASKS_RUN',
-            'AFTER',
-            $this,
-            'loghistory',
-            []
-        );
+        $controller->register_hook('IO_WIKIPAGE_WRITE', 'BEFORE', $this, 'logedits', []);
+        $controller->register_hook('SEARCH_QUERY_FULLPAGE', 'AFTER', $this, 'logsearch', []);
+        $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'loglogins', []);
+        $controller->register_hook('AUTH_USER_CHANGE', 'AFTER', $this, 'logregistration', []);
+        $controller->register_hook('FETCH_MEDIA_STATUS', 'BEFORE', $this, 'logmedia', []);
+        $controller->register_hook('INDEXER_TASKS_RUN', 'AFTER', $this, 'loghistory', []);
     }
 
     /**
@@ -80,7 +44,7 @@ class action_plugin_statistics extends ActionPlugin
         $url = DOKU_BASE . 'lib/plugins/statistics/log.php?p=' . rawurlencode($ID) .
             '&amp;r=' . rawurlencode($_SERVER['HTTP_REFERER']) . '&rnd=' . time();
 
-        echo '<noscript><img src="' . $url . '" width="1" height="1" /></noscript>';
+        echo '<noscript><img alt="" src="' . $url . '" width="1" height="1" /></noscript>';
     }
 
     /**
