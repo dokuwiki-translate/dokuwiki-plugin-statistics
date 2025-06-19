@@ -32,10 +32,12 @@ class Logger
      */
     public function __construct(helper_plugin_statistics $hlp)
     {
+        global $INPUT;
+        
         $this->hlp = $hlp;
         $this->db = $this->hlp->getDB();
 
-        $ua = trim($_SERVER['HTTP_USER_AGENT']);
+        $ua = trim($INPUT->server->str('HTTP_USER_AGENT'));
 
         AbstractDeviceParser::setVersionTruncation(AbstractDeviceParser::VERSION_TRUNCATION_MAJOR);
         $dd = new DeviceDetector($ua); // FIXME we could use client hints, but need to add headers
@@ -97,11 +99,13 @@ class Logger
      */
     public function logLastseen()
     {
-        if (empty($_SERVER['REMOTE_USER'])) return;
+        global $INPUT;
+        
+        if (empty($INPUT->server->str('REMOTE_USER'))) return;
 
         $this->db->exec(
             'REPLACE INTO lastseen (user, dt) VALUES (?, CURRENT_TIMESTAMP)',
-            $_SERVER['REMOTE_USER'],
+            $INPUT->server->str('REMOTE_USER'),
         );
     }
 
@@ -329,7 +333,7 @@ class Logger
         $vx = (int)$_REQUEST['vx'];
         $vy = (int)$_REQUEST['vy'];
         $js = (int)$_REQUEST['js'];
-        $user = $_SERVER['REMOTE_USER'] ?? '';
+        $user = $INPUT->server->str('REMOTE_USER');
         $session = $this->getSession();
 
         $this->db->exec(
@@ -370,7 +374,7 @@ class Logger
         $size = (int)$size;
 
         $ip = clientIP(true);
-        $user = $_SERVER['REMOTE_USER'] ?? '';
+        $user = $INPUT->server->str('REMOTE_USER');
         $session = $this->getSession();
 
         $this->db->exec(
@@ -387,7 +391,7 @@ class Logger
         global $USERINFO;
 
         $ip = clientIP(true);
-        $user = $_SERVER['REMOTE_USER'] ?? '';
+        $user = $INPUT->server->str('REMOTE_USER');
         $session = $this->getSession();
 
         $this->db->exec(
@@ -406,7 +410,9 @@ class Logger
      */
     public function log_login($type, $user = '')
     {
-        if (!$user) $user = $_SERVER['REMOTE_USER'] ?? '';
+        global $INPUT;
+        
+        if (!$user) $user = $INPUT->server->str('REMOTE_USER');
 
         $ip = clientIP(true);
         $session = $this->getSession();
