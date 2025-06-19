@@ -18,25 +18,25 @@ class Logger
 {
     /** @var helper_plugin_statistics The statistics helper plugin instance */
     protected helper_plugin_statistics $hlp;
-    
+
     /** @var SQLiteDB The SQLite database instance */
     protected SQLiteDB $db;
 
     /** @var string The full user agent string */
     protected string $uaAgent;
-    
+
     /** @var string The type of user agent (browser, robot, feedreader) */
     protected string $uaType = 'browser';
-    
+
     /** @var string The browser/client name */
     protected string $uaName;
-    
+
     /** @var string The browser/client version */
     protected string $uaVersion;
-    
+
     /** @var string The operating system/platform */
     protected string $uaPlatform;
-    
+
     /** @var string The unique user identifier */
     protected string $uid;
 
@@ -134,9 +134,6 @@ class Logger
 
     /**
      * Log that we've seen the user (authenticated only)
-     *
-     * This is called directly from the constructor and thus logs always,
-     * regardless from where the log is initiated
      */
     public function logLastseen(): void
     {
