@@ -84,9 +84,9 @@ class action_plugin_statistics extends ActionPlugin
     public function loglogins(Event $event, $param)
     {
         global $INPUT;
-        
+
         $type = '';
-        $act  = $this->_act_clean($event->data);
+        $act  = $this->actClean($event->data);
         if ($act == 'logout') {
             $type = 'o';
         } elseif ($INPUT->server->str('REMOTE_USER') && $act == 'login') {
@@ -192,7 +192,7 @@ class action_plugin_statistics extends ActionPlugin
      * Similar to act_clean in action.php but simplified and without
      * error messages
      */
-    public function _act_clean($act)
+    protected function actClean($act)
     {
         // check if the action was given as array key
         if (is_array($act)) {
