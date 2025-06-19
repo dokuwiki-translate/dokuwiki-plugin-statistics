@@ -260,7 +260,10 @@ class Logger
     {
         // check if IP already known and up-to-date
         $result = $this->db->queryValue(
-            "SELECT ip FROM iplocation WHERE ip = ? AND lastupd > date('now', '-30 days')",
+            "SELECT ip 
+             FROM   iplocation 
+             WHERE  ip = ? 
+               AND  lastupd > date('now', '-30 days')",
             $ip
         );
         if ($result) return;
@@ -351,7 +354,11 @@ class Logger
 
         if ($ref_md5) {
             $this->db->exec(
-                'INSERT OR IGNORE INTO refseen (ref_md5, dt) VALUES (?, CURRENT_TIMESTAMP)',
+                'INSERT OR IGNORE INTO refseen (
+                    ref_md5, dt
+                 ) VALUES (
+                    ?, CURRENT_TIMESTAMP
+                 )',
                 $ref_md5
             );
         }
@@ -449,11 +456,19 @@ class Logger
         $page_size = $list['file_size'];
 
         $this->db->exec(
-            'INSERT OR REPLACE INTO history (info, value, dt) VALUES (?, ?, date("now"))',
+            'INSERT OR REPLACE INTO history (
+                info, value, dt
+             ) VALUES (
+                ?, ?, date("now")
+             )',
             'page_count', $page_count
         );
         $this->db->exec(
-            'INSERT OR REPLACE INTO history (info, value, dt) VALUES (?, ?, date("now"))',
+            'INSERT OR REPLACE INTO history (
+                info, value, dt
+             ) VALUES (
+                ?, ?, date("now")
+             )',
             'page_size', $page_size
         );
     }
@@ -474,11 +489,19 @@ class Logger
         $media_size = $list['file_size'];
 
         $this->db->exec(
-            'INSERT OR REPLACE INTO history (info, value, dt) VALUES (?, ?, date("now"))',
+            'INSERT OR REPLACE INTO history (
+                info, value, dt
+             ) VALUES (
+                ?, ?, date("now")
+             )',
             'media_count', $media_count
         );
         $this->db->exec(
-            'INSERT OR REPLACE INTO history (info, value, dt) VALUES (?, ?, date("now"))',
+            'INSERT OR REPLACE INTO history (
+                info, value, dt
+             ) VALUES (
+                ?, ?, date("now")
+             )',
             'media_size', $media_size
         );
     }
