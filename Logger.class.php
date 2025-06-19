@@ -70,7 +70,9 @@ class Logger
      */
     protected function getUID()
     {
-        $uid = $_REQUEST['uid'];
+        global $INPUT;
+        
+        $uid = $INPUT->str('uid');
         if (!$uid) $uid = get_doku_pref('plgstats', false);
         if (!$uid) $uid = session_id();
         return $uid;
@@ -85,7 +87,9 @@ class Logger
      */
     protected function getSession()
     {
-        $ses = $_REQUEST['ses'];
+        global $INPUT;
+        
+        $ses = $INPUT->str('ses');
         if (!$ses) $ses = get_doku_pref('plgstatsses', false);
         if (!$ses) $ses = session_id();
         return $ses;
@@ -202,8 +206,9 @@ class Logger
         if (!$query) return;
 
         // log it!
+        global $INPUT;
         $words = explode(' ', Clean::stripspecials($query, ' ', '\._\-:\*'));
-        $this->log_search($_REQUEST['p'], $query, $words, $name);
+        $this->log_search($INPUT->str('p'), $query, $words, $name);
     }
 
     /**
@@ -284,12 +289,14 @@ class Logger
      */
     public function log_outgoing()
     {
-        if (!$_REQUEST['ol']) return;
+        global $INPUT;
+        
+        if (!$INPUT->str('ol')) return;
 
-        $link = $_REQUEST['ol'];
+        $link = $INPUT->str('ol');
         $link_md5 = md5($link);
         $session = $this->getSession();
-        $page = $_REQUEST['p'];
+        $page = $INPUT->str('p');
 
         $this->db->exec(
             'INSERT INTO outlinks (dt, session, page, link_md5, link) VALUES (CURRENT_TIMESTAMP, ?, ?, ?, ?)',
@@ -304,13 +311,14 @@ class Logger
      */
     public function log_access()
     {
-        if (!$_REQUEST['p']) return;
-        global $USERINFO;
+        global $INPUT, $USERINFO;
+        
+        if (!$INPUT->str('p')) return;
 
         # FIXME check referer against blacklist and drop logging for bad boys
 
         // handle referer
-        $referer = trim($_REQUEST['r']);
+        $referer = trim($INPUT->str('r'));
         if ($referer) {
             $ref = $referer;
             $ref_md5 = md5($referer);
@@ -326,13 +334,13 @@ class Logger
             $ref_type = '';
         }
 
-        $page = $_REQUEST['p'];
+        $page = $INPUT->str('p');
         $ip = clientIP(true);
-        $sx = (int)$_REQUEST['sx'];
-        $sy = (int)$_REQUEST['sy'];
-        $vx = (int)$_REQUEST['vx'];
-        $vy = (int)$_REQUEST['vy'];
-        $js = (int)$_REQUEST['js'];
+        $sx = $INPUT->int('sx');
+        $sy = $INPUT->int('sy');
+        $vx = $INPUT->int('vx');
+        $vy = $INPUT->int('vy');
+        $js = $INPUT->int('js');
         $user = $INPUT->server->str('REMOTE_USER');
         $session = $this->getSession();
 
@@ -369,6 +377,8 @@ class Logger
      */
     public function log_media($media, $mime, $inline, $size)
     {
+        global $INPUT;
+        
         [$mime1, $mime2] = explode('/', strtolower($mime));
         $inline = $inline ? 1 : 0;
         $size = (int)$size;
@@ -388,7 +398,7 @@ class Logger
      */
     public function log_edit($page, $type)
     {
-        global $USERINFO;
+        global $INPUT, $USERINFO;
 
         $ip = clientIP(true);
         $user = $INPUT->server->str('REMOTE_USER');
