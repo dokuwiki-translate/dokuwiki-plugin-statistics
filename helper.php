@@ -2,7 +2,7 @@
 
 use dokuwiki\Extension\Plugin;
 use dokuwiki\plugin\sqlite\SQLiteDB;
-use statistics\StatisticsLogger;
+use dokuwiki\plugin\statistics\Logger;
 
 /**
  * Statistics Plugin
@@ -12,12 +12,12 @@ use statistics\StatisticsLogger;
  */
 class helper_plugin_statistics extends Plugin
 {
-    private $dblink;
+    protected $dblink;
     public $prefix;
-    private $oQuery;
-    private $oLogger;
-    private $oGraph;
-    protected $db;
+    protected $oQuery;
+    protected ?Logger $oLogger;
+    protected $oGraph;
+    protected ?SQLiteDB $db;
 
     /**
      * Constructor
@@ -57,14 +57,14 @@ class helper_plugin_statistics extends Plugin
     /**
      * Return an instance of the logger class
      *
-     * @return StatisticsLogger
+     * @return Logger
      */
     public function Logger()
     {
         $this->prefix = $this->getConf('db_prefix');
         if (is_null($this->oLogger)) {
             require __DIR__ . '/inc/StatisticsLogger.class.php';
-            $this->oLogger = new StatisticsLogger($this);
+            $this->oLogger = new Logger($this);
         }
         return $this->oLogger;
     }

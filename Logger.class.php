@@ -28,12 +28,14 @@ class Logger
 
 
     /**
+     * Constructor
+     *
      * Parses browser info and set internal vars
      */
     public function __construct(helper_plugin_statistics $hlp)
     {
         global $INPUT;
-        
+
         $this->hlp = $hlp;
         $this->db = $this->hlp->getDB();
 
@@ -51,7 +53,6 @@ class Logger
             throw new \RuntimeException('Bot detected, not logging');
         }
 
-
         $this->uaAgent = $ua;
         $this->uaName = Browser::getBrowserFamily($dd->getClient('name'));
         $this->uaVersion = $dd->getClient('version');
@@ -66,12 +67,32 @@ class Logger
     }
 
     /**
+     * Should be called before logging
+     *
+     * This starts a transaction, so all logging is done in one go
+     */
+    public function begin()
+    {
+        $this->hlp->getDB()->getPdo()->beginTransaction();
+    }
+
+    /**
+     * Should be called after logging
+     *
+     * This commits the transaction started in begin()
+     */
+    public function end()
+    {
+        $this->hlp->getDB()->getPdo()->commit();
+    }
+
+    /**
      * get the unique user ID
      */
     protected function getUID()
     {
         global $INPUT;
-        
+
         $uid = $INPUT->str('uid');
         if (!$uid) $uid = get_doku_pref('plgstats', false);
         if (!$uid) $uid = session_id();
@@ -88,7 +109,7 @@ class Logger
     protected function getSession()
     {
         global $INPUT;
-        
+
         $ses = $INPUT->str('ses');
         if (!$ses) $ses = get_doku_pref('plgstatsses', false);
         if (!$ses) $ses = session_id();
@@ -104,7 +125,7 @@ class Logger
     public function logLastseen()
     {
         global $INPUT;
-        
+
         if (empty($INPUT->server->str('REMOTE_USER'))) return;
 
         $this->db->exec(
@@ -148,7 +169,7 @@ class Logger
      *
      * Will not write anything if the referer isn't a search engine
      */
-    public function log_externalsearch($referer, &$type)
+    public function logExternalSearch($referer, &$type)
     {
         $referer = PhpString::strtolower($referer);
         include(__DIR__ . '/searchengines.php');
@@ -208,25 +229,25 @@ class Logger
         // log it!
         global $INPUT;
         $words = explode(' ', Clean::stripspecials($query, ' ', '\._\-:\*'));
-        $this->log_search($INPUT->str('p'), $query, $words, $name);
+        $this->logSearch($INPUT->str('p'), $query, $words, $name);
     }
 
     /**
      * The given data to the search related tables
      */
-    public function log_search($page, $query, $words, $engine)
+    public function logSearch($page, $query, $words, $engine)
     {
-        $id = $this->db->exec(
+        $sid = $this->db->exec(
             'INSERT INTO search (dt, page, query, engine) VALUES (CURRENT_TIMESTAMP, ?, ?, ?)',
             $page, $query, $engine
         );
-        if (!$id) return;
+        if (!$sid) return;
 
         foreach ($words as $word) {
             if (!$word) continue;
             $this->db->exec(
                 'INSERT INTO searchwords (sid, word) VALUES (?, ?)',
-                $id, $word
+                $sid, $word
             );
         }
     }
@@ -241,7 +262,7 @@ class Logger
      *
      * @param int $addview set to 1 to count a view
      */
-    public function log_session($addview = 0)
+    public function logSession($addview = 0)
     {
         // only log browser sessions
         if ($this->uaType != 'browser') return;
@@ -251,10 +272,10 @@ class Logger
             'INSERT OR REPLACE INTO session (
                 session, dt, end, views, uid
              ) VALUES (
-                ?, 
-                CURRENT_TIMESTAMP, 
-                CURRENT_TIMESTAMP, 
-                COALESCE((SELECT views FROM session WHERE session = ?) + ?, ?), 
+                ?,
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP,
+                COALESCE((SELECT views FROM session WHERE session = ?) + ?, ?),
                 ?
              )',
             $session, $session, $addview, $addview, $this->uid
@@ -264,13 +285,13 @@ class Logger
     /**
      * Resolve IP to country/city
      */
-    public function log_ip($ip)
+    public function logIp($ip)
     {
         // check if IP already known and up-to-date
         $result = $this->db->queryValue(
-            "SELECT ip 
-             FROM   iplocation 
-             WHERE  ip = ? 
+            "SELECT ip
+             FROM   iplocation
+             WHERE  ip = ?
                AND  lastupd > date('now', '-30 days')",
             $ip
         );
@@ -278,23 +299,24 @@ class Logger
 
         $http = new DokuHTTPClient();
         $http->timeout = 10;
-        $data = $http->get('http://api.hostip.info/get_html.php?ip=' . $ip);
+        $json = $http->get('http://ip-api.com/json/' . $ip); // yes, it's HTTP only
 
-        if (preg_match('/^Country: (.*?) \((.*?)\)\nCity: (.*?)$/s', $data, $match)) {
-            $country = ucwords(strtolower(trim($match[1])));
-            $code = strtolower(trim($match[2]));
-            $city = ucwords(strtolower(trim($match[3])));
-            $host = gethostbyaddr($ip);
+        if (!$json) return; // FIXME log error
+        try {
+            $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            return; // FIXME log error
+        }
 
-            $this->db->exec(
-                'INSERT OR REPLACE INTO iplocation (
+        $host = gethostbyaddr($ip);
+        $this->db->exec(
+            'INSERT OR REPLACE INTO iplocation (
                     ip, country, code, city, host, lastupd
                  ) VALUES (
                     ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
                  )',
-                $ip, $country, $code, $city, $host
-            );
-        }
+            $ip, $data['country'], $data['countryCode'], $data['city'], $host
+        );
     }
 
     /**
@@ -302,10 +324,10 @@ class Logger
      *
      * called from log.php
      */
-    public function log_outgoing()
+    public function logOutgoing()
     {
         global $INPUT;
-        
+
         if (!$INPUT->str('ol')) return;
 
         $link = $INPUT->str('ol');
@@ -328,10 +350,10 @@ class Logger
      *
      * called from log.php
      */
-    public function log_access()
+    public function logAccess()
     {
         global $INPUT, $USERINFO;
-        
+
         if (!$INPUT->str('p')) return;
 
         # FIXME check referer against blacklist and drop logging for bad boys
@@ -345,7 +367,7 @@ class Logger
                 $ref_type = 'internal';
             } else {
                 $ref_type = 'external';
-                $this->log_externalsearch($referer, $ref_type);
+                $this->logExternalSearch($referer, $ref_type);
             }
         } else {
             $ref = '';
@@ -371,7 +393,7 @@ class Logger
                 CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?, ?, ?, ?
              )',
-            $page, $ip, $this->uaAgent, $this->uaName, $this->uaType, $this->uaVersion, $this->uaPlatform, 
+            $page, $ip, $this->uaAgent, $this->uaName, $this->uaType, $this->uaVersion, $this->uaPlatform,
             $ref, $ref_md5, $ref_type, $sx, $sy, $vx, $vy, $js, $user, $session, $this->uid
         );
 
@@ -392,7 +414,7 @@ class Logger
         }
 
         // resolve the IP
-        $this->log_ip(clientIP(true));
+        $this->logIp(clientIP(true));
     }
 
     /**
@@ -405,10 +427,10 @@ class Logger
      * @param bool $inline is this displayed inline?
      * @param int $size size of the media file
      */
-    public function log_media($media, $mime, $inline, $size)
+    public function logMedia($media, $mime, $inline, $size)
     {
         global $INPUT;
-        
+
         [$mime1, $mime2] = explode('/', strtolower($mime));
         $inline = $inline ? 1 : 0;
         $size = (int)$size;
@@ -425,7 +447,7 @@ class Logger
                 CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?
              )',
-            $media, $ip, $this->uaAgent, $this->uaName, $this->uaType, $this->uaVersion, $this->uaPlatform, 
+            $media, $ip, $this->uaAgent, $this->uaName, $this->uaType, $this->uaVersion, $this->uaPlatform,
             $user, $session, $this->uid, $size, $mime1, $mime2, $inline
         );
     }
@@ -433,7 +455,7 @@ class Logger
     /**
      * Log edits
      */
-    public function log_edit($page, $type)
+    public function logEdit($page, $type)
     {
         global $INPUT, $USERINFO;
 
@@ -459,10 +481,10 @@ class Logger
     /**
      * Log login/logoffs and user creations
      */
-    public function log_login($type, $user = '')
+    public function logLogin($type, $user = '')
     {
         global $INPUT;
-        
+
         if (!$user) $user = $INPUT->server->str('REMOTE_USER');
 
         $ip = clientIP(true);
@@ -481,7 +503,7 @@ class Logger
     /**
      * Log the current page count and size as today's history entry
      */
-    public function log_history_pages()
+    public function logHistoryPages()
     {
         global $conf;
 
@@ -514,7 +536,7 @@ class Logger
     /**
      * Log the current page count and size as today's history entry
      */
-    public function log_history_media()
+    public function logHistoryMedia()
     {
         global $conf;
 
