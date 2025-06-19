@@ -285,6 +285,9 @@ class Logger
         } catch (\JsonException $e) {
             return; // FIXME log error
         }
+        if(!isset($data['status']) || $data['status'] !== 'success') {
+            return; // FIXME log error
+        }
 
         $host = gethostbyaddr($ip);
         $this->db->exec(
