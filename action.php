@@ -152,14 +152,12 @@ class action_plugin_statistics extends ActionPlugin
 
         /** @var helper_plugin_statistics $hlp */
         $hlp = plugin_load('helper', 'statistics');
+        $db = $hlp->getDB();
 
         // check if a history was gathered already today
-        $sql = "SELECT `info` FROM " . $hlp->prefix . "history WHERE `dt` = DATE(NOW())";
-        $result = $hlp->runSQL($sql);
-        if (is_null($result)) {
-            global $MSG;
-            print_r($MSG);
-        }
+        $result = $db->queryAll(
+            "SELECT info FROM history WHERE dt = date('now')"
+        );
 
         $page_ran  = false;
         $media_ran = false;
