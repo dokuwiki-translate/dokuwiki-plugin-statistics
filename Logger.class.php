@@ -16,14 +16,28 @@ use helper_plugin_statistics;
 
 class Logger
 {
+    /** @var helper_plugin_statistics The statistics helper plugin instance */
     protected helper_plugin_statistics $hlp;
+    
+    /** @var SQLiteDB The SQLite database instance */
     protected SQLiteDB $db;
 
+    /** @var string The full user agent string */
     protected string $uaAgent;
+    
+    /** @var string The type of user agent (browser, robot, feedreader) */
     protected string $uaType = 'browser';
+    
+    /** @var string The browser/client name */
     protected string $uaName;
+    
+    /** @var string The browser/client version */
     protected string $uaVersion;
+    
+    /** @var string The operating system/platform */
     protected string $uaPlatform;
+    
+    /** @var string The unique user identifier */
     protected string $uid;
 
 
@@ -106,9 +120,9 @@ class Logger
      *
      * This is usually our own managed session, not a PHP session (only in fallback)
      *
-     * @return string
+     * @return string The session identifier
      */
-    protected function getSession()
+    protected function getSession(): string
     {
         global $INPUT;
 
@@ -432,14 +446,14 @@ class Logger
     /**
      * Log access to a media file
      *
-     * called from action.php
+     * Called from action.php
      *
-     * @param string $media the media ID
-     * @param string $mime the media's mime type
-     * @param bool $inline is this displayed inline?
-     * @param int $size size of the media file
+     * @param string $media The media ID
+     * @param string $mime The media's mime type
+     * @param bool $inline Is this displayed inline?
+     * @param int $size Size of the media file
      */
-    public function logMedia($media, $mime, $inline, $size)
+    public function logMedia(string $media, string $mime, bool $inline, int $size): void
     {
         global $INPUT;
 
