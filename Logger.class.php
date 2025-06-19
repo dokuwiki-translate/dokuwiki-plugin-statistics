@@ -1,24 +1,31 @@
 <?php
 
+namespace dokuwiki\plugin\statistics;
+
+use DeviceDetector\DeviceDetector;
+use DeviceDetector\Parser\Client\Browser;
+use DeviceDetector\Parser\Device\AbstractDeviceParser;
+use DeviceDetector\Parser\OperatingSystem;
 use dokuwiki\HTTP\DokuHTTPClient;
+use dokuwiki\plugin\sqlite\SQLiteDB;
+use dokuwiki\Utf8\Clean;
+use dokuwiki\Utf8\PhpString;
+use helper_plugin_popularity;
+use helper_plugin_statistics;
 
-use function dokuwiki\Utf8\PhpString::strtolower;
-use function dokuwiki\Utf8\Clean::isUtf8;
-use function dokuwiki\Utf8\Clean::stripspecials;
 
-require __DIR__ . '/StatisticsBrowscap.class.php';
-
-class StatisticsLogger
+class Logger
 {
-    private $hlp;
+    protected helper_plugin_statistics $hlp;
+    protected SQLiteDB $db;
 
-    private $ua_agent;
-    private $ua_type = 'browser';
-    private $ua_name;
-    private $ua_version;
-    private $ua_platform;
+    protected string $uaAgent;
+    protected string $uaType = 'browser';
+    protected string $uaName;
+    protected string $uaVersion;
+    protected string $uaPlatform;
+    protected string $uid;
 
-    private $uid;
 
     /**
      * Parses browser info and set internal vars
@@ -26,19 +33,34 @@ class StatisticsLogger
     public function __construct(helper_plugin_statistics $hlp)
     {
         $this->hlp = $hlp;
+        $this->db = $this->hlp->getDB();
 
-        $this->ua_agent = trim($_SERVER['HTTP_USER_AGENT']);
-        $bc             = new StatisticsBrowscap();
-        $ua             = $bc->getBrowser($this->ua_agent);
-        $this->ua_name  = $ua->Browser;
-        if ($ua->Crawler) $this->ua_type = 'robot';
-        if ($ua->isSyndicationReader) $this->ua_type = 'feedreader';
-        $this->ua_version  = $ua->Version;
-        $this->ua_platform = $ua->Platform;
+        $ua = trim($_SERVER['HTTP_USER_AGENT']);
 
+        AbstractDeviceParser::setVersionTruncation(AbstractDeviceParser::VERSION_TRUNCATION_MAJOR);
+        $dd = new DeviceDetector($ua); // FIXME we could use client hints, but need to add headers
+        $dd->discardBotInformation();
+        $dd->parse();
+
+        if ($dd->isBot()) {
+            $this->uaType = 'robot';
+
+            // for now ignore bots
+            throw new \RuntimeException('Bot detected, not logging');
+        }
+
+
+        $this->uaAgent = $ua;
+        $this->uaName = Browser::getBrowserFamily($dd->getClient('name'));
+        $this->uaVersion = $dd->getClient('version');
+        $this->uaPlatform = OperatingSystem::getOsFamily($dd->getOs('name'));
         $this->uid = $this->getUID();
 
-        $this->log_lastseen();
+        if ($dd->isFeedReader()) {
+            $this->uaType = 'feedreader';
+        }
+
+        $this->logLastseen();
     }
 
     /**
@@ -73,54 +95,44 @@ class StatisticsLogger
      * This is called directly from the constructor and thus logs always,
      * regardless from where the log is initiated
      */
-    public function log_lastseen()
+    public function logLastseen()
     {
         if (empty($_SERVER['REMOTE_USER'])) return;
-        $user = addslashes($_SERVER['REMOTE_USER']);
 
-        $sql = "REPLACE INTO " . $this->hlp->prefix . "lastseen
-                    SET `user` = '$user'
-               ";
-        $this->hlp->runSQL($sql);
+        $this->db->exec(
+            'REPLACE INTO lastseen (user, dt) VALUES (?, CURRENT_TIMESTAMP)',
+            $_SERVER['REMOTE_USER'],
+        );
     }
 
     /**
      * Log actions by groups
      *
-     * @param string $type   The type of access to log ('view','edit')
-     * @param array  $groups The groups to log
+     * @param string $type The type of access to log ('view','edit')
+     * @param array $groups The groups to log
      */
-    public function log_groups($type, $groups)
+    public function logGroups($type, $groups)
     {
         if (!is_array($groups)) {
             return;
         }
 
-        $tolog = $this->hlp->getConf('loggroups');
-        if ($tolog) {
-            foreach ($groups as $pos => $group) {
-                if (!in_array($group, $tolog)) unset($groups[$pos]);
-            }
-        }
+        $tolog = (array)$this->hlp->getConf('loggroups');
+        $groups = array_intersect($groups, $tolog);
         if ($groups === []) {
             return;
         }
 
-        $type = addslashes($type);
 
-        $sql = "INSERT DELAYED INTO " . $this->hlp->prefix . "groups
-                     (`dt`, `type`, `group`) VALUES ";
+        $params = [];
+        $sql = "INSERT INTO groups (`type`, `group`) VALUES ";
         foreach ($groups as $group) {
-            $group = addslashes($group);
-            $sql .= "( NOW(), '$type', '$group' ),";
+            $sql .= '(?, ?),';
+            $params[] = $type;
+            $params[] = $group;
         }
         $sql = rtrim($sql, ',');
-
-        $ok = $this->hlp->runSQL($sql);
-        if (is_null($ok)) {
-            global $MSG;
-            print_r($MSG);
-        }
+        $this->db->exec($sql, $params);
     }
 
     /**
@@ -135,12 +147,12 @@ class StatisticsLogger
         /** @var array $SEARCHENGINES */
 
         $query = '';
-        $name  = '';
+        $name = '';
 
         // parse the referer
         $urlparts = parse_url($referer);
-        $domain   = $urlparts['host'];
-        $qpart    = $urlparts['query'];
+        $domain = $urlparts['host'];
+        $qpart = $urlparts['query'];
         if (!$qpart) $qpart = $urlparts['fragment']; //google does this
 
         $params = [];
@@ -195,8 +207,8 @@ class StatisticsLogger
      */
     public function log_search($page, $query, $words, $engine)
     {
-        $page   = addslashes($page);
-        $query  = addslashes($query);
+        $page = addslashes($page);
+        $query = addslashes($query);
         $engine = addslashes($engine);
 
         $sql = "INSERT INTO " . $this->hlp->prefix . "search
@@ -204,13 +216,13 @@ class StatisticsLogger
                         page     = '$page',
                         query    = '$query',
                         engine   = '$engine'";
-        $id  = $this->hlp->runSQL($sql);
+        $id = $this->hlp->runSQL($sql);
         if (is_null($id)) return;
 
         foreach ($words as $word) {
             if (!$word) continue;
             $word = addslashes($word);
-            $sql  = "INSERT DELAYED INTO " . $this->hlp->prefix . "searchwords
+            $sql = "INSERT DELAYED INTO " . $this->hlp->prefix . "searchwords
                        SET sid  = $id,
                            word = '$word'";
             $this->hlp->runSQL($sql);
@@ -230,12 +242,12 @@ class StatisticsLogger
     public function log_session($addview = 0)
     {
         // only log browser sessions
-        if ($this->ua_type != 'browser') return;
+        if ($this->uaType != 'browser') return;
 
         $addview = addslashes($addview);
         $session = addslashes($this->getSession());
-        $uid     = addslashes($this->uid);
-        $sql     = "INSERT DELAYED INTO " . $this->hlp->prefix . "session
+        $uid = addslashes($this->uid);
+        $sql = "INSERT DELAYED INTO " . $this->hlp->prefix . "session
                    SET session = '$session',
                        dt      = NOW(),
                        end     = NOW(),
@@ -254,23 +266,23 @@ class StatisticsLogger
     public function log_ip($ip)
     {
         // check if IP already known and up-to-date
-        $sql    = "SELECT ip
+        $sql = "SELECT ip
                   FROM " . $this->hlp->prefix . "iplocation
                  WHERE ip ='" . addslashes($ip) . "'
                    AND lastupd > DATE_SUB(CURDATE(),INTERVAL 30 DAY)";
         $result = $this->hlp->runSQL($sql);
         if ($result[0]['ip']) return;
 
-        $http          = new DokuHTTPClient();
+        $http = new DokuHTTPClient();
         $http->timeout = 10;
-        $data          = $http->get('http://api.hostip.info/get_html.php?ip=' . $ip);
+        $data = $http->get('http://api.hostip.info/get_html.php?ip=' . $ip);
 
         if (preg_match('/^Country: (.*?) \((.*?)\)\nCity: (.*?)$/s', $data, $match)) {
             $country = addslashes(ucwords(strtolower(trim($match[1]))));
-            $code    = addslashes(strtolower(trim($match[2])));
-            $city    = addslashes(ucwords(strtolower(trim($match[3]))));
-            $host    = addslashes(gethostbyaddr($ip));
-            $ip      = addslashes($ip);
+            $code = addslashes(strtolower(trim($match[2])));
+            $city = addslashes(ucwords(strtolower(trim($match[3]))));
+            $host = addslashes(gethostbyaddr($ip));
+            $ip = addslashes($ip);
 
             $sql = "REPLACE INTO " . $this->hlp->prefix . "iplocation
                         SET ip = '$ip',
@@ -291,10 +303,10 @@ class StatisticsLogger
     {
         if (!$_REQUEST['ol']) return;
 
-        $link     = addslashes($_REQUEST['ol']);
+        $link = addslashes($_REQUEST['ol']);
         $link_md5 = md5($link);
-        $session  = addslashes($this->getSession());
-        $page     = addslashes($_REQUEST['p']);
+        $session = addslashes($this->getSession());
+        $page = addslashes($_REQUEST['p']);
 
         $sql = "INSERT DELAYED INTO " . $this->hlp->prefix . "outlinks
                     SET dt       = NOW(),
@@ -302,7 +314,7 @@ class StatisticsLogger
                         page     = '$page',
                         link_md5 = '$link_md5',
                         link     = '$link'";
-        $ok  = $this->hlp->runSQL($sql);
+        $ok = $this->hlp->runSQL($sql);
         if (is_null($ok)) {
             global $MSG;
             print_r($MSG);
@@ -324,7 +336,7 @@ class StatisticsLogger
         // handle referer
         $referer = trim($_REQUEST['r']);
         if ($referer) {
-            $ref     = addslashes($referer);
+            $ref = addslashes($referer);
             $ref_md5 = ($ref) ? md5($referer) : '';
             if (str_starts_with($referer, DOKU_URL)) {
                 $ref_type = 'internal';
@@ -333,27 +345,27 @@ class StatisticsLogger
                 $this->log_externalsearch($referer, $ref_type);
             }
         } else {
-            $ref      = '';
-            $ref_md5  = '';
+            $ref = '';
+            $ref_md5 = '';
             $ref_type = '';
         }
 
         // handle user agent
-        $ua      = addslashes($this->ua_agent);
-        $ua_type = addslashes($this->ua_type);
-        $ua_ver  = addslashes($this->ua_version);
-        $os      = addslashes($this->ua_platform);
-        $ua_info = addslashes($this->ua_name);
+        $ua = addslashes($this->uaAgent);
+        $ua_type = addslashes($this->uaType);
+        $ua_ver = addslashes($this->uaVersion);
+        $os = addslashes($this->uaPlatform);
+        $ua_info = addslashes($this->uaName);
 
-        $page    = addslashes($_REQUEST['p']);
-        $ip      = addslashes(clientIP(true));
-        $sx      = (int) $_REQUEST['sx'];
-        $sy      = (int) $_REQUEST['sy'];
-        $vx      = (int) $_REQUEST['vx'];
-        $vy      = (int) $_REQUEST['vy'];
-        $js      = (int) $_REQUEST['js'];
-        $uid     = addslashes($this->uid);
-        $user    = addslashes($_SERVER['REMOTE_USER']);
+        $page = addslashes($_REQUEST['p']);
+        $ip = addslashes(clientIP(true));
+        $sx = (int)$_REQUEST['sx'];
+        $sy = (int)$_REQUEST['sy'];
+        $vx = (int)$_REQUEST['vx'];
+        $vy = (int)$_REQUEST['vy'];
+        $js = (int)$_REQUEST['js'];
+        $uid = addslashes($this->uid);
+        $user = addslashes($_SERVER['REMOTE_USER']);
         $session = addslashes($this->getSession());
 
         $sql = "INSERT DELAYED INTO " . $this->hlp->prefix . "access
@@ -376,7 +388,7 @@ class StatisticsLogger
                         user     = '$user',
                         session  = '$session',
                         uid      = '$uid'";
-        $ok  = $this->hlp->runSQL($sql);
+        $ok = $this->hlp->runSQL($sql);
         if (is_null($ok)) {
             global $MSG;
             print_r($MSG);
@@ -385,7 +397,7 @@ class StatisticsLogger
         $sql = "INSERT DELAYED IGNORE INTO " . $this->hlp->prefix . "refseen
                    SET ref_md5  = '$ref_md5',
                        dt       = NOW()";
-        $ok  = $this->hlp->runSQL($sql);
+        $ok = $this->hlp->runSQL($sql);
         if (is_null($ok)) {
             global $MSG;
             print_r($MSG);
@@ -393,7 +405,7 @@ class StatisticsLogger
 
         // log group access
         if (isset($USERINFO['grps'])) {
-            $this->log_groups('view', $USERINFO['grps']);
+            $this->logGroups('view', $USERINFO['grps']);
         }
 
         // resolve the IP
@@ -406,29 +418,29 @@ class StatisticsLogger
      * called from action.php
      *
      * @param string $media the media ID
-     * @param string $mime  the media's mime type
+     * @param string $mime the media's mime type
      * @param bool $inline is this displayed inline?
      * @param int $size size of the media file
      */
     public function log_media($media, $mime, $inline, $size)
     {
         // handle user agent
-        $ua      = addslashes($this->ua_agent);
-        $ua_type = addslashes($this->ua_type);
-        $ua_ver  = addslashes($this->ua_version);
-        $os      = addslashes($this->ua_platform);
-        $ua_info = addslashes($this->ua_name);
+        $ua = addslashes($this->uaAgent);
+        $ua_type = addslashes($this->uaType);
+        $ua_ver = addslashes($this->uaVersion);
+        $os = addslashes($this->uaPlatform);
+        $ua_info = addslashes($this->uaName);
 
-        $media    = addslashes($media);
-        [$mime1, $mime2]     = explode('/', strtolower($mime));
-        $mime1   = addslashes($mime1);
-        $mime2   = addslashes($mime2);
-        $inline  = $inline ? 1 : 0;
-        $size    = (int) $size;
+        $media = addslashes($media);
+        [$mime1, $mime2] = explode('/', strtolower($mime));
+        $mime1 = addslashes($mime1);
+        $mime2 = addslashes($mime2);
+        $inline = $inline ? 1 : 0;
+        $size = (int)$size;
 
-        $ip      = addslashes(clientIP(true));
-        $uid     = addslashes($this->uid);
-        $user    = addslashes($_SERVER['REMOTE_USER']);
+        $ip = addslashes(clientIP(true));
+        $uid = addslashes($this->uid);
+        $user = addslashes($_SERVER['REMOTE_USER']);
         $session = addslashes($this->getSession());
 
         $sql = "INSERT DELAYED INTO " . $this->hlp->prefix . "media
@@ -448,7 +460,7 @@ class StatisticsLogger
                         mime2    = '$mime2',
                         inline   = $inline
                         ";
-        $ok  = $this->hlp->runSQL($sql);
+        $ok = $this->hlp->runSQL($sql);
         if (is_null($ok)) {
             global $MSG;
             dbglog($MSG);
@@ -462,12 +474,12 @@ class StatisticsLogger
     {
         global $USERINFO;
 
-        $ip      = addslashes(clientIP(true));
-        $user    = addslashes($_SERVER['REMOTE_USER']);
+        $ip = addslashes(clientIP(true));
+        $user = addslashes($_SERVER['REMOTE_USER']);
         $session = addslashes($this->getSession());
-        $uid     = addslashes($this->uid);
-        $page    = addslashes($page);
-        $type    = addslashes($type);
+        $uid = addslashes($this->uid);
+        $page = addslashes($page);
+        $type = addslashes($type);
 
         $sql = "INSERT DELAYED INTO " . $this->hlp->prefix . "edits
                     SET dt       = NOW(),
@@ -481,7 +493,7 @@ class StatisticsLogger
 
         // log group access
         if (isset($USERINFO['grps'])) {
-            $this->log_groups('edit', $USERINFO['grps']);
+            $this->logGroups('edit', $USERINFO['grps']);
         }
     }
 
@@ -492,11 +504,11 @@ class StatisticsLogger
     {
         if (!$user) $user = $_SERVER['REMOTE_USER'];
 
-        $ip      = addslashes(clientIP(true));
-        $user    = addslashes($user);
+        $ip = addslashes(clientIP(true));
+        $user = addslashes($user);
         $session = addslashes($this->getSession());
-        $uid     = addslashes($this->uid);
-        $type    = addslashes($type);
+        $uid = addslashes($this->uid);
+        $type = addslashes($type);
 
         $sql = "INSERT DELAYED INTO " . $this->hlp->prefix . "logins
                     SET dt       = NOW(),
@@ -521,7 +533,7 @@ class StatisticsLogger
         $list = [];
         search($list, $conf['datadir'], [$pop, 'searchCountCallback'], ['all' => false], '');
         $page_count = $list['file_count'];
-        $page_size  = $list['file_size'];
+        $page_size = $list['file_size'];
 
         print_r($list);
 
@@ -551,7 +563,7 @@ class StatisticsLogger
         $list = [];
         search($list, $conf['mediadir'], [$pop, 'searchCountCallback'], ['all' => true], '');
         $media_count = $list['file_count'];
-        $media_size  = $list['file_size'];
+        $media_size = $list['file_size'];
 
         $sql = "REPLACE INTO " . $this->hlp->prefix . "history
                         (`info`, `value`, `dt`)

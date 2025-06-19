@@ -1,27 +1,44 @@
 <?php
 
+use dokuwiki\Extension\Plugin;
+use dokuwiki\plugin\sqlite\SQLiteDB;
+use statistics\StatisticsLogger;
+
 /**
  * Statistics Plugin
  *
  * @license GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author  Andreas Gohr <andi@splitbrain.org>
  */
-
-class helper_plugin_statistics extends Dokuwiki_Plugin
+class helper_plugin_statistics extends Plugin
 {
     private $dblink;
     public $prefix;
     private $oQuery;
     private $oLogger;
     private $oGraph;
+    protected $db;
 
     /**
      * Constructor
      */
     public function __construct()
     {
-        $this->prefix = $this->getConf('db_prefix');
     }
+
+    /**
+     * Get SQLiteDB instance
+     *
+     * @return SQLiteDB|null
+     */
+    public function getDB()
+    {
+        if ($this->db === null) {
+            $this->db = new SQLiteDB('example', DOKU_PLUGIN . 'example/db/');
+        }
+        return $this->db;
+    }
+
 
     /**
      * Return an instance of the query class
@@ -119,7 +136,7 @@ class helper_plugin_statistics extends Dokuwiki_Plugin
         //mysql_db_query returns 1 on a insert statement -> no need to ask for results
         if ($result !== true) {
             for ($i = 0; $i < mysqli_num_rows($result); $i++) {
-                $temparray     = mysqli_fetch_assoc($result);
+                $temparray = mysqli_fetch_assoc($result);
                 $resultarray[] = $temparray;
             }
             mysqli_free_result($result);

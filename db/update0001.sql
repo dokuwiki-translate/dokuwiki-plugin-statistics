@@ -1,7 +1,7 @@
 CREATE TABLE `access`
 (
     `id`       INTEGER PRIMARY KEY,
-    `dt`       TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `dt`       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `page`     TEXT    NOT NULL,
     `ip`       TEXT    NOT NULL,
     `ua`       TEXT    NOT NULL,
@@ -35,14 +35,14 @@ CREATE TABLE `iplocation`
     `country` TEXT NOT NULL,
     `city`    TEXT NOT NULL,
     `host`    TEXT NOT NULL,
-    `lastupd` TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    `lastupd` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX `idx_iplocation_code` ON `iplocation` (`code`);
 
 CREATE TABLE `outlinks`
 (
     `id`       INTEGER PRIMARY KEY,
-    `dt`       TEXT NOT NULL,
+    `dt`       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `session`  TEXT NOT NULL,
     `link_md5` TEXT NOT NULL,
     `link`     TEXT NOT NULL,
@@ -55,7 +55,7 @@ CREATE INDEX `idx_outlinks_dt` ON `outlinks` (`dt`);
 CREATE TABLE `search`
 (
     `id`     INTEGER PRIMARY KEY,
-    `dt`     TEXT NOT NULL,
+    `dt`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `page`   TEXT NOT NULL,
     `query`  TEXT NOT NULL,
     `engine` TEXT NOT NULL
@@ -73,14 +73,14 @@ CREATE TABLE `searchwords`
 CREATE TABLE `refseen`
 (
     `ref_md5` TEXT PRIMARY KEY,
-    `dt`      TEXT NOT NULL
+    `dt`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX `idx_refseen_dt` ON `refseen` (`dt`);
 
 CREATE TABLE `edits`
 (
     `id`      INTEGER PRIMARY KEY,
-    `dt`      TEXT NOT NULL,
+    `dt`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `ip`      TEXT NOT NULL,
     `user`    TEXT NOT NULL,
     `session` TEXT NOT NULL,
@@ -95,7 +95,7 @@ CREATE INDEX `idx_edits_type` ON `edits` (`type`);
 CREATE TABLE `session`
 (
     `session` TEXT PRIMARY KEY,
-    `dt`      TEXT    NOT NULL,
+    `dt`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `end`     TEXT    NOT NULL,
     `views`   INTEGER NOT NULL,
     `uid`     TEXT    NOT NULL
@@ -108,7 +108,7 @@ CREATE INDEX `idx_session_uid` ON `session` (`uid`);
 CREATE TABLE `logins`
 (
     `id`      INTEGER PRIMARY KEY,
-    `dt`      TEXT NOT NULL,
+    `dt`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `ip`      TEXT NOT NULL,
     `user`    TEXT NOT NULL,
     `session` TEXT NOT NULL,
@@ -122,13 +122,13 @@ CREATE INDEX `idx_logins_type` ON `logins` (`type`);
 CREATE TABLE `lastseen`
 (
     `user` TEXT PRIMARY KEY,
-    `dt`   TEXT NOT NULL
+    `dt`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE `media`
 (
     `id`      INTEGER PRIMARY KEY,
-    `dt`      TEXT    NOT NULL,
+    `dt`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `media`   TEXT    NOT NULL,
     `ip`      TEXT,
     `ua`      TEXT    NOT NULL,
@@ -153,7 +153,7 @@ CREATE INDEX `idx_media_mime1` ON `media` (`mime1`);
 CREATE TABLE `history`
 (
     `info`  TEXT    NOT NULL,
-    `dt`    TEXT    NOT NULL,
+    `dt`    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `value` INTEGER NOT NULL,
     PRIMARY KEY (`info`, `dt`)
 );
@@ -161,7 +161,7 @@ CREATE TABLE `history`
 CREATE TABLE `groups`
 (
     `id`    INTEGER PRIMARY KEY,
-    `dt`    TEXT NOT NULL,
+    `dt`    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `group` TEXT NOT NULL,
     `type`  TEXT NOT NULL
 );
