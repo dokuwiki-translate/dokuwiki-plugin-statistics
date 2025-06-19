@@ -248,7 +248,15 @@ class Logger
 
         $session = $this->getSession();
         $this->db->exec(
-            'INSERT OR REPLACE INTO session (session, dt, end, views, uid) VALUES (?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, COALESCE((SELECT views FROM session WHERE session = ?) + ?, ?), ?)',
+            'INSERT OR REPLACE INTO session (
+                session, dt, end, views, uid
+             ) VALUES (
+                ?, 
+                CURRENT_TIMESTAMP, 
+                CURRENT_TIMESTAMP, 
+                COALESCE((SELECT views FROM session WHERE session = ?) + ?, ?), 
+                ?
+             )',
             $session, $session, $addview, $addview, $this->uid
         );
     }
@@ -279,7 +287,11 @@ class Logger
             $host = gethostbyaddr($ip);
 
             $this->db->exec(
-                'INSERT OR REPLACE INTO iplocation (ip, country, code, city, host, lastupd) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)',
+                'INSERT OR REPLACE INTO iplocation (
+                    ip, country, code, city, host, lastupd
+                 ) VALUES (
+                    ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
+                 )',
                 $ip, $country, $code, $city, $host
             );
         }
@@ -302,7 +314,11 @@ class Logger
         $page = $INPUT->str('p');
 
         $this->db->exec(
-            'INSERT INTO outlinks (dt, session, page, link_md5, link) VALUES (CURRENT_TIMESTAMP, ?, ?, ?, ?)',
+            'INSERT INTO outlinks (
+                dt, session, page, link_md5, link
+             ) VALUES (
+                CURRENT_TIMESTAMP, ?, ?, ?, ?
+             )',
             $session, $page, $link_md5, $link
         );
     }
@@ -348,8 +364,15 @@ class Logger
         $session = $this->getSession();
 
         $this->db->exec(
-            'INSERT INTO access (dt, page, ip, ua, ua_info, ua_type, ua_ver, os, ref, ref_md5, ref_type, screen_x, screen_y, view_x, view_y, js, user, session, uid) VALUES (CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            $page, $ip, $this->uaAgent, $this->uaName, $this->uaType, $this->uaVersion, $this->uaPlatform, $ref, $ref_md5, $ref_type, $sx, $sy, $vx, $vy, $js, $user, $session, $this->uid
+            'INSERT INTO access (
+                dt, page, ip, ua, ua_info, ua_type, ua_ver, os, ref, ref_md5, ref_type,
+                screen_x, screen_y, view_x, view_y, js, user, session, uid
+             ) VALUES (
+                CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?, ?, ?
+             )',
+            $page, $ip, $this->uaAgent, $this->uaName, $this->uaType, $this->uaVersion, $this->uaPlatform, 
+            $ref, $ref_md5, $ref_type, $sx, $sy, $vx, $vy, $js, $user, $session, $this->uid
         );
 
         if ($ref_md5) {
@@ -395,8 +418,15 @@ class Logger
         $session = $this->getSession();
 
         $this->db->exec(
-            'INSERT INTO media (dt, media, ip, ua, ua_info, ua_type, ua_ver, os, user, session, uid, size, mime1, mime2, inline) VALUES (CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            $media, $ip, $this->uaAgent, $this->uaName, $this->uaType, $this->uaVersion, $this->uaPlatform, $user, $session, $this->uid, $size, $mime1, $mime2, $inline
+            'INSERT INTO media (
+                dt, media, ip, ua, ua_info, ua_type, ua_ver, os, user, session, uid,
+                size, mime1, mime2, inline
+             ) VALUES (
+                CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                ?, ?, ?, ?
+             )',
+            $media, $ip, $this->uaAgent, $this->uaName, $this->uaType, $this->uaVersion, $this->uaPlatform, 
+            $user, $session, $this->uid, $size, $mime1, $mime2, $inline
         );
     }
 
@@ -412,7 +442,11 @@ class Logger
         $session = $this->getSession();
 
         $this->db->exec(
-            'INSERT INTO edits (dt, page, type, ip, user, session, uid) VALUES (CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO edits (
+                dt, page, type, ip, user, session, uid
+             ) VALUES (
+                CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?
+             )',
             $page, $type, $ip, $user, $session, $this->uid
         );
 
@@ -435,7 +469,11 @@ class Logger
         $session = $this->getSession();
 
         $this->db->exec(
-            'INSERT INTO logins (dt, type, ip, user, session, uid) VALUES (CURRENT_TIMESTAMP, ?, ?, ?, ?, ?)',
+            'INSERT INTO logins (
+                dt, type, ip, user, session, uid
+             ) VALUES (
+                CURRENT_TIMESTAMP, ?, ?, ?, ?, ?
+             )',
             $type, $ip, $user, $session, $this->uid
         );
     }
