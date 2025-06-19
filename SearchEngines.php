@@ -83,13 +83,22 @@ class SearchEngines
         ]
     ];
 
-    /** @var string|null The referrer URL being analyzed */
-    protected ?string $referrer = null;
+    /** @var string The referrer URL being analyzed */
+    protected string $referrer;
     
-    /** @var array|null Cached analysis result */
-    protected ?array $analysisResult = null;
+    /** @var bool Whether the referrer is from a search engine */
+    protected bool $isSearchEngine = false;
+    
+    /** @var string|null The search engine name */
+    protected ?string $engineName = null;
+    
+    /** @var string|null The search engine key */
+    protected ?string $engineKey = null;
+    
+    /** @var string|null The search query */
+    protected ?string $query = null;
 
-    public function __construct(?string $referrer = null)
+    public function __construct(string $referrer)
     {
         // Add the internal DokuWiki search engine
         $this->searchEngines['dokuwiki'] = [
@@ -99,9 +108,8 @@ class SearchEngines
             'params' => ['q']
         ];
         
-        if ($referrer !== null) {
-            $this->referrer = $referrer;
-        }
+        $this->referrer = $referrer;
+        $this->analyze();
     }
 
     /**
@@ -111,7 +119,7 @@ class SearchEngines
      */
     public function isSearchEngine(): bool
     {
-        return $this->getAnalysis() !== null;
+        return $this->isSearchEngine;
     }
 
     /**
@@ -121,8 +129,7 @@ class SearchEngines
      */
     public function getName(): ?string
     {
-        $analysis = $this->getAnalysis();
-        return $analysis['name'] ?? null;
+        return $this->engineName;
     }
 
     /**
@@ -132,12 +139,11 @@ class SearchEngines
      */
     public function getUrl(): ?string
     {
-        $analysis = $this->getAnalysis();
-        if (!$analysis) {
+        if (!$this->engineKey) {
             return null;
         }
         
-        return $this->searchEngines[$analysis['engine']]['url'] ?? null;
+        return $this->searchEngines[$this->engineKey]['url'] ?? null;
     }
 
     /**
@@ -147,22 +153,22 @@ class SearchEngines
      */
     public function getQuery(): ?string
     {
-        $analysis = $this->getAnalysis();
-        return $analysis['query'] ?? null;
+        return $this->query;
     }
 
     /**
-     * Get or perform analysis of the current referrer
-     *
-     * @return array|null Analysis result or null if not a search engine
+     * Analyze the referrer and populate member variables
      */
-    protected function getAnalysis(): ?array
+    protected function analyze(): void
     {
-        if ($this->analysisResult === null && $this->referrer !== null) {
-            $this->analysisResult = $this->analyzeReferrer($this->referrer);
-        }
+        $result = $this->analyzeReferrer($this->referrer);
         
-        return $this->analysisResult;
+        if ($result) {
+            $this->isSearchEngine = true;
+            $this->engineKey = $result['engine'];
+            $this->engineName = $result['name'];
+            $this->query = $result['query'];
+        }
     }
 
     /**
