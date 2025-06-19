@@ -1,8 +1,12 @@
 <?php
 
-class StatisticsQuery
+namespace dokuwiki\plugin\statistics;
+
+use helper_plugin_statistics;
+
+class Query
 {
-    private $hlp;
+    protected $hlp;
 
     public function __construct(helper_plugin_statistics $hlp)
     {
@@ -16,7 +20,7 @@ class StatisticsQuery
     {
         $data = [];
 
-        $sql    = "SELECT ref_type, COUNT(*) as cnt
+        $sql = "SELECT ref_type, COUNT(*) as cnt
                   FROM " . $this->hlp->prefix . "access as A
                  WHERE $tlimit
                    AND ua_type = 'browser'
@@ -31,7 +35,7 @@ class StatisticsQuery
         }
 
         // general user and session info
-        $sql    = "SELECT COUNT(DISTINCT session) as sessions,
+        $sql = "SELECT COUNT(DISTINCT session) as sessions,
                        COUNT(session) as views,
                        COUNT(DISTINCT user) as users,
                        COUNT(DISTINCT uid) as visitors
@@ -40,28 +44,28 @@ class StatisticsQuery
                    AND ua_type = 'browser'";
         $result = $this->hlp->runSQL($sql);
 
-        $data['users']     = max($result[0]['users'] - 1, 0); // subtract empty user
-        $data['sessions']  = $result[0]['sessions'];
+        $data['users'] = max($result[0]['users'] - 1, 0); // subtract empty user
+        $data['sessions'] = $result[0]['sessions'];
         $data['pageviews'] = $result[0]['views'];
-        $data['visitors']  = $result[0]['visitors'];
+        $data['visitors'] = $result[0]['visitors'];
 
         // calculate bounce rate
         if ($data['sessions']) {
-            $sql                = "SELECT COUNT(*) as cnt
+            $sql = "SELECT COUNT(*) as cnt
                       FROM " . $this->hlp->prefix . "session as A
                      WHERE $tlimit
                        AND views = 1";
-            $result             = $this->hlp->runSQL($sql);
+            $result = $this->hlp->runSQL($sql);
             $data['bouncerate'] = $result[0]['cnt'] * 100 / $data['sessions'];
-            $result              = $this->hlp->runSQL($sql);
+            $result = $this->hlp->runSQL($sql);
             $data['newvisitors'] = $result[0]['cnt'] * 100 / $data['sessions'];
         }
 
         // calculate avg. number of views per session
-        $sql              = "SELECT AVG(views) as cnt
+        $sql = "SELECT AVG(views) as cnt
                   FROM " . $this->hlp->prefix . "session as A
                      WHERE $tlimit";
-        $result           = $this->hlp->runSQL($sql);
+        $result = $this->hlp->runSQL($sql);
         $data['avgpages'] = $result[0]['cnt'];
 
         /* not used currently
@@ -74,35 +78,35 @@ class StatisticsQuery
         */
 
         // average time spent on the site
-        $sql               = "SELECT AVG(end - dt)/60 as time
+        $sql = "SELECT AVG(end - dt)/60 as time
                   FROM " . $this->hlp->prefix . "session as A
                  WHERE $tlimit
                    AND dt != end
                    AND DATE(dt) = DATE(end)";
-        $result            = $this->hlp->runSQL($sql);
+        $result = $this->hlp->runSQL($sql);
         $data['timespent'] = $result[0]['time'];
 
         // logins
-        $sql            = "SELECT COUNT(*) as logins
+        $sql = "SELECT COUNT(*) as logins
                   FROM " . $this->hlp->prefix . "logins as A
                  WHERE $tlimit
                    AND (type = 'l' OR type = 'p')";
-        $result         = $this->hlp->runSQL($sql);
+        $result = $this->hlp->runSQL($sql);
         $data['logins'] = $result[0]['logins'];
 
         // registrations
-        $sql                   = "SELECT COUNT(*) as registrations
+        $sql = "SELECT COUNT(*) as registrations
                   FROM " . $this->hlp->prefix . "logins as A
                  WHERE $tlimit
                    AND type = 'C'";
-        $result                = $this->hlp->runSQL($sql);
+        $result = $this->hlp->runSQL($sql);
         $data['registrations'] = $result[0]['registrations'];
 
         // current users
         $sql = "SELECT COUNT(*) as current
                   FROM " . $this->hlp->prefix . "lastseen
                  WHERE `dt` >= NOW() - INTERVAL 10 MINUTE";
-        $result                = $this->hlp->runSQL($sql);
+        $result = $this->hlp->runSQL($sql);
         $data['current'] = $result[0]['current'];
 
         return $data;
@@ -127,7 +131,7 @@ class StatisticsQuery
         $data = [];
 
         // access trends
-        $sql    = "SELECT $TIME as time,
+        $sql = "SELECT $TIME as time,
                        COUNT(DISTINCT session) as sessions,
                        COUNT(session) as pageviews,
                        COUNT(DISTINCT uid) as visitors
@@ -138,9 +142,9 @@ class StatisticsQuery
               ORDER BY time";
         $result = $this->hlp->runSQL($sql);
         foreach ($result as $row) {
-            $data[$row['time']]['sessions']  = $row['sessions'];
+            $data[$row['time']]['sessions'] = $row['sessions'];
             $data[$row['time']]['pageviews'] = $row['pageviews'];
-            $data[$row['time']]['visitors']  = $row['visitors'];
+            $data[$row['time']]['visitors'] = $row['visitors'];
         }
         return $data;
     }
@@ -157,7 +161,7 @@ class StatisticsQuery
 
         // edit trends
         foreach (['E', 'C', 'D'] as $type) {
-            $sql    = "SELECT $TIME as time,
+            $sql = "SELECT $TIME as time,
                            COUNT(*) as cnt
                       FROM " . $this->hlp->prefix . "edits as A
                      WHERE $tlimit
@@ -213,10 +217,10 @@ class StatisticsQuery
     {
         if ($extern) {
             $WHERE = "engine != 'dokuwiki'";
-            $I     = '';
+            $I = '';
         } else {
             $WHERE = "engine = 'dokuwiki'";
-            $I     = 'i';
+            $I = 'i';
         }
         $sql = "SELECT COUNT(*) as cnt, query, query as ${I}lookup
                   FROM " . $this->hlp->prefix . "search as A
@@ -232,10 +236,10 @@ class StatisticsQuery
     {
         if ($extern) {
             $WHERE = "engine != 'dokuwiki'";
-            $I     = '';
+            $I = '';
         } else {
             $WHERE = "engine = 'dokuwiki'";
-            $I     = 'i';
+            $I = 'i';
         }
         $sql = "SELECT COUNT(*) as cnt, word, word as ${I}lookup
                   FROM " . $this->hlp->prefix . "search as A,
@@ -499,8 +503,8 @@ class StatisticsQuery
      */
     public function mklimit($start, $limit)
     {
-        $start = (int) $start;
-        $limit = (int) $limit;
+        $start = (int)$start;
+        $limit = (int)$limit;
         if ($limit) {
             $limit += 1;
             return " LIMIT $start,$limit";
@@ -517,7 +521,7 @@ class StatisticsQuery
     {
         // fixme add better sanity checking here:
         $from = preg_replace('/[^\d\-]+/', '', $from);
-        $to   = preg_replace('/[^\d\-]+/', '', $to);
+        $to = preg_replace('/[^\d\-]+/', '', $to);
         if (!$from) $from = date('Y-m-d');
         if (!$to) $to = date('Y-m-d');
 

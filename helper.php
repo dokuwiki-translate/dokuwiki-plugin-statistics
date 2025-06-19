@@ -3,6 +3,7 @@
 use dokuwiki\Extension\Plugin;
 use dokuwiki\plugin\sqlite\SQLiteDB;
 use dokuwiki\plugin\statistics\Logger;
+use dokuwiki\plugin\statistics\Query;
 
 /**
  * Statistics Plugin
@@ -43,13 +44,12 @@ class helper_plugin_statistics extends Plugin
     /**
      * Return an instance of the query class
      *
-     * @return StatisticsQuery
+     * @return Query
      */
     public function Query()
     {
         if (is_null($this->oQuery)) {
-            require __DIR__ . '/inc/StatisticsQuery.class.php';
-            $this->oQuery = new StatisticsQuery($this);
+            $this->oQuery = new Query($this);
         }
         return $this->oQuery;
     }
