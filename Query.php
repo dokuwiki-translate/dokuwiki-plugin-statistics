@@ -7,25 +7,44 @@ use helper_plugin_statistics;
 class Query
 {
     protected $hlp;
+    protected $from;
+    protected $to;
 
     public function __construct(helper_plugin_statistics $hlp)
     {
         $this->hlp = $hlp;
+        $today = date('Y-m-d');
+        $this->setTimeFrame($today, $today);
+    }
+
+    /**
+     * Set the time frame for all queries
+     */
+    public function setTimeFrame($from, $to)
+    {
+        // fixme add better sanity checking here:
+        $from = preg_replace('/[^\d\-]+/', '', $from);
+        $to = preg_replace('/[^\d\-]+/', '', $to);
+        if (!$from) $from = date('Y-m-d');
+        if (!$to) $to = date('Y-m-d');
+
+        $this->from = $from. ' 00:00:00';
+        $this->to = $to. ' 23:59:59';
     }
 
     /**
      * Return some aggregated statistics
      */
-    public function aggregate($tlimit)
+    public function aggregate()
     {
         $data = [];
 
         $sql = "SELECT ref_type, COUNT(*) as cnt
-                  FROM " . $this->hlp->prefix . "access as A
-                 WHERE $tlimit
-                   AND ua_type = 'browser'
+                  FROM access as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND ua_type = ?
               GROUP BY ref_type";
-        $result = $this->hlp->runSQL($sql);
+        $result = $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'browser']);
 
         if (is_array($result)) foreach ($result as $row) {
             if ($row['ref_type'] == 'search') $data['search'] = $row['cnt'];
@@ -39,10 +58,10 @@ class Query
                        COUNT(session) as views,
                        COUNT(DISTINCT user) as users,
                        COUNT(DISTINCT uid) as visitors
-                  FROM " . $this->hlp->prefix . "access as A
-                 WHERE $tlimit
-                   AND ua_type = 'browser'";
-        $result = $this->hlp->runSQL($sql);
+                  FROM access as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND ua_type = ?";
+        $result = $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'browser']);
 
         $data['users'] = max($result[0]['users'] - 1, 0); // subtract empty user
         $data['sessions'] = $result[0]['sessions'];
@@ -52,20 +71,19 @@ class Query
         // calculate bounce rate
         if ($data['sessions']) {
             $sql = "SELECT COUNT(*) as cnt
-                      FROM " . $this->hlp->prefix . "session as A
-                     WHERE $tlimit
-                       AND views = 1";
-            $result = $this->hlp->runSQL($sql);
+                      FROM session as A
+                     WHERE A.dt >= ? AND A.dt <= ?
+                       AND views = ?";
+            $result = $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 1]);
             $data['bouncerate'] = $result[0]['cnt'] * 100 / $data['sessions'];
-            $result = $this->hlp->runSQL($sql);
             $data['newvisitors'] = $result[0]['cnt'] * 100 / $data['sessions'];
         }
 
         // calculate avg. number of views per session
         $sql = "SELECT AVG(views) as cnt
-                  FROM " . $this->hlp->prefix . "session as A
-                     WHERE $tlimit";
-        $result = $this->hlp->runSQL($sql);
+                  FROM session as A
+                 WHERE A.dt >= ? AND A.dt <= ?";
+        $result = $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to]);
         $data['avgpages'] = $result[0]['cnt'];
 
         /* not used currently
@@ -79,34 +97,34 @@ class Query
 
         // average time spent on the site
         $sql = "SELECT AVG(end - dt)/60 as time
-                  FROM " . $this->hlp->prefix . "session as A
-                 WHERE $tlimit
+                  FROM session as A
+                 WHERE A.dt >= ? AND A.dt <= ?
                    AND dt != end
                    AND DATE(dt) = DATE(end)";
-        $result = $this->hlp->runSQL($sql);
+        $result = $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to]);
         $data['timespent'] = $result[0]['time'];
 
         // logins
         $sql = "SELECT COUNT(*) as logins
-                  FROM " . $this->hlp->prefix . "logins as A
-                 WHERE $tlimit
-                   AND (type = 'l' OR type = 'p')";
-        $result = $this->hlp->runSQL($sql);
+                  FROM logins as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND (type = ? OR type = ?)";
+        $result = $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'l', 'p']);
         $data['logins'] = $result[0]['logins'];
 
         // registrations
         $sql = "SELECT COUNT(*) as registrations
-                  FROM " . $this->hlp->prefix . "logins as A
-                 WHERE $tlimit
-                   AND type = 'C'";
-        $result = $this->hlp->runSQL($sql);
+                  FROM logins as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND type = ?";
+        $result = $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'C']);
         $data['registrations'] = $result[0]['registrations'];
 
         // current users
         $sql = "SELECT COUNT(*) as current
-                  FROM " . $this->hlp->prefix . "lastseen
-                 WHERE `dt` >= NOW() - INTERVAL 10 MINUTE";
-        $result = $this->hlp->runSQL($sql);
+                  FROM lastseen
+                 WHERE dt >= datetime('now', '-10 minutes')";
+        $result = $this->hlp->getDB()->queryAll($sql);
         $data['current'] = $result[0]['current'];
 
         return $data;
@@ -120,10 +138,10 @@ class Query
     /**
      * Return some trend data about visits and edits in the wiki
      */
-    public function dashboardviews($tlimit, $hours = false)
+    public function dashboardviews($hours = false)
     {
         if ($hours) {
-            $TIME = 'HOUR(dt)';
+            $TIME = 'strftime(\'%H\', dt)';
         } else {
             $TIME = 'DATE(dt)';
         }
@@ -135,12 +153,12 @@ class Query
                        COUNT(DISTINCT session) as sessions,
                        COUNT(session) as pageviews,
                        COUNT(DISTINCT uid) as visitors
-                  FROM " . $this->hlp->prefix . "access as A
-                 WHERE $tlimit
-                   AND ua_type = 'browser'
+                  FROM access as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND ua_type = ?
               GROUP BY $TIME
               ORDER BY time";
-        $result = $this->hlp->runSQL($sql);
+        $result = $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'browser']);
         foreach ($result as $row) {
             $data[$row['time']]['sessions'] = $row['sessions'];
             $data[$row['time']]['pageviews'] = $row['pageviews'];
@@ -149,10 +167,10 @@ class Query
         return $data;
     }
 
-    public function dashboardwiki($tlimit, $hours = false)
+    public function dashboardwiki($hours = false)
     {
         if ($hours) {
-            $TIME = 'HOUR(dt)';
+            $TIME = 'strftime(\'%H\', dt)';
         } else {
             $TIME = 'DATE(dt)';
         }
@@ -163,12 +181,12 @@ class Query
         foreach (['E', 'C', 'D'] as $type) {
             $sql = "SELECT $TIME as time,
                            COUNT(*) as cnt
-                      FROM " . $this->hlp->prefix . "edits as A
-                     WHERE $tlimit
-                       AND type = '$type'
+                      FROM edits as A
+                     WHERE A.dt >= ? AND A.dt <= ?
+                       AND type = ?
                   GROUP BY $TIME
                   ORDER BY time";
-            $result = $this->hlp->runSQL($sql);
+            $result = $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, $type]);
             foreach ($result as $row) {
                 $data[$row['time']][$type] = $row['cnt'];
             }
@@ -177,12 +195,12 @@ class Query
         return $data;
     }
 
-    public function history($tlimit, $info, $interval = false)
+    public function history($info, $interval = false)
     {
         if ($interval == 'weeks') {
-            $TIME = 'EXTRACT(YEAR FROM dt), EXTRACT(WEEK FROM dt)';
+            $TIME = 'strftime(\'%Y\', dt), strftime(\'%W\', dt)';
         } elseif ($interval == 'months') {
-            $TIME = 'EXTRACT(YEAR_MONTH FROM dt)';
+            $TIME = 'strftime(\'%Y-%m\', dt)';
         } else {
             $TIME = 'dt';
         }
@@ -193,184 +211,188 @@ class Query
         }
 
         $sql = "SELECT $TIME as time,
-                       AVG(`value`)/$mod as cnt
-                  FROM " . $this->hlp->prefix . "history as A
-                 WHERE $tlimit
-                   AND info = '$info'
+                       AVG(value)/$mod as cnt
+                  FROM history as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND info = ?
                   GROUP BY $TIME
                   ORDER BY $TIME";
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, $info]);
     }
 
-    public function searchengines($tlimit, $start = 0, $limit = 20)
+    public function searchengines($start = 0, $limit = 20)
     {
         $sql = "SELECT COUNT(*) as cnt, engine as eflag, engine
-                  FROM " . $this->hlp->prefix . "search as A
-                 WHERE $tlimit
+                  FROM search as A
+                 WHERE A.dt >= ? AND A.dt <= ?
               GROUP BY engine
               ORDER BY cnt DESC, engine" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to]);
     }
 
-    public function searchphrases($extern, $tlimit, $start = 0, $limit = 20)
+    public function searchphrases($extern, $start = 0, $limit = 20)
     {
         if ($extern) {
-            $WHERE = "engine != 'dokuwiki'";
+            $WHERE = "engine != ?";
+            $engineParam = 'dokuwiki';
             $I = '';
         } else {
-            $WHERE = "engine = 'dokuwiki'";
+            $WHERE = "engine = ?";
+            $engineParam = 'dokuwiki';
             $I = 'i';
         }
         $sql = "SELECT COUNT(*) as cnt, query, query as ${I}lookup
-                  FROM " . $this->hlp->prefix . "search as A
-                 WHERE $tlimit
+                  FROM search as A
+                 WHERE A.dt >= ? AND A.dt <= ?
                    AND $WHERE
               GROUP BY query
               ORDER BY cnt DESC, query" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, $engineParam]);
     }
 
-    public function searchwords($extern, $tlimit, $start = 0, $limit = 20)
+    public function searchwords($extern, $start = 0, $limit = 20)
     {
         if ($extern) {
-            $WHERE = "engine != 'dokuwiki'";
+            $WHERE = "engine != ?";
+            $engineParam = 'dokuwiki';
             $I = '';
         } else {
-            $WHERE = "engine = 'dokuwiki'";
+            $WHERE = "engine = ?";
+            $engineParam = 'dokuwiki';
             $I = 'i';
         }
         $sql = "SELECT COUNT(*) as cnt, word, word as ${I}lookup
-                  FROM " . $this->hlp->prefix . "search as A,
-                       " . $this->hlp->prefix . "searchwords as B
-                 WHERE $tlimit
+                  FROM search as A,
+                       searchwords as B
+                 WHERE A.dt >= ? AND A.dt <= ?
                    AND A.id = B.sid
                    AND $WHERE
               GROUP BY word
               ORDER BY cnt DESC, word" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, $engineParam]);
     }
 
-    public function outlinks($tlimit, $start = 0, $limit = 20)
+    public function outlinks($start = 0, $limit = 20)
     {
         $sql = "SELECT COUNT(*) as cnt, link as url
-                  FROM " . $this->hlp->prefix . "outlinks as A
-                 WHERE $tlimit
+                  FROM outlinks as A
+                 WHERE A.dt >= ? AND A.dt <= ?
               GROUP BY link
               ORDER BY cnt DESC, link" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to]);
     }
 
-    public function pages($tlimit, $start = 0, $limit = 20)
+    public function pages($start = 0, $limit = 20)
     {
         $sql = "SELECT COUNT(*) as cnt, page
-                  FROM " . $this->hlp->prefix . "access as A
-                 WHERE $tlimit
-                   AND ua_type = 'browser'
+                  FROM access as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND ua_type = ?
               GROUP BY page
               ORDER BY cnt DESC, page" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'browser']);
     }
 
-    public function edits($tlimit, $start = 0, $limit = 20)
+    public function edits($start = 0, $limit = 20)
     {
         $sql = "SELECT COUNT(*) as cnt, page
-                  FROM " . $this->hlp->prefix . "edits as A
-                 WHERE $tlimit
+                  FROM edits as A
+                 WHERE A.dt >= ? AND A.dt <= ?
               GROUP BY page
               ORDER BY cnt DESC, page" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to]);
     }
 
-    public function images($tlimit, $start = 0, $limit = 20)
+    public function images($start = 0, $limit = 20)
     {
         $sql = "SELECT COUNT(*) as cnt, media, SUM(size) as filesize
-                  FROM " . $this->hlp->prefix . "media as A
-                 WHERE $tlimit
-                   AND mime1 = 'image'
+                  FROM media as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND mime1 = ?
               GROUP BY media
               ORDER BY cnt DESC, media" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'image']);
     }
 
-    public function imagessum($tlimit)
+    public function imagessum()
     {
         $sql = "SELECT COUNT(*) as cnt, SUM(size) as filesize
-                  FROM " . $this->hlp->prefix . "media as A
-                 WHERE $tlimit
-                   AND mime1 = 'image'";
-        return $this->hlp->runSQL($sql);
+                  FROM media as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND mime1 = ?";
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'image']);
     }
 
-    public function downloads($tlimit, $start = 0, $limit = 20)
+    public function downloads($start = 0, $limit = 20)
     {
         $sql = "SELECT COUNT(*) as cnt, media, SUM(size) as filesize
-                  FROM " . $this->hlp->prefix . "media as A
-                 WHERE $tlimit
-                   AND mime1 != 'image'
+                  FROM media as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND mime1 != ?
               GROUP BY media
               ORDER BY cnt DESC, media" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'image']);
     }
 
-    public function downloadssum($tlimit)
+    public function downloadssum()
     {
         $sql = "SELECT COUNT(*) as cnt, SUM(size) as filesize
-                  FROM " . $this->hlp->prefix . "media as A
-                 WHERE $tlimit
-                   AND mime1 != 'image'";
-        return $this->hlp->runSQL($sql);
+                  FROM media as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND mime1 != ?";
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'image']);
     }
 
-    public function referer($tlimit, $start = 0, $limit = 20)
+    public function referer($start = 0, $limit = 20)
     {
         $sql = "SELECT COUNT(*) as cnt, ref as url
-                  FROM " . $this->hlp->prefix . "access as A
-                 WHERE $tlimit
-                   AND ua_type = 'browser'
-                   AND ref_type = 'external'
+                  FROM access as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND ua_type = ?
+                   AND ref_type = ?
               GROUP BY ref_md5
               ORDER BY cnt DESC, url" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'browser', 'external']);
     }
 
-    public function newreferer($tlimit, $start = 0, $limit = 20)
+    public function newreferer($start = 0, $limit = 20)
     {
         $sql = "SELECT COUNT(*) as cnt, ref as url
-                  FROM " . $this->hlp->prefix . "access as B,
-                       " . $this->hlp->prefix . "refseen as A
-                 WHERE $tlimit
-                   AND ua_type = 'browser'
-                   AND ref_type = 'external'
+                  FROM access as B,
+                       refseen as A
+                 WHERE B.dt >= ? AND B.dt <= ?
+                   AND ua_type = ?
+                   AND ref_type = ?
                    AND A.ref_md5 = B.ref_md5
               GROUP BY A.ref_md5
               ORDER BY cnt DESC, url" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'browser', 'external']);
     }
 
-    public function countries($tlimit, $start = 0, $limit = 20)
+    public function countries($start = 0, $limit = 20)
     {
         $sql = "SELECT COUNT(DISTINCT session) as cnt, B.code AS cflag, B.country
-                  FROM " . $this->hlp->prefix . "access as A,
-                       " . $this->hlp->prefix . "iplocation as B
-                 WHERE $tlimit
+                  FROM access as A,
+                       iplocation as B
+                 WHERE A.dt >= ? AND A.dt <= ?
                    AND A.ip = B.ip
               GROUP BY B.code
               ORDER BY cnt DESC, B.country" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to]);
     }
 
-    public function browsers($tlimit, $start = 0, $limit = 20, $ext = true)
+    public function browsers($start = 0, $limit = 20, $ext = true)
     {
         if ($ext) {
             $sel = 'ua_info as bflag, ua_info as browser, ua_ver';
@@ -381,120 +403,120 @@ class Query
         }
 
         $sql = "SELECT COUNT(DISTINCT session) as cnt, $sel
-                  FROM " . $this->hlp->prefix . "access as A
-                 WHERE $tlimit
-                   AND ua_type = 'browser'
+                  FROM access as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND ua_type = ?
               GROUP BY $grp
               ORDER BY cnt DESC, ua_info" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'browser']);
     }
 
-    public function os($tlimit, $start = 0, $limit = 20)
+    public function os($start = 0, $limit = 20)
     {
         $sql = "SELECT COUNT(DISTINCT session) as cnt, os as osflag, os
-                  FROM " . $this->hlp->prefix . "access as A
-                 WHERE $tlimit
-                   AND ua_type = 'browser'
+                  FROM access as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND ua_type = ?
               GROUP BY os
               ORDER BY cnt DESC, os" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'browser']);
     }
 
-    public function topuser($tlimit, $start = 0, $limit = 20)
+    public function topuser($start = 0, $limit = 20)
     {
         $sql = "SELECT COUNT(*) as cnt, user
-                  FROM " . $this->hlp->prefix . "access as A
-                 WHERE $tlimit
-                   AND ua_type = 'browser'
-                   AND user != ''
+                  FROM access as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND ua_type = ?
+                   AND user != ?
               GROUP BY user
               ORDER BY cnt DESC, user" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'browser', '']);
     }
 
-    public function topeditor($tlimit, $start = 0, $limit = 20)
+    public function topeditor($start = 0, $limit = 20)
     {
         $sql = "SELECT COUNT(*) as cnt, user
-                  FROM " . $this->hlp->prefix . "edits as A
-                 WHERE $tlimit
-                   AND user != ''
+                  FROM edits as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND user != ?
               GROUP BY user
               ORDER BY cnt DESC, user" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, '']);
     }
 
-    public function topgroup($tlimit, $start = 0, $limit = 20)
+    public function topgroup($start = 0, $limit = 20)
     {
         $sql = "SELECT COUNT(*) as cnt, `group`
-                  FROM " . $this->hlp->prefix . "groups as A
-                 WHERE $tlimit
-                   AND `type` = 'view'
+                  FROM groups as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND `type` = ?
               GROUP BY `group`
               ORDER BY cnt DESC, `group`" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'view']);
     }
 
-    public function topgroupedit($tlimit, $start = 0, $limit = 20)
+    public function topgroupedit($start = 0, $limit = 20)
     {
         $sql = "SELECT COUNT(*) as cnt, `group`
-                  FROM " . $this->hlp->prefix . "groups as A
-                 WHERE $tlimit
-                   AND `type` = 'edit'
+                  FROM groups as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND `type` = ?
               GROUP BY `group`
               ORDER BY cnt DESC, `group`" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'edit']);
     }
 
 
-    public function resolution($tlimit, $start = 0, $limit = 20)
+    public function resolution($start = 0, $limit = 20)
     {
         $sql = "SELECT COUNT(DISTINCT uid) as cnt,
                        ROUND(screen_x/100)*100 as res_x,
                        ROUND(screen_y/100)*100 as res_y,
-                       CONCAT(ROUND(screen_x/100)*100,'x',ROUND(screen_y/100)*100) as resolution
-                  FROM " . $this->hlp->prefix . "access as A
-                 WHERE $tlimit
-                   AND ua_type  = 'browser'
-                   AND screen_x != 0
-                   AND screen_y != 0
+                       (ROUND(screen_x/100)*100 || 'x' || ROUND(screen_y/100)*100) as resolution
+                  FROM access as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND ua_type  = ?
+                   AND screen_x != ?
+                   AND screen_y != ?
               GROUP BY resolution
               ORDER BY cnt DESC" .
             $this->mklimit($start, $limit);
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'browser', 0, 0]);
     }
 
-    public function viewport($tlimit, $start = 0, $limit = 20)
+    public function viewport($start = 0, $limit = 20)
     {
         $sql = "SELECT COUNT(DISTINCT uid) as cnt,
                        ROUND(view_x/100)*100 as res_x,
                        ROUND(view_y/100)*100 as res_y,
-                       CONCAT(ROUND(view_x/100)*100,'x',ROUND(view_y/100)*100) as resolution
-                  FROM " . $this->hlp->prefix . "access as A
-                 WHERE $tlimit
-                   AND ua_type  = 'browser'
-                   AND view_x != 0
-                   AND view_y != 0
+                       (ROUND(view_x/100)*100 || 'x' || ROUND(view_y/100)*100) as resolution
+                  FROM access as A
+                 WHERE A.dt >= ? AND A.dt <= ?
+                   AND ua_type  = ?
+                   AND view_x != ?
+                   AND view_y != ?
               GROUP BY resolution
               ORDER BY cnt DESC" .
             $this->mklimit($start, $limit);
 
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql, [$this->from, $this->to, 'browser', 0, 0]);
     }
 
-    public function seenusers($tlimit, $start = 0, $limit = 20)
+    public function seenusers($start = 0, $limit = 20)
     {
         $sql = "SELECT `user`, `dt`
                   FROM " . $this->hlp->prefix . "lastseen as A
               ORDER BY `dt` DESC" .
             $this->mklimit($start, $limit);
 
-        return $this->hlp->runSQL($sql);
+        return $this->hlp->getDB()->queryAll($sql);
     }
 
 
@@ -514,17 +536,4 @@ class Query
         return '';
     }
 
-    /**
-     * Create a time limit for use in SQL
-     */
-    public function mktlimit(&$from, &$to)
-    {
-        // fixme add better sanity checking here:
-        $from = preg_replace('/[^\d\-]+/', '', $from);
-        $to = preg_replace('/[^\d\-]+/', '', $to);
-        if (!$from) $from = date('Y-m-d');
-        if (!$to) $to = date('Y-m-d');
-
-        return "A.dt >= '$from 00:00:00' AND A.dt <= '$to 23:59:59'";
-    }
 }

@@ -8,7 +8,6 @@ require __DIR__ . '/pchart/PieChart.php';
 class StatisticsGraph
 {
     private $hlp;
-    private $tlimit;
     private $start;
     private $from;
     private $to;
@@ -24,7 +23,7 @@ class StatisticsGraph
         $to   = preg_replace('/[^\d\-]+/', '', $to);
         if (!$from) $from = date('Y-m-d');
         if (!$to) $to = date('Y-m-d');
-        $this->tlimit = "A.dt >= '$from 00:00:00' AND A.dt <= '$to 23:59:59'";
+        $this->hlp->Query()->setTimeFrame($from, $to);
         $this->start  = (int) $start;
         $this->from   = $from;
         $this->to     = $to;
@@ -82,7 +81,7 @@ class StatisticsGraph
      */
     protected function sumUpPieChart($query, $key, $max = 4)
     {
-        $result = $this->hlp->Query()->$query($this->tlimit, $this->start, 0, false);
+        $result = $this->hlp->Query()->$query($this->start, 0);
         $data   = [];
         $top    = 0;
         foreach ($result as $row) {
@@ -113,7 +112,7 @@ class StatisticsGraph
             $interval = 'days';
         }
 
-        $result = $this->hlp->Query()->history($this->tlimit, $info, $interval);
+        $result = $this->hlp->Query()->history($info, $interval);
 
         $data = [];
         $times = [];
@@ -204,7 +203,7 @@ class StatisticsGraph
 
     public function viewport()
     {
-        $result = $this->hlp->Query()->viewport($this->tlimit, 0, 100);
+        $result = $this->hlp->Query()->viewport(0, 100);
         $data1  = [];
         $data2  = [];
         $data3  = [];
@@ -240,7 +239,7 @@ class StatisticsGraph
 
     public function resolution()
     {
-        $result = $this->hlp->Query()->resolution($this->tlimit, 0, 100);
+        $result = $this->hlp->Query()->resolution(0, 100);
         $data1  = [];
         $data2  = [];
         $data3  = [];
@@ -299,7 +298,7 @@ class StatisticsGraph
     public function dashboardviews()
     {
         $hours  = ($this->from == $this->to);
-        $result = $this->hlp->Query()->dashboardviews($this->tlimit, $hours);
+        $result = $this->hlp->Query()->dashboardviews($hours);
         $data1  = [];
         $data2  = [];
         $data3  = [];
@@ -356,7 +355,7 @@ class StatisticsGraph
     public function dashboardwiki()
     {
         $hours  = ($this->from == $this->to);
-        $result = $this->hlp->Query()->dashboardwiki($this->tlimit, $hours);
+        $result = $this->hlp->Query()->dashboardwiki($hours);
         $data1  = [];
         $data2  = [];
         $data3  = [];
