@@ -1,7 +1,9 @@
+/* globals JSINFO, DOKU_BASE, jQuery */
+
 /**
  * Statistics script
  */
-var plugin_statistics = {
+const plugin_statistics = {
     data: {},
 
     /**
@@ -10,8 +12,8 @@ var plugin_statistics = {
     init: function () {
 
         // load visitor cookie
-        var now = new Date();
-        var uid = DokuCookie.getValue('plgstats');
+        const now = new Date();
+        let uid = DokuCookie.getValue('plgstats');
         if (!uid) {
             uid = now.getTime() + '-' + Math.floor(Math.random() * 32000);
             DokuCookie.setValue('plgstats', uid);
@@ -31,7 +33,7 @@ var plugin_statistics = {
         };
 
         // log access
-        if (JSINFO['act'] == 'show') {
+        if (JSINFO['act'] === 'show') {
             plugin_statistics.log_view('v');
         } else {
             plugin_statistics.log_view('s');
@@ -42,8 +44,6 @@ var plugin_statistics = {
 
         // attach unload event
         jQuery(window).bind('beforeunload', plugin_statistics.log_exit);
-
-        jQuery('.plg_stats_timeselect .datepicker').datepicker({dateFormat: 'yy-mm-dd'});
     },
 
     /**
@@ -52,8 +52,8 @@ var plugin_statistics = {
      * @param {string} act 'v' = view, 's' = session
      */
     log_view: function (act) {
-        var params = jQuery.param(plugin_statistics.data);
-        var img = new Image();
+        const params = jQuery.param(plugin_statistics.data);
+        const img = new Image();
         img.src = DOKU_BASE + 'lib/plugins/statistics/log.php?do=' + act + '&' + params;
     },
 
@@ -61,10 +61,9 @@ var plugin_statistics = {
      * Log clicks to external URLs
      */
     log_external: function () {
-        var params = jQuery.param(plugin_statistics.data);
-        var img = new Image();
-        img.src = DOKU_BASE + 'lib/plugins/statistics/log.php?do=o&ol=' + encodeURIComponent(this.href) + '&' + params;
-        plugin_statistics.pause(500);
+        const params = jQuery.param(plugin_statistics.data);
+        const url = DOKU_BASE + 'lib/plugins/statistics/log.php?do=o&ol=' + encodeURIComponent(this.href) + '&' + params;
+        navigator.sendBeacon(url);
         return true;
     },
 
@@ -72,13 +71,13 @@ var plugin_statistics = {
      * Log any leaving action as session info
      */
     log_exit: function () {
-        var params = jQuery.param(plugin_statistics.data);
+        const params = jQuery.param(plugin_statistics.data);
 
-        var ses = plugin_statistics.get_session();
-        if(ses != params.ses) return; // session expired a while ago, don't log this anymore
+        const ses = plugin_statistics.get_session();
+        if (ses !== params.ses) return; // session expired a while ago, don't log this anymore
 
-        var url = DOKU_BASE + 'lib/plugins/statistics/log.php?do=s&' + params;
-        jQuery.ajax(url, {async: false});
+        const url = DOKU_BASE + 'lib/plugins/statistics/log.php?do=s&' + params;
+        navigator.sendBeacon(url);
     },
 
     /**
@@ -89,13 +88,13 @@ var plugin_statistics = {
      * @returns {string}
      */
     get_session: function () {
-        var now = new Date();
+        const now = new Date();
 
         // load session cookie
-        var ses = DokuCookie.getValue('plgstatsses');
+        let ses = DokuCookie.getValue('plgstatsses');
         if (ses) {
             ses = ses.split('-');
-            var time = ses[0];
+            const time = ses[0];
             ses = ses[1];
             if (now.getTime() - time > 15 * 60 * 1000) {
                 ses = ''; // session expired
@@ -114,23 +113,6 @@ var plugin_statistics = {
 
         return ses;
     },
-
-
-    /**
-     * Pause the script execution for the given time
-     *
-     * @param {int} ms
-     */
-    pause: function (ms) {
-        var now = new Date();
-        var exitTime = now.getTime() + ms;
-        while (true) {
-            now = new Date();
-            if (now.getTime() > exitTime) {
-                return;
-            }
-        }
-    }
 };
 
 
