@@ -8,14 +8,6 @@ use dokuwiki\Extension\AdminPlugin;
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author     Andreas Gohr <gohr@splitbrain.org>
  */
-
-// must be run within Dokuwiki
-if (!defined('DOKU_INC')) die();
-
-/**
- * All DokuWiki plugins to extend the admin function
- * need to inherit from this class
- */
 class admin_plugin_statistics extends AdminPlugin
 {
     /** @var string the currently selected page */
@@ -28,13 +20,20 @@ class admin_plugin_statistics extends AdminPlugin
     /** @var int Offset to use when displaying paged data */
     protected $start = 0;
 
-    /** @var helper_plugin_statistics  */
+    /** @var helper_plugin_statistics */
     protected $hlp;
 
     /**
      * Available statistic pages
      */
-    protected $pages = ['dashboard' => 1, 'content' => ['page', 'edits', 'images', 'downloads', 'history'], 'users' => ['topuser', 'topeditor', 'topgroup', 'topgroupedit', 'seenusers'], 'links' => ['referer', 'newreferer', 'outlinks'], 'search' => ['searchengines', 'searchphrases', 'searchwords', 'internalsearchphrases', 'internalsearchwords'], 'technology' => ['browsers', 'os', 'countries', 'resolution', 'viewport']];
+    protected $pages = [
+        'dashboard' => 1,
+        'content' => ['page', 'edits', 'images', 'downloads', 'history'],
+        'users' => ['topuser', 'topeditor', 'topgroup', 'topgroupedit', 'seenusers'],
+        'links' => ['referer', 'newreferer', 'outlinks'],
+        'search' => ['searchengines', 'searchphrases', 'searchwords', 'internalsearchphrases', 'internalsearchwords'],
+        'technology' => ['browsers', 'os', 'countries', 'resolution', 'viewport']
+    ];
 
     /** @var array keeps a list of all real content pages, generated from above array */
     protected $allowedpages = [];
@@ -77,11 +76,12 @@ class admin_plugin_statistics extends AdminPlugin
      */
     public function handle()
     {
-        $this->opt = preg_replace('/[^a-z]+/', '', $_REQUEST['opt']);
+        global $INPUT;
+        $this->opt = preg_replace('/[^a-z]+/', '', $INPUT->str('opt'));
         if (!in_array($this->opt, $this->allowedpages)) $this->opt = 'dashboard';
 
-        $this->start = (int) $_REQUEST['s'];
-        $this->setTimeframe($_REQUEST['f'], $_REQUEST['t']);
+        $this->start = $INPUT->int('s');
+        $this->setTimeframe($INPUT->str('f', date('Y-m-d')), $INPUT->str('t', date('Y-m-d')));
     }
 
     /**
@@ -93,8 +93,8 @@ class admin_plugin_statistics extends AdminPlugin
         if ($from > $to) [$from, $to] = [$to, $from];
 
         $this->hlp->Query()->setTimeFrame($from, $to);
-        $this->from   = $from;
-        $this->to     = $to;
+        $this->from = $from;
+        $this->to = $to;
     }
 
     /**
@@ -188,10 +188,13 @@ class admin_plugin_statistics extends AdminPlugin
      */
     public function html_timeselect()
     {
-        $today  = date('Y-m-d');
-        $last1  = date('Y-m-d', time() - (60 * 60 * 24));
-        $last7  = date('Y-m-d', time() - (60 * 60 * 24 * 7));
-        $last30 = date('Y-m-d', time() - (60 * 60 * 24 * 30));
+        $quick = [
+            'today' => date('Y-m-d'),
+            'last1' => date('Y-m-d', time() - (60 * 60 * 24)),
+            'last7' => date('Y-m-d', time() - (60 * 60 * 24 * 7)),
+            'last30' => date('Y-m-d', time() - (60 * 60 * 24 * 30)),
+        ];
+
 
         echo '<div class="plg_stats_timeselect">';
         echo '<span>' . $this->getLang('time_select') . '</span> ';
@@ -200,16 +203,16 @@ class admin_plugin_statistics extends AdminPlugin
         echo '<input type="hidden" name="do" value="admin" />';
         echo '<input type="hidden" name="page" value="statistics" />';
         echo '<input type="hidden" name="opt" value="' . $this->opt . '" />';
-        echo '<input type="text" name="f" value="' . $this->from . '" class="edit datepicker" />';
-        echo '<input type="text" name="t" value="' . $this->to . '" class="edit datepicker" />';
+        echo '<input type="date" name="f" value="' . $this->from . '" class="edit" />';
+        echo '<input type="date" name="t" value="' . $this->to . '" class="edit" />';
         echo '<input type="submit" value="go" class="button" />';
         echo '</form>';
 
         echo '<ul>';
-        foreach (['today', 'last1', 'last7', 'last30'] as $time) {
+        foreach ($quick as $name => $time) {
             echo '<li>';
-            echo '<a href="?do=admin&amp;page=statistics&amp;opt=' . $this->opt . '&amp;f=' . ${$time} . '&amp;t=' . $today . '">';
-            echo $this->getLang('time_' . $time);
+            echo '<a href="?do=admin&amp;page=statistics&amp;opt=' . $this->opt . '&amp;f=' . $time . '&amp;t=' . $quick['today'] . '">';
+            echo $this->getLang('time_' . $name);
             echo '</a>';
             echo '</li>';
         }
@@ -501,9 +504,9 @@ class admin_plugin_statistics extends AdminPlugin
                     echo hsc($v);
                     echo '</a>';
                 } elseif ($k == 'media') {
-                        echo '<a href="' . ml($v) . '" class="wikilink1">';
-                        echo hsc($v);
-                        echo '</a>';
+                    echo '<a href="' . ml($v) . '" class="wikilink1">';
+                    echo hsc($v);
+                    echo '</a>';
                 } elseif ($k == 'filesize') {
                     echo filesize_h($v);
                 } elseif ($k == 'url') {
@@ -566,7 +569,7 @@ class admin_plugin_statistics extends AdminPlugin
         $value = strtolower(preg_replace('/[^\w]+/', '', $value));
         $value = str_replace(' ', '_', $value);
 
-        $file  = 'lib/plugins/statistics/ico/' . $type . '/' . $value . '.png';
+        $file = 'lib/plugins/statistics/ico/' . $type . '/' . $value . '.png';
         if ($type == 'flags') {
             $w = 18;
             $h = 12;

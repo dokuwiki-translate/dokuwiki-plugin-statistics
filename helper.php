@@ -21,20 +21,15 @@ class helper_plugin_statistics extends Plugin
     protected ?SQLiteDB $db = null;
 
     /**
-     * Constructor
-     */
-    public function __construct()
-    {
-    }
-
-    /**
      * Get SQLiteDB instance
      *
      * @return SQLiteDB|null
+     * @throws Exception when SQLite initialization failed
      */
-    public function getDB()
+    public function getDB(): ?SQLiteDB
     {
         if ($this->db === null) {
+            if (!class_exists(SQLiteDB::class)) throw new \Exception('SQLite Plugin missing');
             $this->db = new SQLiteDB('statistics', DOKU_PLUGIN . 'statistics/db/');
         }
         return $this->db;
@@ -46,7 +41,7 @@ class helper_plugin_statistics extends Plugin
      *
      * @return Query
      */
-    public function Query()
+    public function Query(): Query
     {
         if (is_null($this->oQuery)) {
             $this->oQuery = new Query($this);
@@ -59,7 +54,7 @@ class helper_plugin_statistics extends Plugin
      *
      * @return Logger
      */
-    public function Logger()
+    public function Logger(): ?Logger
     {
         $this->prefix = $this->getConf('db_prefix');
         if (is_null($this->oLogger)) {
@@ -81,71 +76,6 @@ class helper_plugin_statistics extends Plugin
             $this->oGraph = new StatisticsGraph($this);
         }
         return $this->oGraph;
-    }
-
-    /**
-     * Return a link to the DB, opening the connection if needed
-     */
-    protected function dbLink()
-    {
-        // connect to DB if needed
-        if (!$this->dblink) {
-            if (!$this->getConf('db_server')) return null;
-
-            $this->dblink = mysqli_connect(
-                $this->getConf('db_server'),
-                $this->getConf('db_user'),
-                $this->getConf('db_password')
-            );
-            if (!$this->dblink) {
-                msg('DB Error: connection failed', -1);
-                return null;
-            }
-            if (!mysqli_select_db($this->dblink, $this->getConf('db_database'))) {
-                msg('DB Error: failed to select database', -1);
-                return null;
-            }
-
-            // set utf-8
-            if (!mysqli_query($this->dblink, 'set names utf8')) {
-                msg('DB Error: could not set UTF-8 (' . mysqli_error($this->dblink) . ')', -1);
-                return null;
-            }
-        }
-        return $this->dblink;
-    }
-
-    /**
-     * Simple function to run a DB query
-     */
-    public function runSQL($sql_string)
-    {
-        $link = $this->dbLink();
-        if (!$link) return null;
-
-        $result = mysqli_query($link, $sql_string);
-        if ($result === false) {
-            dbglog('DB Error: ' . mysqli_error($link) . ' ' . hsc($sql_string), -1);
-            msg('DB Error: ' . mysqli_error($link) . ' ' . hsc($sql_string), -1);
-            return null;
-        }
-
-        $resultarray = [];
-
-        //mysql_db_query returns 1 on a insert statement -> no need to ask for results
-        if ($result !== true) {
-            for ($i = 0; $i < mysqli_num_rows($result); $i++) {
-                $temparray = mysqli_fetch_assoc($result);
-                $resultarray[] = $temparray;
-            }
-            mysqli_free_result($result);
-        }
-
-        if (mysqli_insert_id($link)) {
-            $resultarray = mysqli_insert_id($link); //give back ID on insert
-        }
-
-        return $resultarray;
     }
 
     /**

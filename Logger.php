@@ -9,7 +9,6 @@ use DeviceDetector\Parser\OperatingSystem;
 use dokuwiki\HTTP\DokuHTTPClient;
 use dokuwiki\plugin\sqlite\SQLiteDB;
 use dokuwiki\Utf8\Clean;
-use dokuwiki\Utf8\PhpString;
 use helper_plugin_popularity;
 use helper_plugin_statistics;
 
@@ -155,21 +154,16 @@ class Logger
      */
     public function logGroups(string $type, array $groups): void
     {
-        if (!is_array($groups)) {
-            return;
-        }
+        if (!$groups) return;
 
-        $tolog = (array)$this->hlp->getConf('loggroups');
-        $groups = array_intersect($groups, $tolog);
-        if ($groups === []) {
-            return;
-        }
+        $toLog = (array)$this->hlp->getConf('loggroups');
+        $groups = array_intersect($groups, $toLog);
+        if (!$groups) return;
 
-
+        $placeholders = join(',', array_fill(0, count($groups), '(?, ?)'));
         $params = [];
-        $sql = "INSERT INTO groups (`type`, `group`) VALUES ";
+        $sql = "INSERT INTO groups (`type`, `group`) VALUES $placeholders";
         foreach ($groups as $group) {
-            $sql .= '(?, ?),';
             $params[] = $type;
             $params[] = $group;
         }
@@ -285,7 +279,7 @@ class Logger
         } catch (\JsonException $e) {
             return; // FIXME log error
         }
-        if(!isset($data['status']) || $data['status'] !== 'success') {
+        if (!isset($data['status']) || $data['status'] !== 'success') {
             return; // FIXME log error
         }
 
@@ -506,7 +500,7 @@ class Logger
             'INSERT OR REPLACE INTO history (
                 info, value, dt
              ) VALUES (
-                ?, ?, date("now")
+                ?, ?, CURRENT_TIMESTAMP
              )',
             'page_count', $page_count
         );
@@ -514,7 +508,7 @@ class Logger
             'INSERT OR REPLACE INTO history (
                 info, value, dt
              ) VALUES (
-                ?, ?, date("now")
+                ?, ?, CURRENT_TIMESTAMP
              )',
             'page_size', $page_size
         );
@@ -539,7 +533,7 @@ class Logger
             'INSERT OR REPLACE INTO history (
                 info, value, dt
              ) VALUES (
-                ?, ?, date("now")
+                ?, ?, CURRENT_TIMESTAMP
              )',
             'media_count', $media_count
         );
@@ -547,7 +541,7 @@ class Logger
             'INSERT OR REPLACE INTO history (
                 info, value, dt
              ) VALUES (
-                ?, ?, date("now")
+                ?, ?, CURRENT_TIMESTAMP
              )',
             'media_size', $media_size
         );
