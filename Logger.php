@@ -71,9 +71,9 @@ class Logger
         }
 
         $this->uaAgent = $ua;
-        $this->uaName = Browser::getBrowserFamily($dd->getClient('name'));
-        $this->uaVersion = $dd->getClient('version');
-        $this->uaPlatform = OperatingSystem::getOsFamily($dd->getOs('name'));
+        $this->uaName = Browser::getBrowserFamily($dd->getClient('name')) ?: 'Unknown';
+        $this->uaVersion = $dd->getClient('version') ?: '';
+        $this->uaPlatform = OperatingSystem::getOsFamily($dd->getOs('name')) ?: 'Unknown';
         $this->uid = $this->getUID();
 
         if ($dd->isFeedReader()) {
