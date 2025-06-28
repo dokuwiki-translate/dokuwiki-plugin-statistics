@@ -242,7 +242,7 @@ class LoggerTest extends DokuWikiTest
 
         // Create a mock HTTP client
         $mockHttpClient = $this->createMock(\dokuwiki\HTTP\DokuHTTPClient::class);
-        
+
         // Mock the API response
         $mockResponse = json_encode([
             'status' => 'success',
@@ -251,21 +251,21 @@ class LoggerTest extends DokuWikiTest
             'city' => 'Ashburn',
             'query' => $ip
         ]);
-        
+
         $mockHttpClient->expects($this->once())
             ->method('get')
             ->with('http://ip-api.com/json/' . $ip)
             ->willReturn($mockResponse);
-        
+
         // Set timeout property
         $mockHttpClient->timeout = 10;
-        
+
         // Create logger with mock HTTP client
         $logger = new Logger($this->helper, $mockHttpClient);
-        
+
         // Test with IP that doesn't exist in database
         $logger->logIp($ip);
-        
+
         // Verify the IP was logged
         $ipRecord = $this->helper->getDB()->queryRecord('SELECT * FROM iplocation WHERE ip = ?', [$ip]);
         $this->assertNotNull($ipRecord);
@@ -274,11 +274,11 @@ class LoggerTest extends DokuWikiTest
         $this->assertEquals('US', $ipRecord['code']);
         $this->assertEquals('Ashburn', $ipRecord['city']);
         $this->assertNotEmpty($ipRecord['host']); // gethostbyaddr result
-        
+
         // Test with IP that already exists and is recent (should not make HTTP call)
         $mockHttpClient2 = $this->createMock(\dokuwiki\HTTP\DokuHTTPClient::class);
         $mockHttpClient2->expects($this->never())->method('get');
-        
+
         $logger2 = new Logger($this->helper, $mockHttpClient2);
         $logger2->logIp($ip); // Should not trigger HTTP call
     }
@@ -512,8 +512,8 @@ class LoggerTest extends DokuWikiTest
      */
     public function testFeedReaderUserAgent()
     {
-        // Use a user agent that DeviceDetector recognizes as a feedreader, not a bot
-        $_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 (compatible; FeedReader)';
+        // Use a user agent that DeviceDetector recognizes as a feedreader
+        $_SERVER['HTTP_USER_AGENT'] = 'BashPodder/1.0 (http://bashpodder.sourceforge.net/)';
 
         $logger = new Logger($this->helper);
 

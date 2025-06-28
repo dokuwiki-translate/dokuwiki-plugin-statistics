@@ -63,7 +63,9 @@ class Logger
         $dd->discardBotInformation();
         $dd->parse();
 
-        if ($dd->isBot()) {
+        if ($dd->isFeedReader()) {
+            $this->uaType = 'feedreader';
+        } else if ($dd->isBot()) {
             $this->uaType = 'robot';
 
             // for now ignore bots
@@ -72,13 +74,10 @@ class Logger
 
         $this->uaAgent = $ua;
         $this->uaName = Browser::getBrowserFamily($dd->getClient('name')) ?: 'Unknown';
-        $this->uaVersion = $dd->getClient('version') ?: '';
+        $this->uaVersion = $dd->getClient('version') ?: '0';
         $this->uaPlatform = OperatingSystem::getOsFamily($dd->getOs('name')) ?: 'Unknown';
         $this->uid = $this->getUID();
 
-        if ($dd->isFeedReader()) {
-            $this->uaType = 'feedreader';
-        }
 
         $this->logLastseen();
     }
