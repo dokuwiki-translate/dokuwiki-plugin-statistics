@@ -121,6 +121,9 @@ class LoggerTest extends DokuWikiTest
         global $conf;
         $conf['plugin']['statistics']['loggroups'] = ['admin', 'user'];
 
+        // Clear any existing data for this test
+        $this->helper->getDB()->exec('DELETE FROM groups WHERE type = ?', [$type]);
+
         $this->logger->logGroups($type, $groups);
 
         $count = $this->helper->getDB()->queryValue('SELECT COUNT(*) FROM groups WHERE type = ?', [$type]);
@@ -284,6 +287,9 @@ class LoggerTest extends DokuWikiTest
 
         $conf['plugin']['statistics']['loggroups'] = ['admin', 'user'];
 
+        // Clear any existing data for this test
+        $this->helper->getDB()->exec('DELETE FROM groups WHERE type = ?', ['view']);
+
         $page = 'test:page';
         $referer = 'https://example.com';
         $user = 'testuser';
@@ -379,6 +385,9 @@ class LoggerTest extends DokuWikiTest
 
         $conf['plugin']['statistics']['loggroups'] = ['admin'];
 
+        // Clear any existing data for this test
+        $this->helper->getDB()->exec('DELETE FROM groups WHERE type = ?', ['edit']);
+
         $user = 'testuser';
         $INPUT->server->set('REMOTE_USER', $user);
         $USERINFO = ['grps' => ['admin']];
@@ -467,7 +476,8 @@ class LoggerTest extends DokuWikiTest
      */
     public function testFeedReaderUserAgent()
     {
-        $_SERVER['HTTP_USER_AGENT'] = 'FeedBurner/1.0 (http://www.FeedBurner.com)';
+        // Use a user agent that DeviceDetector recognizes as a feedreader, not a bot
+        $_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 (compatible; FeedReader)';
 
         $logger = new Logger($this->helper);
 
@@ -484,6 +494,9 @@ class LoggerTest extends DokuWikiTest
      */
     public function testLogSessionOnlyForBrowser()
     {
+        // Clear any existing session data
+        $this->helper->getDB()->exec('DELETE FROM session');
+
         // Change user agent type to feedreader using reflection
         $reflection = new \ReflectionClass($this->logger);
         $uaTypeProperty = $reflection->getProperty('uaType');
