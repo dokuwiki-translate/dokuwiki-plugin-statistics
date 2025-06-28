@@ -39,18 +39,22 @@ class Logger
     /** @var string The unique user identifier */
     protected string $uid;
 
+    /** @var DokuHTTPClient|null The HTTP client instance for testing */
+    protected ?DokuHTTPClient $httpClient = null;
+
 
     /**
      * Constructor
      *
      * Parses browser info and set internal vars
      */
-    public function __construct(helper_plugin_statistics $hlp)
+    public function __construct(helper_plugin_statistics $hlp, ?DokuHTTPClient $httpClient = null)
     {
         global $INPUT;
 
         $this->hlp = $hlp;
         $this->db = $this->hlp->getDB();
+        $this->httpClient = $httpClient;
 
         $ua = trim($INPUT->server->str('HTTP_USER_AGENT'));
 
@@ -269,7 +273,7 @@ class Logger
         );
         if ($result) return;
 
-        $http = new DokuHTTPClient();
+        $http = $this->httpClient ?: new DokuHTTPClient();
         $http->timeout = 10;
         $json = $http->get('http://ip-api.com/json/' . $ip); // yes, it's HTTP only
 

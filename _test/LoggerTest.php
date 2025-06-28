@@ -240,14 +240,47 @@ class LoggerTest extends DokuWikiTest
     {
         $ip = '8.8.8.8';
 
-        // Mock HTTP client response using this result:
-        // {"status":"success","country":"United States","countryCode":"US","region":"VA","regionName":"Virginia","city":"Ashburn","zip":"20149","lat":39.03,"lon":-77.5,"timezone":"America/New_York","isp":"Google LLC","org":"Google Public DNS","as":"AS15169 Google LLC","query":"8.8.8.8"}
-
-
-        $this->markTestSkipped('Requires mocking HTTP client for external API call');
-
-        // This test would need to mock the DokuHTTPClient to avoid actual API calls
-        // For now, we'll skip it as the requirement was not to mock anything
+        // Create a mock HTTP client
+        $mockHttpClient = $this->createMock(\dokuwiki\HTTP\DokuHTTPClient::class);
+        
+        // Mock the API response
+        $mockResponse = json_encode([
+            'status' => 'success',
+            'country' => 'United States',
+            'countryCode' => 'US',
+            'city' => 'Ashburn',
+            'query' => $ip
+        ]);
+        
+        $mockHttpClient->expects($this->once())
+            ->method('get')
+            ->with('http://ip-api.com/json/' . $ip)
+            ->willReturn($mockResponse);
+        
+        // Set timeout property
+        $mockHttpClient->timeout = 10;
+        
+        // Create logger with mock HTTP client
+        $logger = new Logger($this->helper, $mockHttpClient);
+        
+        // Test with IP that doesn't exist in database
+        $logger->logIp($ip);
+        
+        // Verify the IP was logged
+        $ipRecord = $this->helper->getDB()->queryRecord('SELECT * FROM iplocation WHERE ip = ?', [$ip]);
+        $this->assertNotNull($ipRecord);
+        $this->assertEquals($ip, $ipRecord['ip']);
+        $this->assertEquals('United States', $ipRecord['country']);
+        $this->assertEquals('US', $ipRecord['code']);
+        $this->assertEquals('Ashburn', $ipRecord['city']);
+        $this->assertNotEmpty($ipRecord['host']); // gethostbyaddr result
+        
+        // Test with IP that already exists and is recent (should not make HTTP call)
+        $mockHttpClient2 = $this->createMock(\dokuwiki\HTTP\DokuHTTPClient::class);
+        $mockHttpClient2->expects($this->never())->method('get');
+        
+        $logger2 = new Logger($this->helper, $mockHttpClient2);
+        $logger2->logIp($ip); // Should not trigger HTTP call
     }
 
     /**
