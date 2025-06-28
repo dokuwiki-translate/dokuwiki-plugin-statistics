@@ -240,7 +240,10 @@ class LoggerTest extends DokuWikiTest
     {
         $ip = '8.8.8.8';
 
-        // Mock HTTP client response
+        // Mock HTTP client response using this result:
+        // {"status":"success","country":"United States","countryCode":"US","region":"VA","regionName":"Virginia","city":"Ashburn","zip":"20149","lat":39.03,"lon":-77.5,"timezone":"America/New_York","isp":"Google LLC","org":"Google Public DNS","as":"AS15169 Google LLC","query":"8.8.8.8"}
+
+
         $this->markTestSkipped('Requires mocking HTTP client for external API call');
 
         // This test would need to mock the DokuHTTPClient to avoid actual API calls
