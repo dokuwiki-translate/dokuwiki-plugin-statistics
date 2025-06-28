@@ -14,6 +14,8 @@ use helper_plugin_statistics;
  */
 class LoggerTest extends DokuWikiTest
 {
+    protected $pluginsEnabled = ['statistics', 'sqlite'];
+
     /** @var helper_plugin_statistics */
     protected $helper;
 
@@ -23,13 +25,13 @@ class LoggerTest extends DokuWikiTest
     public function setUp(): void
     {
         parent::setUp();
-        
+
         // Load the helper plugin
         $this->helper = plugin_load('helper', 'statistics');
-        
+
         // Mock user agent to avoid bot detection
         $_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
-        
+
         // Initialize logger
         $this->logger = new Logger($this->helper);
     }
@@ -46,10 +48,10 @@ class LoggerTest extends DokuWikiTest
     public function testConstructor()
     {
         $this->assertInstanceOf(Logger::class, $this->logger);
-        
+
         // Test that bot user agents throw exception
         $_SERVER['HTTP_USER_AGENT'] = 'Googlebot/2.1 (+http://www.google.com/bot.html)';
-        
+
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Bot detected, not logging');
         new Logger($this->helper);
@@ -61,13 +63,13 @@ class LoggerTest extends DokuWikiTest
     public function testBeginEnd()
     {
         $this->logger->begin();
-        
+
         // Verify transaction is active by checking PDO
         $pdo = $this->helper->getDB()->getPdo();
         $this->assertTrue($pdo->inTransaction());
-        
+
         $this->logger->end();
-        
+
         // Verify transaction is committed
         $this->assertFalse($pdo->inTransaction());
     }
@@ -78,21 +80,21 @@ class LoggerTest extends DokuWikiTest
     public function testLogLastseen()
     {
         global $INPUT;
-        
+
         // Test with no user (should not log)
         $INPUT->server->set('REMOTE_USER', '');
         $this->logger->logLastseen();
-        
+
         $count = $this->helper->getDB()->queryValue('SELECT COUNT(*) FROM lastseen');
         $this->assertEquals(0, $count);
-        
+
         // Test with user
         $INPUT->server->set('REMOTE_USER', 'testuser');
         $this->logger->logLastseen();
-        
+
         $count = $this->helper->getDB()->queryValue('SELECT COUNT(*) FROM lastseen');
         $this->assertEquals(1, $count);
-        
+
         $user = $this->helper->getDB()->queryValue('SELECT user FROM lastseen WHERE user = ?', ['testuser']);
         $this->assertEquals('testuser', $user);
     }
@@ -116,14 +118,14 @@ class LoggerTest extends DokuWikiTest
      */
     public function testLogGroups($groups, $type, $expectedCount)
     {
-        // Mock configuration to allow 'admin' and 'user' groups
-        $this->helper->conf['loggroups'] = ['admin', 'user'];
-        
+        global $conf;
+        $conf['plugin']['statistics']['loggroups'] = ['admin', 'user'];
+
         $this->logger->logGroups($type, $groups);
-        
+
         $count = $this->helper->getDB()->queryValue('SELECT COUNT(*) FROM groups WHERE type = ?', [$type]);
         $this->assertEquals($expectedCount, $count);
-        
+
         if ($expectedCount > 0) {
             $loggedGroups = $this->helper->getDB()->queryAll('SELECT `group` FROM groups WHERE type = ?', [$type]);
             $this->assertCount($expectedCount, $loggedGroups);
@@ -140,7 +142,7 @@ class LoggerTest extends DokuWikiTest
                 'https://www.google.com/search?q=dokuwiki+test',
                 'search',
                 'dokuwiki test',
-                'Google'
+                'google'
             ],
             'non-search referer' => [
                 'https://example.com/page',
@@ -159,16 +161,16 @@ class LoggerTest extends DokuWikiTest
     {
         global $INPUT;
         $INPUT->set('p', 'test:page');
-        
+
         $type = '';
         $this->logger->logExternalSearch($referer, $type);
-        
+
         $this->assertEquals($expectedType, $type);
-        
+
         if ($expectedType === 'search') {
             $searchCount = $this->helper->getDB()->queryValue('SELECT COUNT(*) FROM search');
             $this->assertEquals(1, $searchCount);
-            
+
             $search = $this->helper->getDB()->queryRecord('SELECT * FROM search ORDER BY dt DESC LIMIT 1');
             $this->assertEquals($expectedQuery, $search['query']);
             $this->assertEquals($expectedEngine, $search['engine']);
@@ -184,20 +186,20 @@ class LoggerTest extends DokuWikiTest
         $query = 'test search query';
         $words = ['test', 'search', 'query'];
         $engine = 'Google';
-        
+
         $this->logger->logSearch($page, $query, $words, $engine);
-        
+
         // Check search table
         $search = $this->helper->getDB()->queryRecord('SELECT * FROM search ORDER BY dt DESC LIMIT 1');
         $this->assertEquals($page, $search['page']);
         $this->assertEquals($query, $search['query']);
         $this->assertEquals($engine, $search['engine']);
-        
+
         // Check searchwords table
-        $wordCount = $this->helper->getDB()->queryValue('SELECT COUNT(*) FROM searchwords WHERE sid = ?', [$search['rowid']]);
+        $wordCount = $this->helper->getDB()->queryValue('SELECT COUNT(*) FROM searchwords WHERE sid = ?', [$search['id']]);
         $this->assertEquals(3, $wordCount);
-        
-        $loggedWords = $this->helper->getDB()->queryAll('SELECT word FROM searchwords WHERE sid = ? ORDER BY word', [$search['rowid']]);
+
+        $loggedWords = $this->helper->getDB()->queryAll('SELECT word FROM searchwords WHERE sid = ? ORDER BY word', [$search['id']]);
         $this->assertEquals(['query', 'search', 'test'], array_column($loggedWords, 'word'));
     }
 
@@ -208,22 +210,22 @@ class LoggerTest extends DokuWikiTest
     {
         // Test without adding view
         $this->logger->logSession(0);
-        
+
         $sessionCount = $this->helper->getDB()->queryValue('SELECT COUNT(*) FROM session');
         $this->assertEquals(1, $sessionCount);
-        
+
         $session = $this->helper->getDB()->queryRecord('SELECT * FROM session ORDER BY dt DESC LIMIT 1');
         $this->assertEquals(0, $session['views']);
-        
+
         // Test adding view
         $this->logger->logSession(1);
-        
+
         $session = $this->helper->getDB()->queryRecord('SELECT * FROM session ORDER BY dt DESC LIMIT 1');
         $this->assertEquals(1, $session['views']);
-        
+
         // Test incrementing views
         $this->logger->logSession(1);
-        
+
         $session = $this->helper->getDB()->queryRecord('SELECT * FROM session ORDER BY dt DESC LIMIT 1');
         $this->assertEquals(2, $session['views']);
     }
@@ -234,10 +236,10 @@ class LoggerTest extends DokuWikiTest
     public function testLogIp()
     {
         $ip = '8.8.8.8';
-        
+
         // Mock HTTP client response
         $this->markTestSkipped('Requires mocking HTTP client for external API call');
-        
+
         // This test would need to mock the DokuHTTPClient to avoid actual API calls
         // For now, we'll skip it as the requirement was not to mock anything
     }
@@ -248,25 +250,25 @@ class LoggerTest extends DokuWikiTest
     public function testLogOutgoing()
     {
         global $INPUT;
-        
+
         // Test without outgoing link
         $INPUT->set('ol', '');
         $this->logger->logOutgoing();
-        
+
         $count = $this->helper->getDB()->queryValue('SELECT COUNT(*) FROM outlinks');
         $this->assertEquals(0, $count);
-        
+
         // Test with outgoing link
         $link = 'https://example.com';
         $page = 'test:page';
         $INPUT->set('ol', $link);
         $INPUT->set('p', $page);
-        
+
         $this->logger->logOutgoing();
-        
+
         $count = $this->helper->getDB()->queryValue('SELECT COUNT(*) FROM outlinks');
         $this->assertEquals(1, $count);
-        
+
         $outlink = $this->helper->getDB()->queryRecord('SELECT * FROM outlinks ORDER BY dt DESC LIMIT 1');
         $this->assertEquals($link, $outlink['link']);
         $this->assertEquals(md5($link), $outlink['link_md5']);
@@ -278,12 +280,14 @@ class LoggerTest extends DokuWikiTest
      */
     public function testLogAccess()
     {
-        global $INPUT, $USERINFO;
-        
+        global $INPUT, $USERINFO, $conf;
+
+        $conf['plugin']['statistics']['loggroups'] = ['admin', 'user'];
+
         $page = 'test:page';
         $referer = 'https://example.com';
         $user = 'testuser';
-        
+
         $INPUT->set('p', $page);
         $INPUT->set('r', $referer);
         $INPUT->set('sx', 1920);
@@ -292,12 +296,11 @@ class LoggerTest extends DokuWikiTest
         $INPUT->set('vy', 800);
         $INPUT->set('js', 1);
         $INPUT->server->set('REMOTE_USER', $user);
-        
+
         $USERINFO = ['grps' => ['admin', 'user']];
-        $this->helper->conf['loggroups'] = ['admin', 'user'];
-        
+
         $this->logger->logAccess();
-        
+
         // Check access table
         $access = $this->helper->getDB()->queryRecord('SELECT * FROM access ORDER BY dt DESC LIMIT 1');
         $this->assertEquals($page, $access['page']);
@@ -308,11 +311,11 @@ class LoggerTest extends DokuWikiTest
         $this->assertEquals(800, $access['view_y']);
         $this->assertEquals(1, $access['js']);
         $this->assertEquals('external', $access['ref_type']);
-        
+
         // Check refseen table
         $refCount = $this->helper->getDB()->queryValue('SELECT COUNT(*) FROM refseen WHERE ref_md5 = ?', [md5($referer)]);
         $this->assertEquals(1, $refCount);
-        
+
         // Check groups table
         $groupCount = $this->helper->getDB()->queryValue('SELECT COUNT(*) FROM groups WHERE type = ?', ['view']);
         $this->assertEquals(2, $groupCount);
@@ -337,18 +340,18 @@ class LoggerTest extends DokuWikiTest
     public function testLogMedia($media, $mime, $inline, $size)
     {
         global $INPUT;
-        
+
         $user = 'testuser';
         $INPUT->server->set('REMOTE_USER', $user);
-        
+
         $this->logger->logMedia($media, $mime, $inline, $size);
-        
+
         $mediaLog = $this->helper->getDB()->queryRecord('SELECT * FROM media ORDER BY dt DESC LIMIT 1');
         $this->assertEquals($media, $mediaLog['media']);
         $this->assertEquals($user, $mediaLog['user']);
         $this->assertEquals($size, $mediaLog['size']);
         $this->assertEquals($inline ? 1 : 0, $mediaLog['inline']);
-        
+
         [$mime1, $mime2] = explode('/', strtolower($mime));
         $this->assertEquals($mime1, $mediaLog['mime1']);
         $this->assertEquals($mime2, $mediaLog['mime2']);
@@ -372,21 +375,22 @@ class LoggerTest extends DokuWikiTest
      */
     public function testLogEdit($page, $type)
     {
-        global $INPUT, $USERINFO;
-        
+        global $INPUT, $USERINFO, $conf;
+
+        $conf['plugin']['statistics']['loggroups'] = ['admin'];
+
         $user = 'testuser';
         $INPUT->server->set('REMOTE_USER', $user);
         $USERINFO = ['grps' => ['admin']];
-        $this->helper->conf['loggroups'] = ['admin'];
-        
+
         $this->logger->logEdit($page, $type);
-        
+
         // Check edits table
         $edit = $this->helper->getDB()->queryRecord('SELECT * FROM edits ORDER BY dt DESC LIMIT 1');
         $this->assertEquals($page, $edit['page']);
         $this->assertEquals($type, $edit['type']);
         $this->assertEquals($user, $edit['user']);
-        
+
         // Check groups table
         $groupCount = $this->helper->getDB()->queryValue('SELECT COUNT(*) FROM groups WHERE type = ?', ['edit']);
         $this->assertEquals(1, $groupCount);
@@ -411,14 +415,14 @@ class LoggerTest extends DokuWikiTest
     public function testLogLogin($type, $user)
     {
         global $INPUT;
-        
+
         if ($user === 'testuser') {
             $INPUT->server->set('REMOTE_USER', $user);
             $this->logger->logLogin($type);
         } else {
             $this->logger->logLogin($type, $user);
         }
-        
+
         $login = $this->helper->getDB()->queryRecord('SELECT * FROM logins ORDER BY dt DESC LIMIT 1');
         $this->assertEquals($type, $login['type']);
         $this->assertEquals($user, $login['user']);
@@ -430,11 +434,11 @@ class LoggerTest extends DokuWikiTest
     public function testLogHistoryPages()
     {
         $this->logger->logHistoryPages();
-        
+
         // Check that both page_count and page_size entries were created
         $pageCount = $this->helper->getDB()->queryValue('SELECT value FROM history WHERE info = ?', ['page_count']);
         $pageSize = $this->helper->getDB()->queryValue('SELECT value FROM history WHERE info = ?', ['page_size']);
-        
+
         $this->assertIsNumeric($pageCount);
         $this->assertIsNumeric($pageSize);
         $this->assertGreaterThanOrEqual(0, $pageCount);
@@ -447,11 +451,11 @@ class LoggerTest extends DokuWikiTest
     public function testLogHistoryMedia()
     {
         $this->logger->logHistoryMedia();
-        
+
         // Check that both media_count and media_size entries were created
         $mediaCount = $this->helper->getDB()->queryValue('SELECT value FROM history WHERE info = ?', ['media_count']);
         $mediaSize = $this->helper->getDB()->queryValue('SELECT value FROM history WHERE info = ?', ['media_size']);
-        
+
         $this->assertIsNumeric($mediaCount);
         $this->assertIsNumeric($mediaSize);
         $this->assertGreaterThanOrEqual(0, $mediaCount);
@@ -464,14 +468,14 @@ class LoggerTest extends DokuWikiTest
     public function testFeedReaderUserAgent()
     {
         $_SERVER['HTTP_USER_AGENT'] = 'FeedBurner/1.0 (http://www.FeedBurner.com)';
-        
+
         $logger = new Logger($this->helper);
-        
+
         // Use reflection to access protected property
         $reflection = new \ReflectionClass($logger);
         $uaTypeProperty = $reflection->getProperty('uaType');
         $uaTypeProperty->setAccessible(true);
-        
+
         $this->assertEquals('feedreader', $uaTypeProperty->getValue($logger));
     }
 
@@ -485,9 +489,9 @@ class LoggerTest extends DokuWikiTest
         $uaTypeProperty = $reflection->getProperty('uaType');
         $uaTypeProperty->setAccessible(true);
         $uaTypeProperty->setValue($this->logger, 'feedreader');
-        
+
         $this->logger->logSession(1);
-        
+
         $sessionCount = $this->helper->getDB()->queryValue('SELECT COUNT(*) FROM session');
         $this->assertEquals(0, $sessionCount);
     }
