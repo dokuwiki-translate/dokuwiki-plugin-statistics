@@ -1,119 +1,192 @@
-/* globals JSINFO, DOKU_BASE, jQuery */
+/* globals JSINFO, DOKU_BASE, DokuCookie */
 
 /**
- * Statistics script
+ * Modern Statistics Plugin
  */
-const plugin_statistics = {
-    data: {},
+class StatisticsPlugin {
+    constructor() {
+        this.data = {};
+        this.sessionTimeout = 15 * 60 * 1000; // 15 minutes
+        this.uid = this.initializeUserTracking();
+        this.sessionId = this.getSession();
+    }
 
     /**
-     * initialize the script
+     * Initialize the statistics plugin
      */
-    init: function () {
+    async init() {
+        try {
+            this.buildTrackingData();
+            await this.logPageView();
+            this.attachEventListeners();
+        } catch (error) {
+            console.error('Statistics plugin initialization failed:', error);
+        }
+    }
 
-        // load visitor cookie
-        const now = new Date();
+    /**
+     * Initialize user tracking with visitor cookie
+     * @returns {string} User ID (UUID)
+     */
+    initializeUserTracking() {
         let uid = DokuCookie.getValue('plgstats');
         if (!uid) {
-            uid = now.getTime() + '-' + Math.floor(Math.random() * 32000);
+            uid = this.generateUUID();
             DokuCookie.setValue('plgstats', uid);
         }
+        return uid;
+    }
 
-        plugin_statistics.data = {
-            uid: uid,
-            ses: plugin_statistics.get_session(),
-            p: JSINFO['id'],
+
+    /**
+     * Build tracking data object
+     */
+    buildTrackingData() {
+        const now = Date.now();
+        this.data = {
+            uid: this.uid,
+            ses: this.sessionId,
+            p: JSINFO.id,
             r: document.referrer,
             sx: screen.width,
             sy: screen.height,
             vx: window.innerWidth,
             vy: window.innerHeight,
             js: 1,
-            rnd: now.getTime()
+            rnd: now
         };
+    }
 
-        // log access
-        if (JSINFO['act'] === 'show') {
-            plugin_statistics.log_view('v');
-        } else {
-            plugin_statistics.log_view('s');
-        }
+    /**
+     * Log page view based on action
+     */
+    async logPageView() {
+        const action = JSINFO.act === 'show' ? 'v' : 's';
+        await this.logView(action);
+    }
 
-        // attach outgoing event
-        jQuery('a.urlextern').click(plugin_statistics.log_external);
+    /**
+     * Attach event listeners for tracking
+     */
+    attachEventListeners() {
+        // Track external link clicks
+        document.querySelectorAll('a.urlextern').forEach(link => {
+            link.addEventListener('click', this.logExternal.bind(this));
+        });
 
-        // attach unload event
-        jQuery(window).bind('beforeunload', plugin_statistics.log_exit);
-    },
+        // Track page unload
+        window.addEventListener('beforeunload', this.logExit.bind(this));
+    }
 
     /**
      * Log a view or session
-     *
-     * @param {string} act 'v' = view, 's' = session
+     * @param {string} action 'v' = view, 's' = session
      */
-    log_view: function (act) {
-        const params = jQuery.param(plugin_statistics.data);
-        const img = new Image();
-        img.src = DOKU_BASE + 'lib/plugins/statistics/log.php?do=' + act + '&' + params;
-    },
+    async logView(action) {
+        const params = new URLSearchParams(this.data);
+        const url = `${DOKU_BASE}lib/plugins/statistics/log.php?do=${action}&${params}`;
+
+        try {
+            // Use fetch with keepalive for better reliability
+            await fetch(url, {
+                method: 'GET',
+                keepalive: true,
+                cache: 'no-cache'
+            });
+        } catch (error) {
+            // Fallback to image beacon for older browsers
+            const img = new Image();
+            img.src = url;
+        }
+    }
 
     /**
      * Log clicks to external URLs
+     * @param {Event} event Click event
      */
-    log_external: function () {
-        const params = jQuery.param(plugin_statistics.data);
-        const url = DOKU_BASE + 'lib/plugins/statistics/log.php?do=o&ol=' + encodeURIComponent(this.href) + '&' + params;
-        navigator.sendBeacon(url);
+    logExternal(event) {
+        const params = new URLSearchParams(this.data);
+        const url = `${DOKU_BASE}lib/plugins/statistics/log.php?do=o&ol=${encodeURIComponent(event.target.href)}&${params}`;
+
+        // Use sendBeacon for reliable tracking
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(url);
+        } else {
+            // Fallback for older browsers
+            const img = new Image();
+            img.src = url;
+        }
+
         return true;
-    },
+    }
 
     /**
-     * Log any leaving action as session info
+     * Log page exit as session info
      */
-    log_exit: function () {
-        const params = jQuery.param(plugin_statistics.data);
+    logExit() {
+        const currentSession = this.getSession();
+        if (currentSession !== this.sessionId) {
+            return; // Session expired, don't log
+        }
 
-        const ses = plugin_statistics.get_session();
-        if (ses !== params.ses) return; // session expired a while ago, don't log this anymore
+        const params = new URLSearchParams(this.data);
+        const url = `${DOKU_BASE}lib/plugins/statistics/log.php?do=s&${params}`;
 
-        const url = DOKU_BASE + 'lib/plugins/statistics/log.php?do=s&' + params;
-        navigator.sendBeacon(url);
-    },
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(url);
+        }
+    }
 
     /**
-     * get current session identifier
-     *
-     * Auto clears an expired session and creates a new one after 15 min idle time
-     *
-     * @returns {string}
+     * Get current session identifier
+     * Auto clears expired sessions and creates new ones after 15 min idle time
+     * @returns {string} Session ID
      */
-    get_session: function () {
-        const now = new Date();
+    getSession() {
+        const now = Date.now();
 
-        // load session cookie
-        let ses = DokuCookie.getValue('plgstatsses');
-        if (ses) {
-            ses = ses.split('-');
-            const time = ses[0];
-            ses = ses[1];
-            if (now.getTime() - time > 15 * 60 * 1000) {
-                ses = ''; // session expired
+        // Load session cookie
+        let sessionData = DokuCookie.getValue('plgstatsses');
+        let sessionId = '';
+
+        if (sessionData) {
+            const [timestamp, id] = sessionData.split('-', 2);
+            if (now - parseInt(timestamp, 10) <= this.sessionTimeout) {
+                sessionId = id;
             }
         }
-        // assign new session
-        if (!ses) {
-            //http://stackoverflow.com/a/16693578/172068
-            ses = (Math.random().toString(16) + "000000000").substr(2, 8) +
-                (Math.random().toString(16) + "000000000").substr(2, 8) +
-                (Math.random().toString(16) + "000000000").substr(2, 8) +
-                (Math.random().toString(16) + "000000000").substr(2, 8);
+
+        // Generate new session if needed
+        if (!sessionId) {
+            sessionId = this.generateUUID();
         }
-        // update session info
-        DokuCookie.setValue('plgstatsses', now.getTime() + '-' + ses);
 
-        return ses;
-    },
-};
+        // Update session cookie
+        DokuCookie.setValue('plgstatsses', `${now}-${sessionId}`);
+        return sessionId;
+    }
 
+    /**
+     * Generate a UUID v4
+     * @returns {string} UUID
+     */
+    generateUUID() {
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000)
+                .toString(16)
+                .substring(1);
+        }
 
-jQuery(plugin_statistics.init);
+        return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+    }
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        new StatisticsPlugin().init();
+    });
+} else {
+    // DOM already loaded
+    new StatisticsPlugin().init();
+}

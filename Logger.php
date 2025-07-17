@@ -114,6 +114,7 @@ class Logger
         $uid = $INPUT->str('uid');
         if (!$uid) $uid = get_doku_pref('plgstats', false);
         if (!$uid) $uid = session_id();
+        set_doku_pref('plgstats', $uid);
         return $uid;
     }
 
@@ -131,6 +132,7 @@ class Logger
         $ses = $INPUT->str('ses');
         if (!$ses) $ses = get_doku_pref('plgstatsses', false);
         if (!$ses) $ses = session_id();
+        set_doku_pref('plgstatsses', $ses);
         return $ses;
     }
 
@@ -494,7 +496,7 @@ class Logger
         // use the popularity plugin's search method to find the wanted data
         /** @var helper_plugin_popularity $pop */
         $pop = plugin_load('helper', 'popularity');
-        $list = [];
+        $list = $this->initEmptySearchList();
         search($list, $conf['datadir'], [$pop, 'searchCountCallback'], ['all' => false], '');
         $page_count = $list['file_count'];
         $page_size = $list['file_size'];
@@ -527,7 +529,7 @@ class Logger
         // use the popularity plugin's search method to find the wanted data
         /** @var helper_plugin_popularity $pop */
         $pop = plugin_load('helper', 'popularity');
-        $list = [];
+        $list = $this->initEmptySearchList();
         search($list, $conf['mediadir'], [$pop, 'searchCountCallback'], ['all' => true], '');
         $media_count = $list['file_count'];
         $media_size = $list['file_size'];
@@ -548,5 +550,22 @@ class Logger
              )',
             'media_size', $media_size
         );
+    }
+
+    /**
+     * @todo can be dropped in favor of helper_plugin_popularity::initEmptySearchList() once it's public
+     * @return array
+     */
+    protected function initEmptySearchList()
+    {
+        return array_fill_keys([
+            'file_count',
+            'file_size',
+            'file_max',
+            'file_min',
+            'dir_count',
+            'dir_nest',
+            'file_oldest'
+        ], 0);
     }
 }
