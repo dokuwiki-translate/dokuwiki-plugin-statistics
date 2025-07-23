@@ -442,7 +442,7 @@ class SearchEnginesTest extends DokuWikiTest
     public function testGetNameUnknownEngine(): void
     {
         $unknownEngine = 'unknown_engine';
-        $this->assertEquals($unknownEngine, SearchEngines::getName($unknownEngine));
+        $this->assertEquals('Unknown_engine', SearchEngines::getName($unknownEngine));
     }
 
     /**

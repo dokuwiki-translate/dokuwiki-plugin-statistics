@@ -125,9 +125,9 @@ class SearchEngines
     /**
      * Get the search engine identifier from the referer
      *
-     * @return string The search engine
+     * @return string|null The search engine or null if not a search engine
      */
-    public function getEngine(): string
+    public function getEngine(): ?string
     {
         return $this->engine;
     }
@@ -145,11 +145,11 @@ class SearchEngines
     /**
      * Get the search engine name for the given engine identifier
      *
-     * @return string If we have a name for the engine, return it, otherwise return $engine
+     * @return string If we have a name for the engine, return it, otherwise return capitalized $engine
      */
-    public static function getName($engine): ?string
+    public static function getName($engine): string
     {
-        return isset(self::$searchEngines[$engine]) ? self::$searchEngines[$engine]['name'] : $engine;
+        return isset(self::$searchEngines[$engine]) ? self::$searchEngines[$engine]['name'] : ucfirst($engine);
     }
 
     /**
@@ -290,10 +290,10 @@ class SearchEngines
      */
     protected function cleanQuery(string $query): ?string
     {
-        // Remove non-search queries
-        $query = preg_replace('/^(cache|related):[^\+]+/', '', $query);
+        // Remove non-search queries (cache: and related: prefixes)
+        $query = preg_replace('/^(cache|related):[^\s]+\s*/', '', $query);
         // Compact whitespace
-        $query = preg_replace('/ +/', ' ', $query);
+        $query = preg_replace('/\s+/', ' ', $query);
         $query = trim($query);
 
         return $query ?: null;
