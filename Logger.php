@@ -162,7 +162,9 @@ class Logger
         if (!$groups) return;
 
         $toLog = (array)$this->hlp->getConf('loggroups');
-        $groups = array_intersect($groups, $toLog);
+
+        // if specific groups are configured, limit logging to them only
+        $groups = !empty(array_filter($toLog)) ? array_intersect($groups, $toLog) : $groups;
         if (!$groups) return;
 
         $placeholders = join(',', array_fill(0, count($groups), '(?, ?)'));
