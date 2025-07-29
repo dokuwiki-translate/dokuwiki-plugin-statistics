@@ -68,12 +68,12 @@ class helper_plugin_statistics extends Plugin
      *
      * @return StatisticsGraph
      */
-    public function Graph()
+    public function Graph($from, $to, $width, $height)
     {
         $this->prefix = $this->getConf('db_prefix');
         if (is_null($this->oGraph)) {
             require __DIR__ . '/inc/StatisticsGraph.class.php';
-            $this->oGraph = new StatisticsGraph($this);
+            $this->oGraph = new StatisticsGraph($this, $from, $to, $width, $height);
         }
         return $this->oGraph;
     }

@@ -102,6 +102,10 @@ class admin_plugin_statistics extends AdminPlugin
      */
     public function html()
     {
+        // TODO package JS
+        echo '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
+        echo '<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>';
+
         echo '<div id="plugin__statistics">';
         echo '<h1>' . $this->getLang('menu') . '</h1>';
         $this->html_timeselect();
@@ -156,9 +160,7 @@ class admin_plugin_statistics extends AdminPlugin
 
     public function html_graph($name, $width, $height)
     {
-        $url = DOKU_BASE . 'lib/plugins/statistics/img.php?img=' . $name .
-            '&amp;f=' . $this->from . '&amp;t=' . $this->to;
-        echo '<img src="' . $url . '" class="graph" width="' . $width . '" height="' . $height . '"/>';
+        $this->hlp->Graph($this->from, $this->to, $width, $height)->$name();
     }
 
     /**
@@ -287,22 +289,22 @@ class admin_plugin_statistics extends AdminPlugin
     public function html_countries()
     {
         echo '<p>' . $this->getLang('intro_countries') . '</p>';
-        $this->html_graph('countries', 400, 200);
-        $result = $this->hlp->Query()->countries($this->start, 150);
+        $this->html_graph('countries', 200, 200);
+        $result = $this->hlp->Query()->countries();
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_page()
     {
         echo '<p>' . $this->getLang('intro_page') . '</p>';
-        $result = $this->hlp->Query()->pages($this->start, 150);
+        $result = $this->hlp->Query()->pages();
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_edits()
     {
         echo '<p>' . $this->getLang('intro_edits') . '</p>';
-        $result = $this->hlp->Query()->edits($this->start, 150);
+        $result = $this->hlp->Query()->edits();
         $this->html_resulttable($result, '', 150);
     }
 
@@ -315,7 +317,7 @@ class admin_plugin_statistics extends AdminPlugin
         echo sprintf($this->getLang('trafficsum'), $result[0]['cnt'], filesize_h($result[0]['filesize']));
         echo '</p>';
 
-        $result = $this->hlp->Query()->images($this->start, 150);
+        $result = $this->hlp->Query()->images();
         $this->html_resulttable($result, '', 150);
     }
 
@@ -328,55 +330,55 @@ class admin_plugin_statistics extends AdminPlugin
         echo sprintf($this->getLang('trafficsum'), $result[0]['cnt'], filesize_h($result[0]['filesize']));
         echo '</p>';
 
-        $result = $this->hlp->Query()->downloads($this->start, 150);
+        $result = $this->hlp->Query()->downloads();
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_browsers()
     {
         echo '<p>' . $this->getLang('intro_browsers') . '</p>';
-        $this->html_graph('browsers', 400, 200);
-        $result = $this->hlp->Query()->browsers($this->start, 150, true);
+        $this->html_graph('browsers', 200, 200);
+        $result = $this->hlp->Query()->browsers(false);
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_topuser()
     {
         echo '<p>' . $this->getLang('intro_topuser') . '</p>';
-        $this->html_graph('topuser', 400, 200);
-        $result = $this->hlp->Query()->topuser($this->start, 150);
+        $this->html_graph('topuser', 200, 200);
+        $result = $this->hlp->Query()->topuser();
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_topeditor()
     {
         echo '<p>' . $this->getLang('intro_topeditor') . '</p>';
-        $this->html_graph('topeditor', 400, 200);
-        $result = $this->hlp->Query()->topeditor($this->start, 150);
+        $this->html_graph('topeditor', 200, 200);
+        $result = $this->hlp->Query()->topeditor();
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_topgroup()
     {
         echo '<p>' . $this->getLang('intro_topgroup') . '</p>';
-        $this->html_graph('topgroup', 400, 200);
-        $result = $this->hlp->Query()->topgroup($this->start, 150);
+        $this->html_graph('topgroup', 200, 200);
+        $result = $this->hlp->Query()->topgroup();
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_topgroupedit()
     {
         echo '<p>' . $this->getLang('intro_topgroupedit') . '</p>';
-        $this->html_graph('topgroupedit', 400, 200);
-        $result = $this->hlp->Query()->topgroupedit($this->start, 150);
+        $this->html_graph('topgroupedit', 200, 200);
+        $result = $this->hlp->Query()->topgroupedit();
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_os()
     {
         echo '<p>' . $this->getLang('intro_os') . '</p>';
-        $this->html_graph('os', 400, 200);
-        $result = $this->hlp->Query()->os($this->start, 150);
+        $this->html_graph('os', 200, 200);
+        $result = $this->hlp->Query()->os();
         $this->html_resulttable($result, '', 150);
     }
 
@@ -399,7 +401,7 @@ class admin_plugin_statistics extends AdminPlugin
             );
         }
 
-        $result = $this->hlp->Query()->referer($this->start, 150);
+        $result = $this->hlp->Query()->referer();
         $this->html_resulttable($result, '', 150);
     }
 
@@ -407,42 +409,42 @@ class admin_plugin_statistics extends AdminPlugin
     {
         echo '<p>' . $this->getLang('intro_newreferer') . '</p>';
 
-        $result = $this->hlp->Query()->newreferer($this->start, 150);
+        $result = $this->hlp->Query()->newreferer();
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_outlinks()
     {
         echo '<p>' . $this->getLang('intro_outlinks') . '</p>';
-        $result = $this->hlp->Query()->outlinks($this->start, 150);
+        $result = $this->hlp->Query()->outlinks();
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_searchphrases()
     {
         echo '<p>' . $this->getLang('intro_searchphrases') . '</p>';
-        $result = $this->hlp->Query()->searchphrases(true, $this->start, 150);
+        $result = $this->hlp->Query()->searchphrases(true);
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_searchwords()
     {
         echo '<p>' . $this->getLang('intro_searchwords') . '</p>';
-        $result = $this->hlp->Query()->searchwords(true, $this->start, 150);
+        $result = $this->hlp->Query()->searchwords(true);
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_internalsearchphrases()
     {
         echo '<p>' . $this->getLang('intro_internalsearchphrases') . '</p>';
-        $result = $this->hlp->Query()->searchphrases(false, $this->start, 150);
+        $result = $this->hlp->Query()->searchphrases(false);
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_internalsearchwords()
     {
         echo '<p>' . $this->getLang('intro_internalsearchwords') . '</p>';
-        $result = $this->hlp->Query()->searchwords(false, $this->start, 150);
+        $result = $this->hlp->Query()->searchwords(false);
         $this->html_resulttable($result, '', 150);
     }
 
@@ -450,7 +452,7 @@ class admin_plugin_statistics extends AdminPlugin
     {
         echo '<p>' . $this->getLang('intro_searchengines') . '</p>';
         $this->html_graph('searchengines', 400, 200);
-        $result = $this->hlp->Query()->searchengines($this->start, 150);
+        $result = $this->hlp->Query()->searchengines();
         $this->html_resulttable($result, '', 150);
     }
 
@@ -458,7 +460,7 @@ class admin_plugin_statistics extends AdminPlugin
     {
         echo '<p>' . $this->getLang('intro_resolution') . '</p>';
         $this->html_graph('resolution', 650, 490);
-        $result = $this->hlp->Query()->resolution($this->start, 150);
+        $result = $this->hlp->Query()->resolution();
         $this->html_resulttable($result, '', 150);
     }
 
@@ -466,14 +468,14 @@ class admin_plugin_statistics extends AdminPlugin
     {
         echo '<p>' . $this->getLang('intro_viewport') . '</p>';
         $this->html_graph('viewport', 650, 490);
-        $result = $this->hlp->Query()->viewport($this->start, 150);
+        $result = $this->hlp->Query()->viewport();
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_seenusers()
     {
         echo '<p>' . $this->getLang('intro_seenusers') . '</p>';
-        $result = $this->hlp->Query()->seenusers($this->start, 150);
+        $result = $this->hlp->Query()->seenusers();
         $this->html_resulttable($result, '', 150);
     }
 

@@ -234,7 +234,7 @@ class Query
         } elseif ($interval == 'months') {
             $TIME = 'strftime(\'%Y-%m\', dt)';
         } else {
-            $TIME = 'dt';
+            $TIME = 'dt'; // FIXME
         }
 
         $mod = 1;

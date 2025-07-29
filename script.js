@@ -190,3 +190,55 @@ if (document.readyState === 'loading') {
     // DOM already loaded
     new StatisticsPlugin().init();
 }
+
+class ChartComponent extends HTMLElement {
+    connectedCallback() {
+        this.renderChart();
+    }
+
+    renderChart() {
+        const chartType = this.getAttribute('type');
+        const data = JSON.parse(this.getAttribute('data'));
+
+        console.log('data', data);
+
+        const canvas = document.createElement("canvas");
+        canvas.id = "myChart";
+        canvas.style.height = chartType === "pie" ? "200px" : "100%";
+        canvas.style.width = chartType === "pie" ? "200px" : "100%";
+
+        this.appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+
+        // basic config
+        const config = {
+            type: chartType,
+            data: data
+        };
+
+        // percentage labels and tooltips for pie charts
+        if (chartType === "pie") {
+            // chartjs-plugin-datalabels needs to be registered
+            Chart.register(ChartDataLabels);
+
+            config.options =  {
+                plugins: {
+                    datalabels: {
+                        formatter: (value, context) => {
+                            const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(2) + '%';
+                            return percentage;
+                        },
+                        color: '#fff',
+                    }
+                }
+            };
+        }
+
+
+        new Chart(ctx, config);
+    }
+}
+
+customElements.define('chart-component', ChartComponent);
