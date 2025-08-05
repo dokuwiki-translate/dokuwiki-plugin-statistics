@@ -1,14 +1,16 @@
 <?php
 
+namespace dokuwiki\plugin\statistics;
+
 class StatisticsGraph
 {
-    private helper_plugin_statistics $hlp;
+    private \helper_plugin_statistics $hlp;
     private string $from;
     private string $to;
     private int $width;
     private int $height;
 
-    public function __construct(helper_plugin_statistics $hlp, $from, $to, $width, $height)
+    public function __construct(\helper_plugin_statistics $hlp, $from, $to, $width, $height)
     {
         $this->hlp = $hlp;
         $this->from = $from;

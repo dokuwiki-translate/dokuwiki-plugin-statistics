@@ -4,6 +4,7 @@ use dokuwiki\Extension\Plugin;
 use dokuwiki\plugin\sqlite\SQLiteDB;
 use dokuwiki\plugin\statistics\Logger;
 use dokuwiki\plugin\statistics\Query;
+use dokuwiki\plugin\statistics\StatisticsGraph;
 
 /**
  * Statistics Plugin
@@ -72,7 +73,6 @@ class helper_plugin_statistics extends Plugin
     {
         $this->prefix = $this->getConf('db_prefix');
         if (is_null($this->oGraph)) {
-            require __DIR__ . '/inc/StatisticsGraph.class.php';
             $this->oGraph = new StatisticsGraph($this, $from, $to, $width, $height);
         }
         return $this->oGraph;
