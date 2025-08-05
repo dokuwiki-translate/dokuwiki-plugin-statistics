@@ -102,10 +102,6 @@ class admin_plugin_statistics extends AdminPlugin
      */
     public function html()
     {
-        // TODO package JS
-        echo '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
-        echo '<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>';
-
         echo '<div id="plugin__statistics">';
         echo '<h1>' . $this->getLang('menu') . '</h1>';
         $this->html_timeselect();
