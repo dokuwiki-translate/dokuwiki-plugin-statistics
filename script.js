@@ -207,8 +207,8 @@ class ChartComponent extends HTMLElement {
 
         const canvas = document.createElement("canvas");
         canvas.id = "myChart";
-        canvas.style.height = chartType === "pie" ? "200px" : "100%";
-        canvas.style.width = chartType === "pie" ? "200px" : "100%";
+        canvas.style.height = chartType === "pie" ? "300px" : "100%";
+        canvas.style.width = chartType === "pie" ? "300px" : "100%";
 
         this.appendChild(canvas);
 

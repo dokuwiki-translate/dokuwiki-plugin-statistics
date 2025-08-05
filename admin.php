@@ -285,7 +285,7 @@ class admin_plugin_statistics extends AdminPlugin
     public function html_countries()
     {
         echo '<p>' . $this->getLang('intro_countries') . '</p>';
-        $this->html_graph('countries', 200, 200);
+        $this->html_graph('countries', 300, 300);
         $result = $this->hlp->Query()->countries();
         $this->html_resulttable($result, '', 150);
     }
@@ -333,7 +333,7 @@ class admin_plugin_statistics extends AdminPlugin
     public function html_browsers()
     {
         echo '<p>' . $this->getLang('intro_browsers') . '</p>';
-        $this->html_graph('browsers', 200, 200);
+        $this->html_graph('browsers', 300, 300);
         $result = $this->hlp->Query()->browsers(false);
         $this->html_resulttable($result, '', 150);
     }
@@ -341,7 +341,7 @@ class admin_plugin_statistics extends AdminPlugin
     public function html_topuser()
     {
         echo '<p>' . $this->getLang('intro_topuser') . '</p>';
-        $this->html_graph('topuser', 200, 200);
+        $this->html_graph('topuser', 300, 300);
         $result = $this->hlp->Query()->topuser();
         $this->html_resulttable($result, '', 150);
     }
@@ -349,7 +349,7 @@ class admin_plugin_statistics extends AdminPlugin
     public function html_topeditor()
     {
         echo '<p>' . $this->getLang('intro_topeditor') . '</p>';
-        $this->html_graph('topeditor', 200, 200);
+        $this->html_graph('topeditor', 300, 300);
         $result = $this->hlp->Query()->topeditor();
         $this->html_resulttable($result, '', 150);
     }
@@ -357,7 +357,7 @@ class admin_plugin_statistics extends AdminPlugin
     public function html_topgroup()
     {
         echo '<p>' . $this->getLang('intro_topgroup') . '</p>';
-        $this->html_graph('topgroup', 200, 200);
+        $this->html_graph('topgroup', 300, 300);
         $result = $this->hlp->Query()->topgroup();
         $this->html_resulttable($result, '', 150);
     }
@@ -365,7 +365,7 @@ class admin_plugin_statistics extends AdminPlugin
     public function html_topgroupedit()
     {
         echo '<p>' . $this->getLang('intro_topgroupedit') . '</p>';
-        $this->html_graph('topgroupedit', 200, 200);
+        $this->html_graph('topgroupedit', 300, 300);
         $result = $this->hlp->Query()->topgroupedit();
         $this->html_resulttable($result, '', 150);
     }
@@ -373,7 +373,7 @@ class admin_plugin_statistics extends AdminPlugin
     public function html_os()
     {
         echo '<p>' . $this->getLang('intro_os') . '</p>';
-        $this->html_graph('os', 200, 200);
+        $this->html_graph('os', 300, 300);
         $result = $this->hlp->Query()->os();
         $this->html_resulttable($result, '', 150);
     }
