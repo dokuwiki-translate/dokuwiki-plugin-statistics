@@ -154,12 +154,13 @@ class Logger
     /**
      * Log actions by groups
      *
+     * @param int $pid Id of access data row (foreign key)
      * @param string $type The type of access to log ('view','edit')
      * @param array $groups The groups to log
      */
-    public function logGroups(string $type, array $groups): void
+    public function logGroups(int $pid, string $type, array $groups): void
     {
-        if (!$groups) return;
+        if (empty($groups) || !$pid) return;
 
         $toLog = (array)$this->hlp->getConf('loggroups');
 
@@ -167,15 +168,36 @@ class Logger
         $groups = !empty(array_filter($toLog)) ? array_intersect($groups, $toLog) : $groups;
         if (!$groups) return;
 
-        $placeholders = join(',', array_fill(0, count($groups), '(?, ?)'));
+        $placeholders = join(',', array_fill(0, count($groups), '(?, ?, ?)'));
         $params = [];
-        $sql = "INSERT INTO groups (`type`, `group`) VALUES $placeholders";
+        $sql = "INSERT INTO groups (`pid`, `type`, `group`) VALUES $placeholders";
         foreach ($groups as $group) {
+            $params[] = $pid;
             $params[] = $type;
             $params[] = $group;
         }
         $sql = rtrim($sql, ',');
         $this->db->exec($sql, $params);
+    }
+
+    /**
+     * Log email domain, skip logging if no domain is found
+     *
+     * @param int $pid Id of access data row (foreign key)
+     * @param string $type The type of access to log ('view','edit')
+     * @param string $mail The email to extract the domain from
+     */
+    public function logDomain(int $pid, string $type, string $mail): void
+    {
+        if (!$pid) return;
+
+        $pos = strrpos($mail, '@');
+        if (!$pos) return;
+        $domain = substr($mail, $pos + 1);
+        if (empty($domain)) return;
+
+        $sql = "INSERT INTO domain (`pid`, `type`, `domain`) VALUES (?, ?, ?)";
+        $this->db->exec($sql, [$pid, $type, $domain]);
     }
 
     /**
@@ -367,7 +389,7 @@ class Logger
         $user = $INPUT->server->str('REMOTE_USER');
         $session = $this->getSession();
 
-        $this->db->exec(
+        $accessId = $this->db->exec(
             'INSERT INTO access (
                 dt, page, ip, ua, ua_info, ua_type, ua_ver, os, ref, ref_md5, ref_type,
                 screen_x, screen_y, view_x, view_y, js, user, session, uid
@@ -392,7 +414,11 @@ class Logger
 
         // log group access
         if (isset($USERINFO['grps'])) {
-            $this->logGroups('view', $USERINFO['grps']);
+            $this->logGroups($accessId, 'view', $USERINFO['grps']);
+        }
+        // log email domain
+        if (!empty($USERINFO['mail'])) {
+            $this->logDomain($accessId, 'view', $USERINFO['mail']);
         }
 
         // resolve the IP
@@ -448,7 +474,7 @@ class Logger
         $user = $INPUT->server->str('REMOTE_USER');
         $session = $this->getSession();
 
-        $this->db->exec(
+        $editId = $this->db->exec(
             'INSERT INTO edits (
                 dt, page, type, ip, user, session, uid
              ) VALUES (
@@ -459,7 +485,12 @@ class Logger
 
         // log group access
         if (isset($USERINFO['grps'])) {
-            $this->logGroups('edit', $USERINFO['grps']);
+            $this->logGroups($editId, 'edit', $USERINFO['grps']);
+        }
+
+        // log email domain
+        if (!empty($USERINFO['mail'])) {
+            $this->logDomain($editId, 'edit', $USERINFO['mail']);
         }
     }
 

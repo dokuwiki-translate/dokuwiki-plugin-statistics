@@ -163,14 +163,20 @@ CREATE TABLE `groups`
     `id`    INTEGER PRIMARY KEY,
     `dt`    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `group` TEXT NOT NULL,
-    `type`  TEXT NOT NULL
+    `type`  TEXT NOT NULL,
+    `pid`   INTEGER REFERENCES access(id)
 );
 CREATE INDEX `idx_groups_dt` ON `groups` (`dt`);
 CREATE INDEX `idx_groups_type` ON `groups` (`type`);
 
 
-
-
+CREATE TABLE `domain` (
+    id      INTEGER PRIMARY KEY,
+    dt      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    domain  TEXT NOT NULL,
+    type    TEXT NOT NULL,
+    pid     INTEGER REFERENCES access(id)
+);
 
 
 
