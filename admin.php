@@ -255,19 +255,17 @@ class admin_plugin_statistics extends AdminPlugin
         echo '<div class="plg_stats_top">';
         $result = $this->hlp->getQuery()->aggregate();
 
-        echo '<ul class="left">';
+        echo '<ul>';
         foreach (['pageviews', 'sessions', 'visitors', 'users', 'logins', 'current'] as $name) {
             echo '<li><div class="li">' . sprintf($this->getLang('dash_' . $name), $result[$name]) . '</div></li>';
         }
         echo '</ul>';
 
-        echo '<ul class="left">';
+        echo '<ul>';
         foreach (['bouncerate', 'timespent', 'avgpages', 'newvisitors', 'registrations'] as $name) {
             echo '<li><div class="li">' . sprintf($this->getLang('dash_' . $name), $result[$name]) . '</div></li>';
         }
         echo '</ul>';
-
-        echo '<br style="clear: left" />';
 
         $this->html_graph('dashboardviews', 700, 280);
         $this->html_graph('dashboardwiki', 700, 280);
@@ -292,7 +290,7 @@ class admin_plugin_statistics extends AdminPlugin
             echo '<h2>' . $this->getLang($graph['lbl']) . '</h2>';
             $result = call_user_func([$this->hlp->getQuery(), $graph['query']]);
             $this->html_resulttable($result);
-            echo '<a href="?' . buildURLparams($params) . '" class="more button">' . $this->getLang('more') . '</a>';
+            echo '<p><a href="?' . buildURLparams($params) . '" class="more">' . $this->getLang('more') . '…</a></p>';
             echo '</div>';
         }
     }
