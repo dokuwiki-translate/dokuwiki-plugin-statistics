@@ -12,7 +12,6 @@ use dokuwiki\Utf8\Clean;
 use helper_plugin_popularity;
 use helper_plugin_statistics;
 
-
 class Logger
 {
     /** @var helper_plugin_statistics The statistics helper plugin instance */
@@ -65,9 +64,8 @@ class Logger
 
         if ($dd->isFeedReader()) {
             $this->uaType = 'feedreader';
-        } else if ($dd->isBot()) {
+        } elseif ($dd->isBot()) {
             $this->uaType = 'robot';
-
             // for now ignore bots
             throw new \RuntimeException('Bot detected, not logging');
         }
@@ -160,15 +158,15 @@ class Logger
      */
     public function logGroups(int $pid, string $type, array $groups): void
     {
-        if (empty($groups) || !$pid) return;
+        if ($groups === [] || !$pid) return;
 
         $toLog = (array)$this->hlp->getConf('loggroups');
 
         // if specific groups are configured, limit logging to them only
-        $groups = !empty(array_filter($toLog)) ? array_intersect($groups, $toLog) : $groups;
+        $groups = empty(array_filter($toLog)) ? $groups : array_intersect($groups, $toLog);
         if (!$groups) return;
 
-        $placeholders = join(',', array_fill(0, count($groups), '(?, ?, ?)'));
+        $placeholders = implode(',', array_fill(0, count($groups), '(?, ?, ?)'));
         $params = [];
         $sql = "INSERT INTO groups (`pid`, `type`, `group`) VALUES $placeholders";
         foreach ($groups as $group) {
@@ -241,7 +239,9 @@ class Logger
     {
         $sid = $this->db->exec(
             'INSERT INTO search (dt, page, query, engine) VALUES (CURRENT_TIMESTAMP, ?, ?, ?)',
-            $page, $query ?? '', $engine
+            $page,
+            $query ?? '',
+            $engine
         );
         if (!$sid) return;
 
@@ -249,7 +249,8 @@ class Logger
             if (!$word) continue;
             $this->db->exec(
                 'INSERT INTO searchwords (sid, word) VALUES (?, ?)',
-                $sid, $word
+                $sid,
+                $word
             );
         }
     }
@@ -280,7 +281,11 @@ class Logger
                 COALESCE((SELECT views FROM session WHERE session = ?) + ?, ?),
                 ?
              )',
-            $session, $session, $addview, $addview, $this->uid
+            $session,
+            $session,
+            $addview,
+            $addview,
+            $this->uid
         );
     }
 
@@ -322,7 +327,11 @@ class Logger
                  ) VALUES (
                     ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
                  )',
-            $ip, $data['country'], $data['countryCode'], $data['city'], $host
+            $ip,
+            $data['country'],
+            $data['countryCode'],
+            $data['city'],
+            $host
         );
     }
 
@@ -348,7 +357,10 @@ class Logger
              ) VALUES (
                 CURRENT_TIMESTAMP, ?, ?, ?, ?
              )',
-            $session, $page, $link_md5, $link
+            $session,
+            $page,
+            $link_md5,
+            $link
         );
     }
 
@@ -400,8 +412,24 @@ class Logger
                 CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?, ?, ?, ?
              )',
-            $page, $ip, $this->uaAgent, $this->uaName, $this->uaType, $this->uaVersion, $this->uaPlatform,
-            $ref, $ref_md5, $ref_type, $sx, $sy, $vx, $vy, $js, $user, $session, $this->uid
+            $page,
+            $ip,
+            $this->uaAgent,
+            $this->uaName,
+            $this->uaType,
+            $this->uaVersion,
+            $this->uaPlatform,
+            $ref,
+            $ref_md5,
+            $ref_type,
+            $sx,
+            $sy,
+            $vx,
+            $vy,
+            $js,
+            $user,
+            $session,
+            $this->uid
         );
 
         if ($ref_md5) {
@@ -444,7 +472,6 @@ class Logger
 
         [$mime1, $mime2] = explode('/', strtolower($mime));
         $inline = $inline ? 1 : 0;
-        $size = (int)$size;
 
         $ip = clientIP(true);
         $user = $INPUT->server->str('REMOTE_USER');
@@ -458,8 +485,20 @@ class Logger
                 CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?
              )',
-            $media, $ip, $this->uaAgent, $this->uaName, $this->uaType, $this->uaVersion, $this->uaPlatform,
-            $user, $session, $this->uid, $size, $mime1, $mime2, $inline
+            $media,
+            $ip,
+            $this->uaAgent,
+            $this->uaName,
+            $this->uaType,
+            $this->uaVersion,
+            $this->uaPlatform,
+            $user,
+            $session,
+            $this->uid,
+            $size,
+            $mime1,
+            $mime2,
+            $inline
         );
     }
 
@@ -483,7 +522,12 @@ class Logger
              ) VALUES (
                 CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?
              )',
-            $page, $type, $ip, $user, $session, $this->uid
+            $page,
+            $type,
+            $ip,
+            $user,
+            $session,
+            $this->uid
         );
 
         // log group access
@@ -518,7 +562,11 @@ class Logger
              ) VALUES (
                 CURRENT_TIMESTAMP, ?, ?, ?, ?, ?
              )',
-            $type, $ip, $user, $session, $this->uid
+            $type,
+            $ip,
+            $user,
+            $session,
+            $this->uid
         );
     }
 
@@ -543,7 +591,8 @@ class Logger
              ) VALUES (
                 ?, ?, CURRENT_TIMESTAMP
              )',
-            'page_count', $page_count
+            'page_count',
+            $page_count
         );
         $this->db->exec(
             'INSERT OR REPLACE INTO history (
@@ -551,7 +600,8 @@ class Logger
              ) VALUES (
                 ?, ?, CURRENT_TIMESTAMP
              )',
-            'page_size', $page_size
+            'page_size',
+            $page_size
         );
     }
 
@@ -576,7 +626,8 @@ class Logger
              ) VALUES (
                 ?, ?, CURRENT_TIMESTAMP
              )',
-            'media_count', $media_count
+            'media_count',
+            $media_count
         );
         $this->db->exec(
             'INSERT OR REPLACE INTO history (
@@ -584,7 +635,8 @@ class Logger
              ) VALUES (
                 ?, ?, CURRENT_TIMESTAMP
              )',
-            'media_size', $media_size
+            'media_size',
+            $media_size
         );
     }
 

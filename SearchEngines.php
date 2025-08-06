@@ -292,5 +292,4 @@ class SearchEngines
 
         return $query ?: null;
     }
-
 }

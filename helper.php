@@ -29,7 +29,7 @@ class helper_plugin_statistics extends Plugin
      */
     public function getDB(): ?SQLiteDB
     {
-        if ($this->db === null) {
+        if (!$this->db instanceof SQLiteDB) {
             if (!class_exists(SQLiteDB::class)) throw new \Exception('SQLite Plugin missing');
             $this->db = new SQLiteDB('statistics', DOKU_PLUGIN . 'statistics/db/');
         }

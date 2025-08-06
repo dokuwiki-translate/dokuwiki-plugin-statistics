@@ -2,7 +2,6 @@
 
 namespace dokuwiki\plugin\statistics;
 
-
 use dokuwiki\plugin\sqlite\SQLiteDB;
 use helper_plugin_statistics;
 
@@ -619,5 +618,4 @@ class Query
 
         return $this->db->queryAll($sql);
     }
-
 }
