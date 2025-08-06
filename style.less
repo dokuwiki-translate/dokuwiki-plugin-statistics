@@ -1,0 +1,77 @@
+// Variables
+@plugin-id: #plugin__statistics;
+@table-width: 500px;
+@margin-standard: 1em;
+@margin-small: 0.5em;
+@input-width: 6em;
+@font-size-large: 120%;
+@padding-bottom: 2em;
+
+@plugin-id {
+    // Time selector styles
+    div.plg_stats_timeselect {
+        margin-bottom: @margin-standard;
+        
+        ul,
+        ul li,
+        form {
+            list-style-type: none;
+            display: inline;
+            margin: 0;
+            padding: 0;
+            text-align: left;
+        }
+        
+        ul li,
+        input {
+            margin: 0 @margin-small 0 0;
+        }
+        
+        input.edit {
+            width: @input-width;
+        }
+    }
+    
+    // Graph styles
+    img.graph {
+        background: transparent url(ico/load.gif) center center no-repeat;
+        margin: @margin-standard 0;
+    }
+    
+    // Dashboard styles
+    .plg_stats_dashboard div {
+        padding-bottom: @padding-bottom;
+    }
+    
+    // Top section styles
+    .plg_stats_top {
+        font-size: @font-size-large;
+        
+        div {
+            padding: 0;
+        }
+    }
+    
+    // Layout utilities
+    .left {
+        float: left;
+    }
+    
+    // Table styles
+    table {
+        width: @table-width;
+    }
+    
+    // Pager styles
+    .plg_stats_pager {
+        width: @table-width;
+        
+        a.next {
+            float: right;
+        }
+        
+        a.prev {
+            float: left;
+        }
+    }
+}
