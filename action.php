@@ -68,7 +68,7 @@ class action_plugin_statistics extends ActionPlugin
     {
         /** @var helper_plugin_statistics $hlp */
         $hlp = plugin_load('helper', 'statistics');
-        $hlp->Logger()->logSearch('', $event->data['query'], $event->data['highlight'], 'dokuwiki');
+        $hlp->Logger()->logSearch('', 'dokuwiki', $event->data['query'], $event->data['highlight']);
     }
 
     /**

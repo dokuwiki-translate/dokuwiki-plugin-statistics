@@ -190,7 +190,7 @@ class LoggerTest extends DokuWikiTest
         $words = ['test', 'search', 'query'];
         $engine = 'Google';
 
-        $this->logger->logSearch($page, $query, $words, $engine);
+        $this->logger->logSearch($page, $engine, $query, $words);
 
         // Check search table
         $search = $this->helper->getDB()->queryRecord('SELECT * FROM search ORDER BY dt DESC LIMIT 1');

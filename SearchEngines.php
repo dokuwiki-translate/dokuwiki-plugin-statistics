@@ -192,10 +192,6 @@ class SearchEngines
         $domain = $urlparts['host'];
         $queryString = $urlparts['query'] ?? $urlparts['fragment'] ?? '';
 
-        if (!$queryString) {
-            return null;
-        }
-
         parse_str($queryString, $params);
 
         // Try to match against known search engines
@@ -220,13 +216,11 @@ class SearchEngines
         foreach (self::$searchEngines as $key => $engine) {
             if (preg_match('/' . $engine['regex'] . '/', $domain)) {
                 $query = $this->extractQuery($params, $engine['params']);
-                if ($query) {
-                    return [
-                        'engine' => $key,
-                        'name' => $engine['name'],
-                        'query' => $query
-                    ];
-                }
+                return [
+                    'engine' => $key,
+                    'name' => $engine['name'],
+                    'query' => $query
+                ];
             }
         }
 

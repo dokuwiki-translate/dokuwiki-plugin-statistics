@@ -222,23 +222,26 @@ class Logger
         $query = $searchEngine->getQuery();
 
         // log it!
-        $words = explode(' ', Clean::stripspecials($query, ' ', '\._\-:\*'));
-        $this->logSearch($INPUT->str('p'), $query, $words, $searchEngine->getEngine());
+        $words = [];
+        if ($query) {
+            $words = explode(' ', Clean::stripspecials($query, ' ', '\._\-:\*'));
+        }
+        $this->logSearch($INPUT->str('p'), $searchEngine->getEngine(), $query, $words);
     }
 
     /**
      * Log search data to the search related tables
      *
      * @param string $page The page being searched from
-     * @param string $query The search query
-     * @param array $words Array of search words
      * @param string $engine The search engine name
+     * @param string|null $query The search query
+     * @param array|null $words Array of search words
      */
-    public function logSearch(string $page, string $query, array $words, string $engine): void
+    public function logSearch(string $page, string $engine, ?string $query, ?array $words): void
     {
         $sid = $this->db->exec(
             'INSERT INTO search (dt, page, query, engine) VALUES (CURRENT_TIMESTAMP, ?, ?, ?)',
-            $page, $query, $engine
+            $page, $query ?? '', $engine
         );
         if (!$sid) return;
 
