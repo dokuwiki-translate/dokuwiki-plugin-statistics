@@ -1,5 +1,7 @@
 <?php
 
+// phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols
+
 /**
  * Statistics plugin - data logger
  *
@@ -25,7 +27,7 @@ try {
     $plugin = plugin_load('helper', 'statistics');
     $plugin->sendGIF(); // browser be done
 
-    $logger = $plugin->Logger();
+    $logger = $plugin->getLogger();
     $logger->begin();
     $logger->logLastseen(); // refresh session
 

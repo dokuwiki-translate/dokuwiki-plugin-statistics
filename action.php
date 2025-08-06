@@ -58,7 +58,7 @@ class action_plugin_statistics extends ActionPlugin
         }
         /** @var helper_plugin_statistics $hlp */
         $hlp = plugin_load('helper', 'statistics');
-        $hlp->Logger()->logEdit(cleanID($event->data[1] . ':' . $event->data[2]), $type);
+        $hlp->getLogger()->logEdit(cleanID($event->data[1] . ':' . $event->data[2]), $type);
     }
 
     /**
@@ -68,7 +68,7 @@ class action_plugin_statistics extends ActionPlugin
     {
         /** @var helper_plugin_statistics $hlp */
         $hlp = plugin_load('helper', 'statistics');
-        $hlp->Logger()->logSearch('', 'dokuwiki', $event->data['query'], $event->data['highlight']);
+        $hlp->getLogger()->logSearch('', 'dokuwiki', $event->data['query'], $event->data['highlight']);
     }
 
     /**
@@ -95,7 +95,7 @@ class action_plugin_statistics extends ActionPlugin
 
         /** @var helper_plugin_statistics $hlp */
         $hlp = plugin_load('helper', 'statistics');
-        $hlp->Logger()->logLogin($type);
+        $hlp->getLogger()->logLogin($type);
     }
 
     /**
@@ -106,7 +106,7 @@ class action_plugin_statistics extends ActionPlugin
         if ($event->data['type'] == 'create') {
             /** @var helper_plugin_statistics $hlp */
             $hlp = plugin_load('helper', 'statistics');
-            $hlp->Logger()->logLogin('C', $event->data['params'][0]);
+            $hlp->getLogger()->logLogin('C', $event->data['params'][0]);
         }
     }
 
@@ -128,7 +128,7 @@ class action_plugin_statistics extends ActionPlugin
 
         /** @var helper_plugin_statistics $hlp */
         $hlp = plugin_load('helper', 'statistics');
-        $hlp->Logger()->logMedia(
+        $hlp->getLogger()->logMedia(
             $event->data['media'],
             $event->data['mime'],
             !$event->data['download'],
@@ -169,10 +169,10 @@ class action_plugin_statistics extends ActionPlugin
 
         if ($page_ran) {
             echo 'Plugin Statistics: logging media' . DOKU_LF;
-            $hlp->Logger()->logHistoryMedia();
+            $hlp->getLogger()->logHistoryMedia();
         } else {
             echo 'Plugin Statistics: logging pages' . DOKU_LF;
-            $hlp->Logger()->logHistoryPages();
+            $hlp->getLogger()->logHistoryPages();
         }
         echo 'Plugin Statistics: finished' . DOKU_LF;
     }

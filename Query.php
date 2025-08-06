@@ -269,7 +269,7 @@ class Query
      * @param bool $extern Limit results to external search engine (true) or dokuwiki (false)
      * @return array
      */
-    public function searchphrases(bool $extern): array
+    public function searchphrases(bool $extern = false): array
     {
         if ($extern) {
             $WHERE = "engine != ?";
@@ -294,7 +294,7 @@ class Query
      * @param bool $extern Limit results to external search engine (true) or dokuwiki (false)
      * @return array
      */
-    public function searchwords(bool $extern): array
+    public function searchwords(bool $extern = false): array
     {
         if ($extern) {
             $WHERE = "engine != ?";
@@ -612,7 +612,7 @@ class Query
     public function seenusers(): array
     {
         $sql = "SELECT `user`, `dt`
-                  FROM " . $this->hlp->prefix . "lastseen as A
+                  FROM lastseen as A
               ORDER BY `dt` DESC" .
             $this->limit;
 

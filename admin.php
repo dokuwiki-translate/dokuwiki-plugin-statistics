@@ -1,5 +1,6 @@
 <?php
 
+// phpcs:disable PSR1.Methods.CamelCapsMethodName.NotCamelCaps
 use dokuwiki\Extension\AdminPlugin;
 
 /**
@@ -92,7 +93,7 @@ class admin_plugin_statistics extends AdminPlugin
         // swap if wrong order
         if ($from > $to) [$from, $to] = [$to, $from];
 
-        $this->hlp->Query()->setTimeFrame($from, $to);
+        $this->hlp->getQuery()->setTimeFrame($from, $to);
         $this->from = $from;
         $this->to = $to;
     }
@@ -139,7 +140,9 @@ class admin_plugin_statistics extends AdminPlugin
 
                 foreach ($info as $page) {
                     $toc[] = html_mktocitem(
-                        '?do=admin&amp;page=statistics&amp;opt=' . $page . '&amp;f=' . $this->from . '&amp;t=' . $this->to,
+                        '?do=admin&amp;page=statistics&amp;opt=' . $page .
+                        '&amp;f=' . $this->from .
+                        '&amp;t=' . $this->to,
                         $this->getLang($page),
                         2,
                         ''
@@ -147,7 +150,9 @@ class admin_plugin_statistics extends AdminPlugin
                 }
             } else {
                 $toc[] = html_mktocitem(
-                    '?do=admin&amp;page=statistics&amp;opt=' . $key . '&amp;f=' . $this->from . '&amp;t=' . $this->to,
+                    '?do=admin&amp;page=statistics&amp;opt=' . $key .
+                    '&amp;f=' . $this->from .
+                    '&amp;t=' . $this->to,
                     $this->getLang($key),
                     1,
                     ''
@@ -159,7 +164,7 @@ class admin_plugin_statistics extends AdminPlugin
 
     public function html_graph($name, $width, $height)
     {
-        $this->hlp->Graph($this->from, $this->to, $width, $height)->$name();
+        $this->hlp->getGraph($this->from, $this->to, $width, $height)->$name();
     }
 
     /**
@@ -170,16 +175,25 @@ class admin_plugin_statistics extends AdminPlugin
      */
     public function html_pager($limit, $next)
     {
-        echo '<div class="plg_stats_pager">';
+        $params = [
+            'do' => 'admin',
+            'page' => 'statistics',
+            'opt' => $this->opt,
+            'f' => $this->from,
+            't' => $this->to,
+        ];
 
+        echo '<div class="plg_stats_pager">';
         if ($this->start > 0) {
             $go = max($this->start - $limit, 0);
-            echo '<a href="?do=admin&amp;page=statistics&amp;opt=' . $this->opt . '&amp;f=' . $this->from . '&amp;t=' . $this->to . '&amp;s=' . $go . '" class="prev button">' . $this->getLang('prev') . '</a>';
+            $params['s'] = $go;
+            echo '<a href="?' . buildURLparams($params) . '" class="prev button">' . $this->getLang('prev') . '</a>';
         }
 
         if ($next) {
             $go = $this->start + $limit;
-            echo '<a href="?do=admin&amp;page=statistics&amp;opt=' . $this->opt . '&amp;f=' . $this->from . '&amp;t=' . $this->to . '&amp;s=' . $go . '" class="next button">' . $this->getLang('next') . '</a>';
+            $params['s'] = $go;
+            echo '<a href="?' . buildURLparams($params) . '" class="next button">' . $this->getLang('next') . '</a>';
         }
         echo '</div>';
     }
@@ -211,8 +225,16 @@ class admin_plugin_statistics extends AdminPlugin
 
         echo '<ul>';
         foreach ($quick as $name => $time) {
+            $url = buildURLparams([
+                'do' => 'admin',
+                'page' => 'statistics',
+                'opt' => $this->opt,
+                'f' => $time,
+                't' => $quick['today'],
+            ]);
+
             echo '<li>';
-            echo '<a href="?do=admin&amp;page=statistics&amp;opt=' . $this->opt . '&amp;f=' . $time . '&amp;t=' . $quick['today'] . '">';
+            echo '<a href="?' . $url . '">';
             echo $this->getLang('time_' . $name);
             echo '</a>';
             echo '</li>';
@@ -231,7 +253,7 @@ class admin_plugin_statistics extends AdminPlugin
 
         // general info
         echo '<div class="plg_stats_top">';
-        $result = $this->hlp->Query()->aggregate();
+        $result = $this->hlp->getQuery()->aggregate();
 
         echo '<ul class="left">';
         foreach (['pageviews', 'sessions', 'visitors', 'users', 'logins', 'current'] as $name) {
@@ -251,29 +273,28 @@ class admin_plugin_statistics extends AdminPlugin
         $this->html_graph('dashboardwiki', 700, 280);
         echo '</div>';
 
-        // top pages today
-        echo '<div>';
-        echo '<h2>' . $this->getLang('dash_mostpopular') . '</h2>';
-        $result = $this->hlp->Query()->pages($this->start, 15);
-        $this->html_resulttable($result);
-        echo '<a href="?do=admin&amp;page=statistics&amp;opt=page&amp;f=' . $this->from . '&amp;t=' . $this->to . '" class="more button">' . $this->getLang('more') . '</a>';
-        echo '</div>';
+        $quickgraphs = [
+            ['lbl' => 'dash_mostpopular', 'query' => 'pages', 'opt' => 'page'],
+            ['lbl' => 'dash_newincoming', 'query' => 'newreferer', 'opt' => 'newreferer'],
+            ['lbl' => 'dash_topsearch', 'query' => 'searchphrases', 'opt' => 'internalsearchphrases'],
+        ];
 
-        // top referer today
-        echo '<div>';
-        echo '<h2>' . $this->getLang('dash_newincoming') . '</h2>';
-        $result = $this->hlp->Query()->newreferer($this->start, 15);
-        $this->html_resulttable($result);
-        echo '<a href="?do=admin&amp;page=statistics&amp;opt=newreferer&amp;f=' . $this->from . '&amp;t=' . $this->to . '" class="more button">' . $this->getLang('more') . '</a>';
-        echo '</div>';
+        foreach ($quickgraphs as $graph) {
+            $params = [
+                'do' => 'admin',
+                'page' => 'statistics',
+                'f' => $this->from,
+                't' => $this->to,
+                'opt' => $graph['opt'],
+            ];
 
-        // top searches today
-        echo '<div>';
-        echo '<h2>' . $this->getLang('dash_topsearch') . '</h2>';
-        $result = $this->hlp->Query()->searchphrases(true, $this->start, 15);
-        $this->html_resulttable($result);
-        echo '<a href="?do=admin&amp;page=statistics&amp;opt=searchphrases&amp;f=' . $this->from . '&amp;t=' . $this->to . '" class="more button">' . $this->getLang('more') . '</a>';
-        echo '</div>';
+            echo '<div>';
+            echo '<h2>' . $this->getLang($graph['lbl']) . '</h2>';
+            $result = call_user_func([$this->hlp->getQuery(), $graph['query']]);
+            $this->html_resulttable($result);
+            echo '<a href="?' . buildURLparams($params) . '" class="more button">' . $this->getLang('more') . '</a>';
+            echo '</div>';
+        }
     }
 
     public function html_history()
@@ -289,21 +310,21 @@ class admin_plugin_statistics extends AdminPlugin
     {
         echo '<p>' . $this->getLang('intro_countries') . '</p>';
         $this->html_graph('countries', 300, 300);
-        $result = $this->hlp->Query()->countries();
+        $result = $this->hlp->getQuery()->countries();
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_page()
     {
         echo '<p>' . $this->getLang('intro_page') . '</p>';
-        $result = $this->hlp->Query()->pages();
+        $result = $this->hlp->getQuery()->pages();
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_edits()
     {
         echo '<p>' . $this->getLang('intro_edits') . '</p>';
-        $result = $this->hlp->Query()->edits();
+        $result = $this->hlp->getQuery()->edits();
         $this->html_resulttable($result, '', 150);
     }
 
@@ -311,12 +332,12 @@ class admin_plugin_statistics extends AdminPlugin
     {
         echo '<p>' . $this->getLang('intro_images') . '</p>';
 
-        $result = $this->hlp->Query()->imagessum();
+        $result = $this->hlp->getQuery()->imagessum();
         echo '<p>';
         echo sprintf($this->getLang('trafficsum'), $result[0]['cnt'], filesize_h($result[0]['filesize']));
         echo '</p>';
 
-        $result = $this->hlp->Query()->images();
+        $result = $this->hlp->getQuery()->images();
         $this->html_resulttable($result, '', 150);
     }
 
@@ -324,12 +345,12 @@ class admin_plugin_statistics extends AdminPlugin
     {
         echo '<p>' . $this->getLang('intro_downloads') . '</p>';
 
-        $result = $this->hlp->Query()->downloadssum();
+        $result = $this->hlp->getQuery()->downloadssum();
         echo '<p>';
         echo sprintf($this->getLang('trafficsum'), $result[0]['cnt'], filesize_h($result[0]['filesize']));
         echo '</p>';
 
-        $result = $this->hlp->Query()->downloads();
+        $result = $this->hlp->getQuery()->downloads();
         $this->html_resulttable($result, '', 150);
     }
 
@@ -337,7 +358,7 @@ class admin_plugin_statistics extends AdminPlugin
     {
         echo '<p>' . $this->getLang('intro_browsers') . '</p>';
         $this->html_graph('browsers', 300, 300);
-        $result = $this->hlp->Query()->browsers(false);
+        $result = $this->hlp->getQuery()->browsers(false);
         $this->html_resulttable($result, '', 150);
     }
 
@@ -345,7 +366,7 @@ class admin_plugin_statistics extends AdminPlugin
     {
         echo '<p>' . $this->getLang('intro_topuser') . '</p>';
         $this->html_graph('topuser', 300, 300);
-        $result = $this->hlp->Query()->topuser();
+        $result = $this->hlp->getQuery()->topuser();
         $this->html_resulttable($result, '', 150);
     }
 
@@ -353,7 +374,7 @@ class admin_plugin_statistics extends AdminPlugin
     {
         echo '<p>' . $this->getLang('intro_topeditor') . '</p>';
         $this->html_graph('topeditor', 300, 300);
-        $result = $this->hlp->Query()->topeditor();
+        $result = $this->hlp->getQuery()->topeditor();
         $this->html_resulttable($result, '', 150);
     }
 
@@ -361,7 +382,7 @@ class admin_plugin_statistics extends AdminPlugin
     {
         echo '<p>' . $this->getLang('intro_topgroup') . '</p>';
         $this->html_graph('topgroup', 300, 300);
-        $result = $this->hlp->Query()->topgroup();
+        $result = $this->hlp->getQuery()->topgroup();
         $this->html_resulttable($result, '', 150);
     }
 
@@ -369,7 +390,7 @@ class admin_plugin_statistics extends AdminPlugin
     {
         echo '<p>' . $this->getLang('intro_topgroupedit') . '</p>';
         $this->html_graph('topgroupedit', 300, 300);
-        $result = $this->hlp->Query()->topgroupedit();
+        $result = $this->hlp->getQuery()->topgroupedit();
         $this->html_resulttable($result, '', 150);
     }
 
@@ -377,13 +398,13 @@ class admin_plugin_statistics extends AdminPlugin
     {
         echo '<p>' . $this->getLang('intro_os') . '</p>';
         $this->html_graph('os', 300, 300);
-        $result = $this->hlp->Query()->os();
+        $result = $this->hlp->getQuery()->os();
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_referer()
     {
-        $result = $this->hlp->Query()->aggregate();
+        $result = $this->hlp->getQuery()->aggregate();
 
         $all = $result['search'] + $result['external'] + $result['direct'];
 
@@ -400,7 +421,7 @@ class admin_plugin_statistics extends AdminPlugin
             );
         }
 
-        $result = $this->hlp->Query()->referer();
+        $result = $this->hlp->getQuery()->referer();
         $this->html_resulttable($result, '', 150);
     }
 
@@ -408,42 +429,42 @@ class admin_plugin_statistics extends AdminPlugin
     {
         echo '<p>' . $this->getLang('intro_newreferer') . '</p>';
 
-        $result = $this->hlp->Query()->newreferer();
+        $result = $this->hlp->getQuery()->newreferer();
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_outlinks()
     {
         echo '<p>' . $this->getLang('intro_outlinks') . '</p>';
-        $result = $this->hlp->Query()->outlinks();
+        $result = $this->hlp->getQuery()->outlinks();
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_searchphrases()
     {
         echo '<p>' . $this->getLang('intro_searchphrases') . '</p>';
-        $result = $this->hlp->Query()->searchphrases(true);
+        $result = $this->hlp->getQuery()->searchphrases(true);
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_searchwords()
     {
         echo '<p>' . $this->getLang('intro_searchwords') . '</p>';
-        $result = $this->hlp->Query()->searchwords(true);
+        $result = $this->hlp->getQuery()->searchwords(true);
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_internalsearchphrases()
     {
         echo '<p>' . $this->getLang('intro_internalsearchphrases') . '</p>';
-        $result = $this->hlp->Query()->searchphrases(false);
+        $result = $this->hlp->getQuery()->searchphrases(false);
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_internalsearchwords()
     {
         echo '<p>' . $this->getLang('intro_internalsearchwords') . '</p>';
-        $result = $this->hlp->Query()->searchwords(false);
+        $result = $this->hlp->getQuery()->searchwords(false);
         $this->html_resulttable($result, '', 150);
     }
 
@@ -451,7 +472,7 @@ class admin_plugin_statistics extends AdminPlugin
     {
         echo '<p>' . $this->getLang('intro_searchengines') . '</p>';
         $this->html_graph('searchengines', 400, 200);
-        $result = $this->hlp->Query()->searchengines();
+        $result = $this->hlp->getQuery()->searchengines();
         $this->html_resulttable($result, '', 150);
     }
 
@@ -459,7 +480,7 @@ class admin_plugin_statistics extends AdminPlugin
     {
         echo '<p>' . $this->getLang('intro_resolution') . '</p>';
         $this->html_graph('resolution', 650, 490);
-        $result = $this->hlp->Query()->resolution();
+        $result = $this->hlp->getQuery()->resolution();
         $this->html_resulttable($result, '', 150);
     }
 
@@ -467,14 +488,14 @@ class admin_plugin_statistics extends AdminPlugin
     {
         echo '<p>' . $this->getLang('intro_viewport') . '</p>';
         $this->html_graph('viewport', 650, 490);
-        $result = $this->hlp->Query()->viewport();
+        $result = $this->hlp->getQuery()->viewport();
         $this->html_resulttable($result, '', 150);
     }
 
     public function html_seenusers()
     {
         echo '<p>' . $this->getLang('intro_seenusers') . '</p>';
-        $result = $this->hlp->Query()->seenusers();
+        $result = $this->hlp->getQuery()->seenusers();
         $this->html_resulttable($result, '', 150);
     }
 
@@ -523,18 +544,18 @@ class admin_plugin_statistics extends AdminPlugin
                     echo '<a href="' . wl('', ['id' => $v, 'do' => 'search']) . '">Search</a>';
                 } elseif ($k == 'lookup') {
                     echo '<a href="http://www.google.com/search?q=' . rawurlencode($v) . '">';
-                    echo '<img src="' . DOKU_BASE . 'lib/plugins/statistics/ico/search/google.png" alt="Google" border="0" />';
+                    echo '<img src="' . DOKU_BASE . 'lib/plugins/statistics/ico/search/google.png" alt="Google" />';
                     echo '</a> ';
 
                     echo '<a href="http://search.yahoo.com/search?p=' . rawurlencode($v) . '">';
-                    echo '<img src="' . DOKU_BASE . 'lib/plugins/statistics/ico/search/yahoo.png" alt="Yahoo!" border="0" />';
+                    echo '<img src="' . DOKU_BASE . 'lib/plugins/statistics/ico/search/yahoo.png" alt="Yahoo!" />';
                     echo '</a> ';
 
                     echo '<a href="http://www.bing.com/search?q=' . rawurlencode($v) . '">';
-                    echo '<img src="' . DOKU_BASE . 'lib/plugins/statistics/ico/search/bing.png" alt="Bing" border="0" />';
+                    echo '<img src="' . DOKU_BASE . 'lib/plugins/statistics/ico/search/bing.png" alt="Bing" />';
                     echo '</a> ';
                 } elseif ($k == 'engine') {
-                    include_once(__DIR__ . '/inc/searchengines.php');
+                    // FIXME thhis is not correct anymore
                     if (isset($SEARCHENGINEINFO[$v])) {
                         echo '<a href="' . $SEARCHENGINEINFO[$v][1] . '">' . $SEARCHENGINEINFO[$v][0] . '</a>';
                     } else {
@@ -578,8 +599,8 @@ class admin_plugin_statistics extends AdminPlugin
             $w = 16;
             $h = 16;
         }
-        if (file_exists(DOKU_INC . $file)) {
-            echo '<img src="' . DOKU_BASE . $file . '" alt="' . hsc($value) . '" width="' . $w . '" height="' . $h . '" />';
-        }
+        if (!file_exists(DOKU_INC . $file)) return;
+
+        echo '<img src="' . DOKU_BASE . $file . '" alt="' . hsc($value) . '" width="' . $w . '" height="' . $h . '" />';
     }
 }

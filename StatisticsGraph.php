@@ -1,7 +1,11 @@
 <?php
 
+// phpcs:disable PSR1.Methods.CamelCapsMethodName.NotCamelCaps
 namespace dokuwiki\plugin\statistics;
 
+/**
+ * Create the data for graph visualization
+ */
 class StatisticsGraph
 {
     private \helper_plugin_statistics $hlp;
@@ -10,6 +14,15 @@ class StatisticsGraph
     private int $width;
     private int $height;
 
+    /**
+     * Initialize a new Graph
+     *
+     * @param \helper_plugin_statistics $hlp
+     * @param string $from From date
+     * @param string $to To date
+     * @param int $width width of the graph in pixels
+     * @param int $height height of the graph in pixels
+     */
     public function __construct(\helper_plugin_statistics $hlp, $from, $to, $width, $height)
     {
         $this->hlp = $hlp;
@@ -24,7 +37,7 @@ class StatisticsGraph
      *
      * @param array $data associative array contianing label and values
      */
-    protected function PieChart($data)
+    protected function pieChart($data)
     {
         $data = [
             'datasets' => [
@@ -48,7 +61,7 @@ class StatisticsGraph
      */
     protected function sumUpPieChart($query, $key, $max = 4)
     {
-        $result = $this->hlp->Query()->$query();
+        $result = $this->hlp->getQuery()->$query();
         $data   = [];
         $top    = 0;
         foreach ($result as $row) {
@@ -59,7 +72,7 @@ class StatisticsGraph
             }
             $top++;
         }
-        $this->PieChart($data);
+        $this->pieChart($data);
     }
 
     /**
@@ -79,7 +92,7 @@ class StatisticsGraph
             $interval = 'days';
         }
 
-        $result = $this->hlp->Query()->history($info, $interval);
+        $result = $this->hlp->getQuery()->history($info, $interval);
 
         $data = [];
         $times = [];
@@ -150,7 +163,7 @@ class StatisticsGraph
 
     public function viewport()
     {
-        $result = $this->hlp->Query()->viewport();
+        $result = $this->hlp->getQuery()->viewport();
         $data = [];
 
         foreach ($result as $row) {
@@ -175,7 +188,7 @@ class StatisticsGraph
 
     public function resolution()
     {
-        $result = $this->hlp->Query()->resolution();
+        $result = $this->hlp->getQuery()->resolution();
         $data = [];
 
         foreach ($result as $row) {
@@ -222,7 +235,7 @@ class StatisticsGraph
     public function dashboardviews()
     {
         $hours  = ($this->from == $this->to);
-        $result = $this->hlp->Query()->dashboardviews($hours);
+        $result = $this->hlp->getQuery()->dashboardviews($hours);
         $data1  = [];
         $data2  = [];
         $data3  = [];
@@ -259,7 +272,7 @@ class StatisticsGraph
     public function dashboardwiki($js = false)
     {
         $hours  = ($this->from == $this->to);
-        $result = $this->hlp->Query()->dashboardwiki($hours);
+        $result = $this->hlp->getQuery()->dashboardwiki($hours);
         $data1  = [];
         $data2  = [];
         $data3  = [];

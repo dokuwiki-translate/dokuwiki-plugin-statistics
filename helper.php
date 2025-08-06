@@ -14,7 +14,6 @@ use dokuwiki\plugin\statistics\StatisticsGraph;
  */
 class helper_plugin_statistics extends Plugin
 {
-    protected $dblink;
     public $prefix;
     protected $oQuery;
     protected ?Logger $oLogger = null;
@@ -30,7 +29,7 @@ class helper_plugin_statistics extends Plugin
     public function getDB(): ?SQLiteDB
     {
         if (!$this->db instanceof SQLiteDB) {
-            if (!class_exists(SQLiteDB::class)) throw new \Exception('SQLite Plugin missing');
+            if (!class_exists(SQLiteDB::class)) throw new Exception('SQLite Plugin missing');
             $this->db = new SQLiteDB('statistics', DOKU_PLUGIN . 'statistics/db/');
         }
         return $this->db;
@@ -42,7 +41,7 @@ class helper_plugin_statistics extends Plugin
      *
      * @return Query
      */
-    public function Query(): Query
+    public function getQuery(): Query
     {
         if (is_null($this->oQuery)) {
             $this->oQuery = new Query($this);
@@ -55,9 +54,8 @@ class helper_plugin_statistics extends Plugin
      *
      * @return Logger
      */
-    public function Logger(): ?Logger
+    public function getLogger(): ?Logger
     {
-        $this->prefix = $this->getConf('db_prefix');
         if (is_null($this->oLogger)) {
             $this->oLogger = new Logger($this);
         }
@@ -69,9 +67,8 @@ class helper_plugin_statistics extends Plugin
      *
      * @return StatisticsGraph
      */
-    public function Graph($from, $to, $width, $height)
+    public function getGraph($from, $to, $width, $height)
     {
-        $this->prefix = $this->getConf('db_prefix');
         if (is_null($this->oGraph)) {
             $this->oGraph = new StatisticsGraph($this, $from, $to, $width, $height);
         }
@@ -99,6 +96,6 @@ class helper_plugin_statistics extends Plugin
         echo $img;
         flush();
         // Browser should drop connection after this
-        // Thinks it's got the whole image
+        // Thinks it got the whole image
     }
 }
