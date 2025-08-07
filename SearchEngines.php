@@ -83,6 +83,18 @@ class SearchEngines
             'regex' => '^duckduckgo\.com$',
             'params' => ['q']
         ],
+        'ecosia' => [
+            'name' => 'Ecosia',
+            'url' => 'https://www.ecosia.org',
+            'regex' => '^(\w+\.)*ecosia\.org$',
+            'params' => ['q']
+        ],
+        'qwant' => [
+            'name' => 'Qwant',
+            'url' => 'https://www.qwant.com',
+            'regex' => '^(\w+\.)*qwant\.com$',
+            'params' => ['q']
+        ],
         'google_avg' => [
             'name' => 'Google',
             'url' => 'http://www.google.com',

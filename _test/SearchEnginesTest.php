@@ -41,7 +41,7 @@ class SearchEnginesTest extends DokuWikiTest
                 'Google',
                 'test query'
             ],
-            
+
             // Bing
             'bing.com' => [
                 'https://www.bing.com/search?q=dokuwiki+plugin',
@@ -57,7 +57,7 @@ class SearchEnginesTest extends DokuWikiTest
                 'Bing',
                 'search test'
             ],
-            
+
             // Yahoo
             'yahoo.com' => [
                 'https://search.yahoo.com/search?p=test+search',
@@ -66,7 +66,7 @@ class SearchEnginesTest extends DokuWikiTest
                 'Yahoo!',
                 'test search'
             ],
-            
+
             // Yandex
             'yandex.ru' => [
                 'https://yandex.ru/search/?query=test+query',
@@ -82,7 +82,7 @@ class SearchEnginesTest extends DokuWikiTest
                 'Яндекс (Yandex)',
                 'another test'
             ],
-            
+
             // Naver
             'naver.com' => [
                 'https://search.naver.com/search.naver?query=korean+search',
@@ -91,7 +91,7 @@ class SearchEnginesTest extends DokuWikiTest
                 '네이버 (Naver)',
                 'korean search'
             ],
-            
+
             // Baidu
             'baidu.com' => [
                 'https://www.baidu.com/s?wd=chinese+search',
@@ -114,7 +114,7 @@ class SearchEnginesTest extends DokuWikiTest
                 '百度 (Baidu)',
                 'keyword test'
             ],
-            
+
             // Ask
             'ask.com' => [
                 'https://www.ask.com/web?q=ask+search',
@@ -137,7 +137,7 @@ class SearchEnginesTest extends DokuWikiTest
                 'Ask',
                 'search results'
             ],
-            
+
             // DuckDuckGo
             'duckduckgo.com' => [
                 'https://duckduckgo.com/?q=privacy+search',
@@ -146,7 +146,25 @@ class SearchEnginesTest extends DokuWikiTest
                 'DuckDuckGo',
                 'privacy search'
             ],
-            
+
+            // Ecosia
+            'ecosia.org' => [
+                'https://www.ecosia.org/search?method=index&q=eco+friendly+search',
+                true,
+                'ecosia',
+                'Ecosia',
+                'eco friendly search'
+            ],
+
+            // Qwant
+            'qwant.com' => [
+                'https://www.qwant.com/?q=dokuwiki&t=web',
+                true,
+                'qwant',
+                'Qwant',
+                'dokuwiki'
+            ],
+
             // AOL
             'aol.com' => [
                 'https://search.aol.com/aol/search?query=aol+search',
@@ -155,6 +173,7 @@ class SearchEnginesTest extends DokuWikiTest
                 'AOL Search',
                 'aol search'
             ],
+
             'aol.co.uk' => [
                 'https://search.aol.co.uk/aol/search?q=uk+search',
                 true,
@@ -162,7 +181,7 @@ class SearchEnginesTest extends DokuWikiTest
                 'AOL Search',
                 'uk search'
             ],
-            
+
             // Babylon
             'babylon.com' => [
                 'https://search.babylon.com/?q=babylon+search',
@@ -171,7 +190,7 @@ class SearchEnginesTest extends DokuWikiTest
                 'Babylon',
                 'babylon search'
             ],
-            
+
             // Google AVG
             'avg.com' => [
                 'https://search.avg.com/search?q=avg+search',
@@ -354,7 +373,7 @@ class SearchEnginesTest extends DokuWikiTest
         $this->assertEquals($expectedIsSearchEngine, $searchEngine->isSearchEngine());
         $this->assertEquals($expectedEngine, $searchEngine->getEngine());
         $this->assertEquals($expectedQuery, $searchEngine->getQuery());
-        
+
         if ($expectedEngine) {
             $this->assertEquals($expectedName, SearchEngines::getName($expectedEngine));
         }
@@ -376,7 +395,7 @@ class SearchEnginesTest extends DokuWikiTest
         $this->assertEquals($expectedIsSearchEngine, $searchEngine->isSearchEngine());
         $this->assertEquals($expectedEngine, $searchEngine->getEngine());
         $this->assertEquals($expectedQuery, $searchEngine->getQuery());
-        
+
         if ($expectedEngine) {
             $this->assertEquals($expectedName, SearchEngines::getName($expectedEngine));
         }
