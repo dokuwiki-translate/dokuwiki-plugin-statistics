@@ -314,14 +314,16 @@ class StatisticsGraph
     protected function printGraph(string $name, string $type, array $data)
     {
         $json = htmlspecialchars(json_encode($data), ENT_QUOTES, 'UTF-8');
-        $tpl = '<div class="plugin-statistics-chart-%s" style="width: %dpx; height: %dpx;">
+        $tpl = '
         <chart-component
+            width="%d"
+            height="%d"
             name="%s"
             type="%s"
             data="%s"></chart-component>
-        </div>';
+        ';
 
-        echo sprintf($tpl, $name, $this->width, $this->height, $name, $type, $json);
+        echo sprintf($tpl, $this->width, $this->height, $name, $type, $json);
     }
 
     #endregion Graphbuilding functions

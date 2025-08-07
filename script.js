@@ -206,9 +206,8 @@ class ChartComponent extends HTMLElement {
         console.log('data', data);
 
         const canvas = document.createElement("canvas");
-        canvas.id = "myChart";
-        canvas.style.height = chartType === "pie" ? "300px" : "100%";
-        canvas.style.width = chartType === "pie" ? "300px" : "100%";
+        canvas.height = this.getAttribute('height') || 300;
+        canvas.width = this.getAttribute('width') || 300;
 
         this.appendChild(canvas);
 
@@ -217,7 +216,10 @@ class ChartComponent extends HTMLElement {
         // basic config
         const config = {
             type: chartType,
-            data: data
+            data: data,
+            options: {
+                responsive: false,
+            },
         };
 
         // percentage labels and tooltips for pie charts
@@ -225,20 +227,16 @@ class ChartComponent extends HTMLElement {
             // chartjs-plugin-datalabels needs to be registered
             Chart.register(ChartDataLabels);
 
-            config.options =  {
-                plugins: {
-                    datalabels: {
-                        formatter: (value, context) => {
-                            const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                            const percentage = ((value / total) * 100).toFixed(2) + '%';
-                            return percentage;
-                        },
-                        color: '#fff',
-                    }
+            config.options.plugins = {
+                datalabels: {
+                    formatter: (value, context) => {
+                        const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        return ((value / total) * 100).toFixed(2) + '%'; // percentage
+                    },
+                    color: '#fff',
                 }
             };
         }
-
 
         new Chart(ctx, config);
     }
