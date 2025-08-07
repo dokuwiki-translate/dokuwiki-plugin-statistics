@@ -594,7 +594,7 @@ class Query
         $sql = "SELECT COUNT(DISTINCT uid) as cnt,
                        ROUND(view_x/100)*100 as res_x,
                        ROUND(view_y/100)*100 as res_y,
-                       (ROUND(view_x/100)*100 || 'x' || ROUND(view_y/100)*100) as resolution
+                       CAST(ROUND(view_x/100)*100 AS int) || 'x' || CAST(ROUND(view_y/100)*100 AS int) as resolution
                   FROM access as A
                  WHERE A.dt >= ? AND A.dt <= ?
                    AND ua_type  = ?
