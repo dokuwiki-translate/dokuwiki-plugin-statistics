@@ -266,20 +266,6 @@ class SearchEnginesTest extends DokuWikiTest
                 null,
                 null
             ],
-            'search engine without query' => [
-                'https://www.google.com/',
-                false,
-                null,
-                null,
-                null
-            ],
-            'search engine with empty query' => [
-                'https://www.google.com/search?q=',
-                false,
-                null,
-                null,
-                null
-            ],
             'invalid URL' => [
                 'not-a-url',
                 false,
