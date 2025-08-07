@@ -2,6 +2,7 @@
 
 // phpcs:disable PSR1.Methods.CamelCapsMethodName.NotCamelCaps
 use dokuwiki\Extension\AdminPlugin;
+use dokuwiki\plugin\statistics\SearchEngines;
 
 /**
  * statistics plugin
@@ -553,11 +554,12 @@ class admin_plugin_statistics extends AdminPlugin
                     echo '<img src="' . DOKU_BASE . 'lib/plugins/statistics/ico/search/bing.png" alt="Bing" />';
                     echo '</a> ';
                 } elseif ($k == 'engine') {
-                    // FIXME thhis is not correct anymore
-                    if (isset($SEARCHENGINEINFO[$v])) {
-                        echo '<a href="' . $SEARCHENGINEINFO[$v][1] . '">' . $SEARCHENGINEINFO[$v][0] . '</a>';
+                    $name = SearchEngines::getName($v);
+                    $url = SearchEngines::getURL($v);
+                    if ($url) {
+                        echo '<a href="' . $url . '">' . hsc($name) . '</a>';
                     } else {
-                        echo hsc(ucwords($v));
+                        echo hsc($name);
                     }
                 } elseif ($k == 'html') {
                     echo $v;

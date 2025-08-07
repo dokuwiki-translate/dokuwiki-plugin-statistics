@@ -17,7 +17,7 @@ class helper_plugin_statistics extends Plugin
     public $prefix;
     protected $oQuery;
     protected ?Logger $oLogger = null;
-    protected $oGraph;
+    protected ?StatisticsGraph $oGraph = null;
     protected ?SQLiteDB $db = null;
 
     /**

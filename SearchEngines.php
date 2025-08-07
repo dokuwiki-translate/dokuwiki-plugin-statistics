@@ -149,7 +149,7 @@ class SearchEngines
      */
     public static function getName($engine): string
     {
-        return isset(self::$searchEngines[$engine]) ? self::$searchEngines[$engine]['name'] : ucfirst($engine);
+        return isset(self::$searchEngines[$engine]) ? self::$searchEngines[$engine]['name'] : ucwords($engine);
     }
 
     /**
