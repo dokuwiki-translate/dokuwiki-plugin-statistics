@@ -226,12 +226,15 @@ class admin_plugin_statistics extends AdminPlugin
 
         echo '<ul>';
         foreach ($quick as $name => $time) {
+            // today is included only today
+            $to = $name == 'today' ? $quick['today'] : $quick['last1'];
+
             $url = buildURLparams([
                 'do' => 'admin',
                 'page' => 'statistics',
                 'opt' => $this->opt,
                 'f' => $time,
-                't' => $quick['today'],
+                't' => $to,
             ]);
 
             echo '<li>';
