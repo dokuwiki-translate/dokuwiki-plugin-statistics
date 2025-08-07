@@ -283,6 +283,7 @@ class Query
         $sql = "SELECT COUNT(*) as cnt, query, query as ${I}lookup
                   FROM search as A
                  WHERE A.dt >= ? AND A.dt <= ?
+                   AND A.query != ''
                    AND $WHERE
               GROUP BY query
               ORDER BY cnt DESC, query" .
