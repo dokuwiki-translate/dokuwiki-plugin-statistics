@@ -559,14 +559,6 @@ class admin_plugin_statistics extends AdminPlugin
                     } else {
                         echo hsc(ucwords($v));
                     }
-                } elseif ($k == 'eflag') {
-                    $this->html_icon('search', $v);
-                } elseif ($k == 'bflag') {
-                    $this->html_icon('browser', $v);
-                } elseif ($k == 'osflag') {
-                    $this->html_icon('os', $v);
-                } elseif ($k == 'cflag') {
-                    $this->html_icon('flags', $v);
                 } elseif ($k == 'html') {
                     echo $v;
                 } else {
@@ -582,23 +574,5 @@ class admin_plugin_statistics extends AdminPlugin
         echo '</table>';
 
         if ($pager) $this->html_pager($pager, count($result) > $pager);
-    }
-
-    public function html_icon($type, $value)
-    {
-        $value = strtolower(preg_replace('/[^\w]+/', '', $value));
-        $value = str_replace(' ', '_', $value);
-
-        $file = 'lib/plugins/statistics/ico/' . $type . '/' . $value . '.png';
-        if ($type == 'flags') {
-            $w = 18;
-            $h = 12;
-        } else {
-            $w = 16;
-            $h = 16;
-        }
-        if (!file_exists(DOKU_INC . $file)) return;
-
-        echo '<img src="' . DOKU_BASE . $file . '" alt="' . hsc($value) . '" width="' . $w . '" height="' . $h . '" />';
     }
 }

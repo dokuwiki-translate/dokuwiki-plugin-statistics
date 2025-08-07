@@ -256,7 +256,7 @@ class Query
      */
     public function searchengines(): array
     {
-        $sql = "SELECT COUNT(*) as cnt, engine as eflag, engine
+        $sql = "SELECT COUNT(*) as cnt, engine
                   FROM search as A
                  WHERE A.dt >= ? AND A.dt <= ?
               GROUP BY engine
@@ -454,7 +454,7 @@ class Query
      */
     public function countries(): array
     {
-        $sql = "SELECT COUNT(DISTINCT session) as cnt, B.code AS cflag, B.country
+        $sql = "SELECT COUNT(DISTINCT session) as cnt, B.country
                   FROM access as A,
                        iplocation as B
                  WHERE A.dt >= ? AND A.dt <= ?
@@ -472,7 +472,7 @@ class Query
     public function browsers(bool $ext = true): array
     {
         if ($ext) {
-            $sel = 'ua_info as bflag, ua_info as browser, ua_ver';
+            $sel = 'ua_info as browser, ua_ver';
             $grp = 'ua_info, ua_ver';
         } else {
             $grp = 'ua_info';
@@ -494,7 +494,7 @@ class Query
      */
     public function os(): array
     {
-        $sql = "SELECT COUNT(DISTINCT session) as cnt, os as osflag, os
+        $sql = "SELECT COUNT(DISTINCT session) as cnt, os
                   FROM access as A
                  WHERE A.dt >= ? AND A.dt <= ?
                    AND ua_type = ?
