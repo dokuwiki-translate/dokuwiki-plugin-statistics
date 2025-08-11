@@ -437,8 +437,8 @@ class Query
     public function newreferer(): array
     {
         $sql = "SELECT COUNT(*) as cnt, ref as url
-                  FROM access as B,
-                       refseen as A
+                  FROM access as A,
+                       refseen as B
                  WHERE B.dt >= ? AND B.dt <= ?
                    AND ua_type = ?
                    AND ref_type = ?
