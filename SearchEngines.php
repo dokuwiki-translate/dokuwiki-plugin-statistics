@@ -11,12 +11,6 @@ class SearchEngines
 {
     /** @var array Search engine definitions with regex patterns and metadata */
     protected static array $searchEngines = [
-        'dokuwiki' => [
-            'name' => 'DokuWiki Internal Search',
-            'url' => DOKU_URL,
-            'regex' => '', // set in constructor
-            'params' => ['q']
-        ],
         'google' => [
             'name' => 'Google',
             'url' => 'http://www.google.com',
@@ -119,8 +113,6 @@ class SearchEngines
      */
     public function __construct(string $referer)
     {
-        // Add regex matching ourselves
-        self::$searchEngines['dokuwiki']['regex'] = '^' . preg_quote(parse_url(DOKU_URL, PHP_URL_HOST), '/') . '$';
         $this->analyze($referer);
     }
 

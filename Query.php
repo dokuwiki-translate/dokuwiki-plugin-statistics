@@ -76,10 +76,19 @@ class Query
     {
         $data = [];
 
-        $sql = "SELECT ref_type, COUNT(*) as cnt
-                  FROM access as A
-                 WHERE A.dt >= ? AND A.dt <= ?
-                   AND ua_type = ?
+        // Count referrer types by joining with referers table
+        $sql = "SELECT
+                    CASE
+                        WHEN R.engine IS NOT NULL THEN 'search'
+                        WHEN R.url IS NOT NULL AND R.url != '' THEN 'external'
+                        ELSE 'direct'
+                    END as ref_type,
+                    COUNT(*) as cnt
+                  FROM pageviews as P
+                  LEFT JOIN referers as R ON P.ref_id = R.id
+                  LEFT JOIN sessions as S ON P.session = S.session
+                 WHERE P.dt >= ? AND P.dt <= ?
+                   AND S.ua_type = ?
               GROUP BY ref_type";
         $result = $this->db->queryAll($sql, [$this->from, $this->to, 'browser']);
 
@@ -87,48 +96,62 @@ class Query
             if ($row['ref_type'] == 'search') $data['search'] = $row['cnt'];
             if ($row['ref_type'] == 'external') $data['external'] = $row['cnt'];
             if ($row['ref_type'] == 'internal') $data['internal'] = $row['cnt'];
-            if ($row['ref_type'] == '') $data['direct'] = $row['cnt'];
+            if ($row['ref_type'] == 'direct') $data['direct'] = $row['cnt'];
         }
 
         // general user and session info
-        $sql = "SELECT COUNT(DISTINCT session) as sessions,
-                       COUNT(session) as views,
-                       COUNT(DISTINCT user) as users,
-                       COUNT(DISTINCT uid) as visitors
-                  FROM access as A
-                 WHERE A.dt >= ? AND A.dt <= ?
-                   AND ua_type = ?";
+        $sql = "SELECT COUNT(DISTINCT P.session) as sessions,
+                       COUNT(P.session) as views,
+                       COUNT(DISTINCT S.user) as users,
+                       COUNT(DISTINCT S.uid) as visitors
+                  FROM pageviews as P
+                  LEFT JOIN sessions as S ON P.session = S.session
+                 WHERE P.dt >= ? AND P.dt <= ?
+                   AND S.ua_type = ?";
         $result = $this->db->queryRecord($sql, [$this->from, $this->to, 'browser']);
 
-        $data['users'] = max($result['users'] - 1, 0); // subtract empty user
+        $data['users'] = $result['users'];
         $data['sessions'] = $result['sessions'];
         $data['pageviews'] = $result['views'];
         $data['visitors'] = $result['visitors'];
 
-        // calculate bounce rate
+        // calculate bounce rate (sessions with only 1 page view)
         if ($data['sessions']) {
             $sql = "SELECT COUNT(*) as cnt
-                      FROM session as A
-                     WHERE A.dt >= ? AND A.dt <= ?
-                       AND views = ?";
-            $count = $this->db->queryValue($sql, [$this->from, $this->to, 1]);
+                      FROM (
+                          SELECT P.session, COUNT(*) as views
+                            FROM pageviews as P
+                            LEFT JOIN sessions as S ON P.session = S.session
+                           WHERE P.dt >= ? AND P.dt <= ?
+                             AND S.ua_type = ?
+                        GROUP BY P.session
+                          HAVING views = 1
+                      )";
+            $count = $this->db->queryValue($sql, [$this->from, $this->to, 'browser']);
             $data['bouncerate'] = $count * 100 / $data['sessions'];
             $data['newvisitors'] = $count * 100 / $data['sessions'];
         }
 
         // calculate avg. number of views per session
         $sql = "SELECT AVG(views) as cnt
-                  FROM session as A
-                 WHERE A.dt >= ? AND A.dt <= ?";
-        $data['avgpages'] = $this->db->queryValue($sql, [$this->from, $this->to]);
+                  FROM (
+                      SELECT P.session, COUNT(*) as views
+                        FROM pageviews as P
+                        LEFT JOIN sessions as S ON P.session = S.session
+                       WHERE P.dt >= ? AND P.dt <= ?
+                         AND S.ua_type = ?
+                    GROUP BY P.session
+                  )";
+        $data['avgpages'] = $this->db->queryValue($sql, [$this->from, $this->to, 'browser']);
 
         // average time spent on the site
-        $sql = "SELECT AVG(end - dt)/60 as time
-                  FROM session as A
-                 WHERE A.dt >= ? AND A.dt <= ?
-                   AND dt != end
-                   AND DATE(dt) = DATE(end)";
-        $data['timespent'] = $this->db->queryValue($sql, [$this->from, $this->to]);
+        $sql = "SELECT AVG((julianday(end) - julianday(dt)) * 24 * 60) as time
+                  FROM sessions as S
+                 WHERE S.dt >= ? AND S.dt <= ?
+                   AND S.dt != S.end
+                   AND DATE(S.dt) = DATE(S.end)
+                   AND S.ua_type = ?";
+        $data['timespent'] = $this->db->queryValue($sql, [$this->from, $this->to, 'browser']);
 
         // logins
         $sql = "SELECT COUNT(*) as logins
@@ -144,10 +167,10 @@ class Query
                    AND type = ?";
         $data['registrations'] = $this->db->queryValue($sql, [$this->from, $this->to, 'C']);
 
-        // current users
-        $sql = "SELECT COUNT(*) as current
-                  FROM lastseen
-                 WHERE dt >= datetime('now', '-10 minutes')";
+        // current users (based on recent sessions)
+        $sql = "SELECT COUNT(DISTINCT uid) as current
+                  FROM sessions
+                 WHERE end >= datetime('now', '-10 minutes')";
         $data['current'] = $this->db->queryValue($sql);
 
         return $data;
@@ -163,21 +186,22 @@ class Query
     public function dashboardviews(bool $hours = false): array
     {
         if ($hours) {
-            $TIME = 'strftime(\'%H\', dt)';
+            $TIME = 'strftime(\'%H\', P.dt)';
         } else {
-            $TIME = 'DATE(dt)';
+            $TIME = 'DATE(P.dt)';
         }
 
         $data = [];
 
         // access trends
         $sql = "SELECT $TIME as time,
-                       COUNT(DISTINCT session) as sessions,
-                       COUNT(session) as pageviews,
-                       COUNT(DISTINCT uid) as visitors
-                  FROM access as A
-                 WHERE A.dt >= ? AND A.dt <= ?
-                   AND ua_type = ?
+                       COUNT(DISTINCT P.session) as sessions,
+                       COUNT(P.session) as pageviews,
+                       COUNT(DISTINCT S.uid) as visitors
+                  FROM pageviews as P
+                  LEFT JOIN sessions as S ON P.session = S.session
+                 WHERE P.dt >= ? AND P.dt <= ?
+                   AND S.ua_type = ?
               GROUP BY $TIME
               ORDER BY time";
         $result = $this->db->queryAll($sql, [$this->from, $this->to, 'browser']);
@@ -256,11 +280,14 @@ class Query
      */
     public function searchengines(): array
     {
-        $sql = "SELECT COUNT(*) as cnt, engine
-                  FROM search as A
-                 WHERE A.dt >= ? AND A.dt <= ?
-              GROUP BY engine
-              ORDER BY cnt DESC, engine" .
+        $sql = "SELECT COUNT(*) as cnt, R.engine
+                  FROM pageviews as P
+                  LEFT JOIN referers as R ON P.ref_id = R.id
+                 WHERE P.dt >= ? AND P.dt <= ?
+                   AND R.engine IS NOT NULL
+                   AND R.engine != ''
+              GROUP BY R.engine
+              ORDER BY cnt DESC, R.engine" .
             $this->limit;
         return $this->db->queryAll($sql, [$this->from, $this->to]);
     }
@@ -272,21 +299,21 @@ class Query
     public function searchphrases(bool $extern = false): array
     {
         if ($extern) {
-            $WHERE = "engine != ?";
+            $WHERE = "S.query != '' AND (R.engine IS NULL OR R.engine != ?)";
             $engineParam = 'dokuwiki';
             $I = '';
         } else {
-            $WHERE = "engine = ?";
+            $WHERE = "S.query != '' AND R.engine = ?";
             $engineParam = 'dokuwiki';
             $I = 'i';
         }
-        $sql = "SELECT COUNT(*) as cnt, query, query as ${I}lookup
-                  FROM search as A
-                 WHERE A.dt >= ? AND A.dt <= ?
-                   AND A.query != ''
+        $sql = "SELECT COUNT(*) as cnt, S.query, S.query as ${I}lookup
+                  FROM search as S
+                  LEFT JOIN referers as R ON S.query = R.url
+                 WHERE S.dt >= ? AND S.dt <= ?
                    AND $WHERE
-              GROUP BY query
-              ORDER BY cnt DESC, query" .
+              GROUP BY S.query
+              ORDER BY cnt DESC, S.query" .
             $this->limit;
         return $this->db->queryAll($sql, [$this->from, $this->to, $engineParam]);
     }
@@ -298,22 +325,23 @@ class Query
     public function searchwords(bool $extern = false): array
     {
         if ($extern) {
-            $WHERE = "engine != ?";
+            $WHERE = "R.engine IS NULL OR R.engine != ?";
             $engineParam = 'dokuwiki';
             $I = '';
         } else {
-            $WHERE = "engine = ?";
+            $WHERE = "R.engine = ?";
             $engineParam = 'dokuwiki';
             $I = 'i';
         }
-        $sql = "SELECT COUNT(*) as cnt, word, word as ${I}lookup
-                  FROM search as A,
-                       searchwords as B
-                 WHERE A.dt >= ? AND A.dt <= ?
-                   AND A.id = B.sid
+        $sql = "SELECT COUNT(*) as cnt, SW.word, SW.word as ${I}lookup
+                  FROM search as S
+                  LEFT JOIN searchwords as SW ON S.id = SW.sid
+                  LEFT JOIN referers as R ON S.query = R.url
+                 WHERE S.dt >= ? AND S.dt <= ?
+                   AND SW.word IS NOT NULL
                    AND $WHERE
-              GROUP BY word
-              ORDER BY cnt DESC, word" .
+              GROUP BY SW.word
+              ORDER BY cnt DESC, SW.word" .
             $this->limit;
         return $this->db->queryAll($sql, [$this->from, $this->to, $engineParam]);
     }
@@ -337,12 +365,13 @@ class Query
      */
     public function pages(): array
     {
-        $sql = "SELECT COUNT(*) as cnt, page
-                  FROM access as A
-                 WHERE A.dt >= ? AND A.dt <= ?
-                   AND ua_type = ?
-              GROUP BY page
-              ORDER BY cnt DESC, page" .
+        $sql = "SELECT COUNT(*) as cnt, P.page
+                  FROM pageviews as P
+                  LEFT JOIN sessions as S ON P.session = S.session
+                 WHERE P.dt >= ? AND P.dt <= ?
+                   AND S.ua_type = ?
+              GROUP BY P.page
+              ORDER BY cnt DESC, P.page" .
             $this->limit;
         return $this->db->queryAll($sql, [$this->from, $this->to, 'browser']);
     }
@@ -420,15 +449,19 @@ class Query
      */
     public function referer(): array
     {
-        $sql = "SELECT COUNT(*) as cnt, ref as url
-                  FROM access as A
-                 WHERE A.dt >= ? AND A.dt <= ?
-                   AND ua_type = ?
-                   AND ref_type = ?
-              GROUP BY ref_md5
-              ORDER BY cnt DESC, url" .
+        $sql = "SELECT COUNT(*) as cnt, R.url
+                  FROM pageviews as P
+                  LEFT JOIN sessions as S ON P.session = S.session
+                  LEFT JOIN referers as R ON P.ref_id = R.id
+                 WHERE P.dt >= ? AND P.dt <= ?
+                   AND S.ua_type = ?
+                   AND R.url IS NOT NULL
+                   AND R.url != ''
+                   AND R.engine IS NULL
+              GROUP BY R.url
+              ORDER BY cnt DESC, R.url" .
             $this->limit;
-        return $this->db->queryAll($sql, [$this->from, $this->to, 'browser', 'external']);
+        return $this->db->queryAll($sql, [$this->from, $this->to, 'browser']);
     }
 
     /**
@@ -436,17 +469,20 @@ class Query
      */
     public function newreferer(): array
     {
-        $sql = "SELECT COUNT(*) as cnt, ref as url
-                  FROM access as A,
-                       refseen as B
-                 WHERE B.dt >= ? AND B.dt <= ?
-                   AND ua_type = ?
-                   AND ref_type = ?
-                   AND A.ref_md5 = B.ref_md5
-              GROUP BY A.ref_md5
-              ORDER BY cnt DESC, url" .
+        $sql = "SELECT COUNT(*) as cnt, R.url
+                  FROM pageviews as P
+                  LEFT JOIN sessions as S ON P.session = S.session
+                  LEFT JOIN referers as R ON P.ref_id = R.id
+                 WHERE P.dt >= ? AND P.dt <= ?
+                   AND S.ua_type = ?
+                   AND R.url IS NOT NULL
+                   AND R.url != ''
+                   AND R.engine IS NULL
+                   AND R.dt >= ?
+              GROUP BY R.url
+              ORDER BY cnt DESC, R.url" .
             $this->limit;
-        return $this->db->queryAll($sql, [$this->from, $this->to, 'browser', 'external']);
+        return $this->db->queryAll($sql, [$this->from, $this->to, 'browser', $this->from]);
     }
 
     /**
@@ -454,13 +490,14 @@ class Query
      */
     public function countries(): array
     {
-        $sql = "SELECT COUNT(DISTINCT session) as cnt, B.country
-                  FROM access as A,
-                       iplocation as B
-                 WHERE A.dt >= ? AND A.dt <= ?
-                   AND A.ip = B.ip
-              GROUP BY B.code
-              ORDER BY cnt DESC, B.country" .
+        $sql = "SELECT COUNT(DISTINCT P.session) as cnt, I.country
+                  FROM pageviews as P
+                  LEFT JOIN iplocation as I ON P.ip = I.ip
+                 WHERE P.dt >= ? AND P.dt <= ?
+                   AND I.country IS NOT NULL
+                   AND I.country != ''
+              GROUP BY I.code
+              ORDER BY cnt DESC, I.country" .
             $this->limit;
         return $this->db->queryAll($sql, [$this->from, $this->to]);
     }
@@ -472,19 +509,19 @@ class Query
     public function browsers(bool $ext = true): array
     {
         if ($ext) {
-            $sel = 'ua_info as browser, ua_ver';
-            $grp = 'ua_info, ua_ver';
+            $sel = 'S.ua_info as browser, S.ua_ver';
+            $grp = 'S.ua_info, S.ua_ver';
         } else {
-            $grp = 'ua_info';
-            $sel = 'ua_info';
+            $grp = 'S.ua_info';
+            $sel = 'S.ua_info';
         }
 
-        $sql = "SELECT COUNT(DISTINCT session) as cnt, $sel
-                  FROM access as A
-                 WHERE A.dt >= ? AND A.dt <= ?
-                   AND ua_type = ?
+        $sql = "SELECT COUNT(DISTINCT S.session) as cnt, $sel
+                  FROM sessions as S
+                 WHERE S.dt >= ? AND S.dt <= ?
+                   AND S.ua_type = ?
               GROUP BY $grp
-              ORDER BY cnt DESC, ua_info" .
+              ORDER BY cnt DESC, S.ua_info" .
             $this->limit;
         return $this->db->queryAll($sql, [$this->from, $this->to, 'browser']);
     }
@@ -494,12 +531,12 @@ class Query
      */
     public function os(): array
     {
-        $sql = "SELECT COUNT(DISTINCT session) as cnt, os
-                  FROM access as A
-                 WHERE A.dt >= ? AND A.dt <= ?
-                   AND ua_type = ?
-              GROUP BY os
-              ORDER BY cnt DESC, os" .
+        $sql = "SELECT COUNT(DISTINCT S.session) as cnt, S.os
+                  FROM sessions as S
+                 WHERE S.dt >= ? AND S.dt <= ?
+                   AND S.ua_type = ?
+              GROUP BY S.os
+              ORDER BY cnt DESC, S.os" .
             $this->limit;
         return $this->db->queryAll($sql, [$this->from, $this->to, 'browser']);
     }
@@ -509,13 +546,15 @@ class Query
      */
     public function topuser(): array
     {
-        $sql = "SELECT COUNT(*) as cnt, user
-                  FROM access as A
-                 WHERE A.dt >= ? AND A.dt <= ?
-                   AND ua_type = ?
-                   AND user != ?
-              GROUP BY user
-              ORDER BY cnt DESC, user" .
+        $sql = "SELECT COUNT(*) as cnt, S.user
+                  FROM pageviews as P
+                  LEFT JOIN sessions as S ON P.session = S.session
+                 WHERE P.dt >= ? AND P.dt <= ?
+                   AND S.ua_type = ?
+                   AND S.user IS NOT NULL
+                   AND S.user != ?
+              GROUP BY S.user
+              ORDER BY cnt DESC, S.user" .
             $this->limit;
         return $this->db->queryAll($sql, [$this->from, $this->to, 'browser', '']);
     }
@@ -526,9 +565,10 @@ class Query
     public function topeditor(): array
     {
         $sql = "SELECT COUNT(*) as cnt, user
-                  FROM edits as A
-                 WHERE A.dt >= ? AND A.dt <= ?
-                   AND user != ?
+                  FROM edits as E
+             LEFT JOIN sessions as S ON E.session = S.session
+                 WHERE E.dt >= ? AND E.dt <= ?
+                   AND S.user != ?
               GROUP BY user
               ORDER BY cnt DESC, user" .
             $this->limit;
@@ -540,14 +580,17 @@ class Query
      */
     public function topgroup(): array
     {
-        $sql = "SELECT COUNT(*) as cnt, `group`
-                  FROM groups as A
-                 WHERE A.dt >= ? AND A.dt <= ?
-                   AND `type` = ?
-              GROUP BY `group`
-              ORDER BY cnt DESC, `group`" .
+        $sql = "SELECT COUNT(*) as cnt, G.`group`
+                  FROM pageviews as P
+                  LEFT JOIN sessions as S ON P.session = S.session
+                  LEFT JOIN groups as G ON S.user = G.user
+                 WHERE P.dt >= ? AND P.dt <= ?
+                   AND S.ua_type = ?
+                   AND G.`group` IS NOT NULL
+              GROUP BY G.`group`
+              ORDER BY cnt DESC, G.`group`" .
             $this->limit;
-        return $this->db->queryAll($sql, [$this->from, $this->to, 'view']);
+        return $this->db->queryAll($sql, [$this->from, $this->to, 'browser']);
     }
 
     /**
@@ -555,14 +598,16 @@ class Query
      */
     public function topgroupedit(): array
     {
-        $sql = "SELECT COUNT(*) as cnt, `group`
-                  FROM groups as A
-                 WHERE A.dt >= ? AND A.dt <= ?
-                   AND `type` = ?
-              GROUP BY `group`
-              ORDER BY cnt DESC, `group`" .
+        $sql = "SELECT COUNT(*) as cnt, G.`group`
+                  FROM edits as E
+                  LEFT JOIN sessions as S ON E.session = S.session
+                  LEFT JOIN groups as G ON S.user = G.user
+                 WHERE E.dt >= ? AND E.dt <= ?
+                   AND G.`group` IS NOT NULL
+              GROUP BY G.`group`
+              ORDER BY cnt DESC, G.`group`" .
             $this->limit;
-        return $this->db->queryAll($sql, [$this->from, $this->to, 'edit']);
+        return $this->db->queryAll($sql, [$this->from, $this->to]);
     }
 
 
@@ -571,15 +616,16 @@ class Query
      */
     public function resolution(): array
     {
-        $sql = "SELECT COUNT(DISTINCT uid) as cnt,
-                       ROUND(screen_x/100)*100 as res_x,
-                       ROUND(screen_y/100)*100 as res_y,
-                       (ROUND(screen_x/100)*100 || 'x' || ROUND(screen_y/100)*100) as resolution
-                  FROM access as A
-                 WHERE A.dt >= ? AND A.dt <= ?
-                   AND ua_type  = ?
-                   AND screen_x != ?
-                   AND screen_y != ?
+        $sql = "SELECT COUNT(DISTINCT S.uid) as cnt,
+                       ROUND(P.screen_x/100)*100 as res_x,
+                       ROUND(P.screen_y/100)*100 as res_y,
+                       CAST(ROUND(P.screen_x/100)*100 AS int) || 'x' || CAST(ROUND(P.screen_y/100)*100 AS int) as resolution
+                  FROM pageviews as P
+                  LEFT JOIN sessions as S ON P.session = S.session
+                 WHERE P.dt >= ? AND P.dt <= ?
+                   AND S.ua_type = ?
+                   AND P.screen_x != ?
+                   AND P.screen_y != ?
               GROUP BY resolution
               ORDER BY cnt DESC" .
             $this->limit;
@@ -591,15 +637,16 @@ class Query
      */
     public function viewport(): array
     {
-        $sql = "SELECT COUNT(DISTINCT uid) as cnt,
-                       ROUND(view_x/100)*100 as res_x,
-                       ROUND(view_y/100)*100 as res_y,
-                       CAST(ROUND(view_x/100)*100 AS int) || 'x' || CAST(ROUND(view_y/100)*100 AS int) as resolution
-                  FROM access as A
-                 WHERE A.dt >= ? AND A.dt <= ?
-                   AND ua_type  = ?
-                   AND view_x != ?
-                   AND view_y != ?
+        $sql = "SELECT COUNT(DISTINCT S.uid) as cnt,
+                       ROUND(P.view_x/100)*100 as res_x,
+                       ROUND(P.view_y/100)*100 as res_y,
+                       CAST(ROUND(P.view_x/100)*100 AS int) || 'x' || CAST(ROUND(P.view_y/100)*100 AS int) as resolution
+                  FROM pageviews as P
+                  LEFT JOIN sessions as S ON P.session = S.session
+                 WHERE P.dt >= ? AND P.dt <= ?
+                   AND S.ua_type = ?
+                   AND P.view_x != ?
+                   AND P.view_y != ?
               GROUP BY resolution
               ORDER BY cnt DESC" .
             $this->limit;
@@ -612,8 +659,11 @@ class Query
      */
     public function seenusers(): array
     {
-        $sql = "SELECT `user`, `dt`
-                  FROM lastseen as A
+        $sql = "SELECT `user`, MAX(`dt`) as dt
+                  FROM users
+                 WHERE `user` IS NOT NULL
+                   AND `user` != ''
+              GROUP BY `user`
               ORDER BY `dt` DESC" .
             $this->limit;
 
