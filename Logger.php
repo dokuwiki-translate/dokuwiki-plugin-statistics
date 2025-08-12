@@ -67,7 +67,7 @@ class Logger
         } elseif ($dd->isBot()) {
             $this->uaType = 'robot';
             // for now ignore bots
-            throw new \RuntimeException('Bot detected, not logging');
+            throw new IgnoreException('Bot detected, not logging');
         }
 
         $this->uaAgent = $ua;

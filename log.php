@@ -21,8 +21,6 @@ session_write_close();
 global $INPUT;
 
 try {
-
-
     /** @var helper_plugin_statistics $plugin */
     $plugin = plugin_load('helper', 'statistics');
     $plugin->sendGIF(); // browser be done
@@ -46,5 +44,7 @@ try {
 
     $logger->end();
 } catch (\Exception $e) {
-    ErrorHandler::logException($e);
+    if (!$e instanceof dokuwiki\plugin\statistics\IgnoreException) {
+        ErrorHandler::logException($e);
+    }
 }
