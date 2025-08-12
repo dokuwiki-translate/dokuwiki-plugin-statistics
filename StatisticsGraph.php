@@ -279,9 +279,9 @@ class StatisticsGraph
         $times  = [];
 
         foreach ($result as $time => $row) {
-            $data1[] = (int) $row['E'];
-            $data2[] = (int) $row['C'];
-            $data3[] = (int) $row['D'];
+            $data1[] = (int) ($row['E'] ?? 0);
+            $data2[] = (int) ($row['C'] ?? 0);
+            $data3[] = (int) ($row['D'] ?? 0);
             $times[] = $time . ($hours ? 'h' : '');
         }
         $data = [

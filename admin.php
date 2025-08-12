@@ -33,7 +33,7 @@ class admin_plugin_statistics extends AdminPlugin
         'content' => ['page', 'edits', 'images', 'downloads', 'history'],
         'users' => ['topuser', 'topeditor', 'topgroup', 'topgroupedit', 'seenusers'],
         'links' => ['referer', 'newreferer', 'outlinks'],
-        'search' => ['searchengines', 'searchphrases', 'searchwords', 'internalsearchphrases', 'internalsearchwords'],
+        'search' => ['searchengines', 'internalsearchphrases', 'internalsearchwords'],
         'technology' => ['browsers', 'os', 'countries', 'resolution', 'viewport']
     ];
 
@@ -408,18 +408,16 @@ class admin_plugin_statistics extends AdminPlugin
     {
         $result = $this->hlp->getQuery()->aggregate();
 
-        $all = $result['search'] + $result['external'] + $result['direct'];
-
-        if ($all) {
+        if ($result['referers']) {
             printf(
                 '<p>' . $this->getLang('intro_referer') . '</p>',
-                $all,
+                $result['referers'],
                 $result['direct'],
-                (100 * $result['direct'] / $all),
+                (100 * $result['direct'] / $result['referers']),
                 $result['search'],
-                (100 * $result['search'] / $all),
+                (100 * $result['search'] / $result['referers']),
                 $result['external'],
-                (100 * $result['external'] / $all)
+                (100 * $result['external'] / $result['referers'])
             );
         }
 

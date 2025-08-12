@@ -74,14 +74,24 @@ class Query
      */
     public function aggregate(): array
     {
-        $data = [];
+        // init some values that might not be set
+        $data = [
+            'referers' => 0, // total number of (external) referrers
+            'external' => 0, // external referrers
+            'search' => 0, // search engine referrers
+            'direct' => 0, // direct referrers
+            'internal' => 0, // internal referrers
+            'bouncerate' => 0,
+            'newvisitors' => 0,
+        ];
 
         // Count referrer types by joining with referers table
         $sql = "SELECT
                     CASE
                         WHEN R.engine IS NOT NULL THEN 'search'
-                        WHEN R.url IS NOT NULL AND R.url != '' THEN 'external'
-                        ELSE 'direct'
+                        WHEN R.url = '' THEN 'direct'
+                        WHEN R.url IS NOT NULL THEN 'external'
+                        ELSE 'internal'
                     END as ref_type,
                     COUNT(*) as cnt
                   FROM pageviews as P
@@ -93,10 +103,21 @@ class Query
         $result = $this->db->queryAll($sql, [$this->from, $this->to, 'browser']);
 
         foreach ($result as $row) {
-            if ($row['ref_type'] == 'search') $data['search'] = $row['cnt'];
-            if ($row['ref_type'] == 'external') $data['external'] = $row['cnt'];
-            if ($row['ref_type'] == 'internal') $data['internal'] = $row['cnt'];
-            if ($row['ref_type'] == 'direct') $data['direct'] = $row['cnt'];
+            if ($row['ref_type'] == 'search') {
+                $data['search'] = $row['cnt'];
+                $data['referers'] += $row['cnt'];
+            }
+            if ($row['ref_type'] == 'direct') {
+                $data['direct'] = $row['cnt'];
+                $data['referers'] += $row['cnt'];
+            }
+            if ($row['ref_type'] == 'external') {
+                $data['external'] = $row['cnt'];
+                $data['referers'] += $row['cnt'];
+            }
+            if ($row['ref_type'] == 'internal') {
+                $data['internal'] = $row['cnt'];
+            }
         }
 
         // general user and session info
@@ -293,57 +314,33 @@ class Query
     }
 
     /**
-     * @param bool $extern Limit results to external search engine (true) or dokuwiki (false)
      * @return array
      */
-    public function searchphrases(bool $extern = false): array
+    public function searchphrases(): array
     {
-        if ($extern) {
-            $WHERE = "S.query != '' AND (R.engine IS NULL OR R.engine != ?)";
-            $engineParam = 'dokuwiki';
-            $I = '';
-        } else {
-            $WHERE = "S.query != '' AND R.engine = ?";
-            $engineParam = 'dokuwiki';
-            $I = 'i';
-        }
-        $sql = "SELECT COUNT(*) as cnt, S.query, S.query as ${I}lookup
-                  FROM search as S
-                  LEFT JOIN referers as R ON S.query = R.url
-                 WHERE S.dt >= ? AND S.dt <= ?
-                   AND $WHERE
-              GROUP BY S.query
-              ORDER BY cnt DESC, S.query" .
+        $sql = "SELECT COUNT(*) as cnt, query, query as ilookup
+                  FROM search
+                 WHERE dt >= ? AND dt <= ?
+              GROUP BY query
+              ORDER BY cnt DESC, query" .
             $this->limit;
-        return $this->db->queryAll($sql, [$this->from, $this->to, $engineParam]);
+        return $this->db->queryAll($sql, [$this->from, $this->to]);
     }
 
     /**
-     * @param bool $extern Limit results to external search engine (true) or dokuwiki (false)
      * @return array
      */
-    public function searchwords(bool $extern = false): array
+    public function searchwords(): array
     {
-        if ($extern) {
-            $WHERE = "R.engine IS NULL OR R.engine != ?";
-            $engineParam = 'dokuwiki';
-            $I = '';
-        } else {
-            $WHERE = "R.engine = ?";
-            $engineParam = 'dokuwiki';
-            $I = 'i';
-        }
-        $sql = "SELECT COUNT(*) as cnt, SW.word, SW.word as ${I}lookup
-                  FROM search as S
-                  LEFT JOIN searchwords as SW ON S.id = SW.sid
-                  LEFT JOIN referers as R ON S.query = R.url
+        $sql = "SELECT COUNT(*) as cnt, SW.word, SW.word as ilookup
+                  FROM search as S,
+                       searchwords as SW
                  WHERE S.dt >= ? AND S.dt <= ?
-                   AND SW.word IS NOT NULL
-                   AND $WHERE
+                   AND S.id = SW.sid
               GROUP BY SW.word
               ORDER BY cnt DESC, SW.word" .
             $this->limit;
-        return $this->db->queryAll($sql, [$this->from, $this->to, $engineParam]);
+        return $this->db->queryAll($sql, [$this->from, $this->to]);
     }
 
     /**
@@ -506,14 +503,14 @@ class Query
      * @param bool $ext return extended information
      * @return array
      */
-    public function browsers(bool $ext = true): array
+    public function browsers(bool $ext = false): array
     {
         if ($ext) {
             $sel = 'S.ua_info as browser, S.ua_ver';
             $grp = 'S.ua_info, S.ua_ver';
         } else {
+            $sel = 'S.ua_info as browser';
             $grp = 'S.ua_info';
-            $sel = 'S.ua_info';
         }
 
         $sql = "SELECT COUNT(DISTINCT S.session) as cnt, $sel

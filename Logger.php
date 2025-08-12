@@ -262,15 +262,29 @@ class Logger
     /**
      * Log the given referer URL
      *
+     * Note: we DO log empty referers. These are external accesses that did not provide a referer URL.
+     * We do not log referers that are our own pages though.
+     *
+     * engine set -> a search engine referer
+     * no engine set, url empty -> a direct access (bookmark, direct link, etc.)
+     * no engine set, url not empty -> a referer from another page (not a wiki page)
+     * null returned -> referer was a wiki page
+     *
      * @param $referer
-     * @return int|null The referer ID or null if no referer was given
+     * @return int|null The referer ID or null if no referer was logged
+     * @todo we could check against a blacklist here
      */
     public function logReferer($referer): ?int
     {
-        if (!$referer) return null;
+        $referer = trim($referer);
 
-        // FIXME we could check against a blacklist here
+        // do not log our own pages as referers
+        $selfre = '^' . preg_quote(DOKU_URL, '/') . '$';
+        if(preg_match("/$selfre/", $referer)) {
+            return null;
+        }
 
+        // is it a search engine?
         $se = new SearchEngines($referer);
         $engine = $se->getEngine();
 
