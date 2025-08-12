@@ -6,10 +6,8 @@ use DeviceDetector\DeviceDetector;
 use DeviceDetector\Parser\Client\Browser;
 use DeviceDetector\Parser\Device\AbstractDeviceParser;
 use DeviceDetector\Parser\OperatingSystem;
-use dokuwiki\ErrorHandler;
 use dokuwiki\HTTP\DokuHTTPClient;
 use dokuwiki\plugin\sqlite\SQLiteDB;
-use dokuwiki\Utf8\Clean;
 use helper_plugin_popularity;
 use helper_plugin_statistics;
 
@@ -122,40 +120,33 @@ class Logger
     /**
      * Get the unique user ID
      *
+     * The user ID is stored in the user preferences and should stay there forever.
      * @return string The unique user identifier
      */
     protected function getUID(): string
     {
-        global $INPUT;
+        if(!isset($_SESSION[DOKU_COOKIE]['statistics']['uid'])) {
+            // when there is no session UID set, we assume this was deliberate and we simply abort all logging
+            // @todo we may later make UID generation optional
+            throw new IgnoreException('No user ID found');
+        }
 
-        $uid = $INPUT->str('uid');
-        if (!$uid) $uid = get_doku_pref('plgstats', false);
-        if (!$uid) $uid = session_id();
-        set_doku_pref('plgstats', $uid);
-        return $uid;
+        return $_SESSION[DOKU_COOKIE]['statistics']['uid'];
     }
 
     /**
      * Return the user's session ID
      *
-     * This is usually our own managed session, not a PHP session (only in fallback)
-     *
      * @return string The session identifier
      */
     protected function getSession(): string
     {
-        global $INPUT;
+        if(!isset($_SESSION[DOKU_COOKIE]['statistics']['id'])) {
+            // when there is no session ID set, we assume this was deliberate and we simply abort all logging
+            throw new IgnoreException('No session ID found');
+        }
 
-
-
-
-        // FIXME session setting needs work. It should be reset on user change, maybe we do rely on the PHP session?
-        // We also want to store the user agent in the session table, so this needs also change the session ID
-        $ses = $INPUT->str('ses');
-        if (!$ses) $ses = get_doku_pref('plgstatsses', false);
-        if (!$ses) $ses = session_id();
-        set_doku_pref('plgstatsses', $ses);
-        return $ses;
+        return $_SESSION[DOKU_COOKIE]['statistics']['id'];
     }
 
     // endregion
@@ -492,7 +483,7 @@ class Logger
      */
     public function logSearch(string $query, array $words): void
     {
-        if(!$query) return;
+        if (!$query) return;
 
         $sid = $this->db->exec(
             'INSERT INTO search (dt, ip, session, query) VALUES (CURRENT_TIMESTAMP, ?, ? , ?)',

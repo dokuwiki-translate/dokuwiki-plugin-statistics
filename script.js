@@ -9,9 +9,6 @@
 class StatisticsPlugin {
     constructor() {
         this.data = {};
-        this.sessionTimeout = 15 * 60 * 1000; // 15 minutes
-        this.uid = this.initializeUserTracking();
-        this.sessionId = this.getSession();
     }
 
     /**
@@ -28,34 +25,17 @@ class StatisticsPlugin {
     }
 
     /**
-     * Initialize user tracking with visitor cookie
-     * @returns {string} User ID (UUID)
-     */
-    initializeUserTracking() {
-        let uid = DokuCookie.getValue('plgstats');
-        if (!uid) {
-            uid = this.generateUUID();
-            DokuCookie.setValue('plgstats', uid);
-        }
-        return uid;
-    }
-
-
-    /**
      * Build tracking data object
      */
     buildTrackingData() {
         const now = Date.now();
         this.data = {
-            uid: this.uid,
-            ses: this.sessionId,
             p: JSINFO.id,
             r: document.referrer,
             sx: screen.width,
             sy: screen.height,
             vx: window.innerWidth,
             vy: window.innerHeight,
-            js: 1,
             rnd: now
         };
     }
@@ -127,60 +107,12 @@ class StatisticsPlugin {
      * Log page exit as session info
      */
     logExit() {
-        const currentSession = this.getSession();
-        if (currentSession !== this.sessionId) {
-            return; // Session expired, don't log
-        }
-
         const params = new URLSearchParams(this.data);
         const url = `${DOKU_BASE}lib/plugins/statistics/log.php?do=s&${params}`;
 
         if (navigator.sendBeacon) {
             navigator.sendBeacon(url);
         }
-    }
-
-    /**
-     * Get current session identifier
-     * Auto clears expired sessions and creates new ones after 15 min idle time
-     * @returns {string} Session ID
-     */
-    getSession() {
-        const now = Date.now();
-
-        // Load session cookie
-        let sessionData = DokuCookie.getValue('plgstatsses');
-        let sessionId = '';
-
-        if (sessionData) {
-            const [timestamp, id] = sessionData.split('-', 2);
-            if (now - parseInt(timestamp, 10) <= this.sessionTimeout) {
-                sessionId = id;
-            }
-        }
-
-        // Generate new session if needed
-        if (!sessionId) {
-            sessionId = this.generateUUID();
-        }
-
-        // Update session cookie
-        DokuCookie.setValue('plgstatsses', `${now}-${sessionId}`);
-        return sessionId;
-    }
-
-    /**
-     * Generate a UUID v4
-     * @returns {string} UUID
-     */
-    generateUUID() {
-        function s4() {
-            return Math.floor((1 + Math.random()) * 0x10000)
-                .toString(16)
-                .substring(1);
-        }
-
-        return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
     }
 }
 

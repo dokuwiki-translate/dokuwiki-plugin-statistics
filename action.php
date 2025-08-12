@@ -1,8 +1,8 @@
 <?php
 
 use dokuwiki\Extension\ActionPlugin;
-use dokuwiki\Extension\EventHandler;
 use dokuwiki\Extension\Event;
+use dokuwiki\Extension\EventHandler;
 
 /**
  *
@@ -20,6 +20,7 @@ class action_plugin_statistics extends ActionPlugin
         global $ACT;
         $JSINFO['act'] = $ACT;
 
+        $controller->register_hook('DOKUWIKI_STARTED', 'AFTER', $this, 'initSession', []);
         // FIXME new save event might be better:
         $controller->register_hook('IO_WIKIPAGE_WRITE', 'BEFORE', $this, 'logedits', []);
         $controller->register_hook('SEARCH_QUERY_FULLPAGE', 'AFTER', $this, 'logsearch', []);
@@ -27,6 +28,45 @@ class action_plugin_statistics extends ActionPlugin
         $controller->register_hook('AUTH_USER_CHANGE', 'AFTER', $this, 'logregistration', []);
         $controller->register_hook('FETCH_MEDIA_STATUS', 'BEFORE', $this, 'logmedia', []);
         $controller->register_hook('INDEXER_TASKS_RUN', 'AFTER', $this, 'loghistory', []);
+    }
+
+    /**
+     * This ensures we have a session for the statistics plugin
+     *
+     * We reset this when the user agent changes or the session is too old
+     * (15 minutes).
+     */
+    public function initSession()
+    {
+        global $INPUT;
+
+        // load session data
+        if (isset($_SESSION[DOKU_COOKIE]['statistics'])) {
+            $session = $_SESSION[DOKU_COOKIE]['statistics'];
+        } else {
+            $session = [];
+        }
+        // reset if session is too old
+        if (time() - ($session['time'] ?? 0) > 60 * 15) {
+            $session = [];
+        }
+        // reset if user agent changed
+        if ($INPUT->server->str('HTTP_USER_AGENT') != ($session['user_agent'] ?? '')) {
+            $session = [];
+        }
+
+        // update session data
+        $session['time'] = time();
+        $session['user_agent'] = $INPUT->server->str('HTTP_USER_AGENT');
+        $session['uid'] = get_doku_pref('plgstats', bin2hex(random_bytes(16)));
+        if (!isset($session['id'])) {
+            // generate a new session id if not set
+            $session['id'] = bin2hex(random_bytes(16));
+        }
+
+        // store session and cookie data
+        $_SESSION[DOKU_COOKIE]['statistics'] = $session;
+        set_doku_pref('plgstats', $session['uid']);
     }
 
     /**
@@ -80,7 +120,7 @@ class action_plugin_statistics extends ActionPlugin
         global $INPUT;
 
         $type = '';
-        $act  = $this->actClean($event->data);
+        $act = $this->actClean($event->data);
         if ($act == 'logout') {
             $type = 'o';
         } elseif ($INPUT->server->str('REMOTE_USER') && $act == 'login') {
@@ -153,10 +193,10 @@ class action_plugin_statistics extends ActionPlugin
             "SELECT info FROM history WHERE date(dt) = date('now')"
         );
 
-        $page_ran  = false;
+        $page_ran = false;
         $media_ran = false;
         foreach ($result as $row) {
-            if ($row['info'] == 'page_count')  $page_ran  = true;
+            if ($row['info'] == 'page_count') $page_ran = true;
             if ($row['info'] == 'media_count') $media_ran = true;
         }
 
