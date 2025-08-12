@@ -146,6 +146,9 @@ class Logger
     {
         global $INPUT;
 
+
+
+
         // FIXME session setting needs work. It should be reset on user change, maybe we do rely on the PHP session?
         // We also want to store the user agent in the session table, so this needs also change the session ID
         $ses = $INPUT->str('ses');
@@ -216,7 +219,7 @@ class Logger
 
         $this->db->exec('DELETE FROM groups WHERE user = ?', $this->user);
 
-        $placeholders = implode(',', array_fill(0, count($groups), '(?, ?, ?)'));
+        $placeholders = implode(',', array_fill(0, count($groups), '(?, ?)'));
         $params = [];
         $sql = "INSERT INTO groups (`user`, `group`) VALUES $placeholders";
         foreach ($groups as $group) {
@@ -265,14 +268,8 @@ class Logger
         $se = new SearchEngines($referer);
         $type = $se->isSearchEngine() ? 'search' : 'external';
 
-        $sql = '
-            INSERT INTO referers (url, type, dt)
-                 VALUES (?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT (url)
-              DO UPDATE
-                    SET type = excluded.type, dt = excluded.dt;
-        ';
-        return $this->db->exec($sql, [$referer, $type]);
+        $sql = 'INSERT OR IGNORE INTO referers (url, type, dt) VALUES (?, ?, CURRENT_TIMESTAMP)';
+        return $this->db->exec($sql, [$referer, $type]); // returns ID even if the insert was ignored
     }
 
     /**
@@ -309,10 +306,13 @@ class Logger
             \dokuwiki\Logger::error('Statistics Plugin - Failed to decode JSON from ip-api.com.', $e);
             return $hash;
         }
-        if (!isset($data['status']) || $data['status'] !== 'success') {
-            \dokuwiki\Logger::error('Statistics Plugin - IP location lookup failed for ' . $ip, $data);
+        if (!isset($data['status'])) {
+            \dokuwiki\Logger::error('Statistics Plugin - Invalid ip-api.com result' . $ip, $data);
             return $hash;
-        }
+        };
+
+        // we do not check for 'success' status here. when the API can't resolve the IP we still log it
+        // without location data, so we won't re-query it in the next 30 days.
 
         $host = gethostbyaddr($ip); // @todo if we anonymize the IP, we should not do this
         $this->db->exec(
@@ -322,9 +322,9 @@ class Logger
                     ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
                  )',
             $hash,
-            $data['country'],
-            $data['countryCode'],
-            $data['city'],
+            $data['country'] ?? '',
+            $data['countryCode'] ?? '',
+            $data['city'] ?? '',
             $host
         );
 
@@ -482,6 +482,33 @@ class Logger
             $session,
             $this->uid
         );
+    }
+
+    /**
+     * Log search data to the search related tables
+     *
+     * @param string $query The search query
+     * @param string[] $words The query split into words
+     */
+    public function logSearch(string $query, array $words): void
+    {
+        if(!$query) return;
+
+        $sid = $this->db->exec(
+            'INSERT INTO search (dt, ip, session, query) VALUES (CURRENT_TIMESTAMP, ?, ? , ?)',
+            $this->logIp(), // resolve the IP address
+            $this->session,
+            $query,
+        );
+
+        foreach ($words as $word) {
+            if (!$word) continue;
+            $this->db->exec(
+                'INSERT INTO searchwords (sid, word) VALUES (?, ?)',
+                $sid,
+                $word
+            );
+        }
     }
 
     /**

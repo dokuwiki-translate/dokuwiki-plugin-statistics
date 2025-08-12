@@ -52,10 +52,10 @@ CREATE INDEX `idx_referers_type` ON `referers` (`type`);
 CREATE TABLE `pageviews`
 (
     `id`       INTEGER PRIMARY KEY,
-    `session`  TEXT    NOT NULL REFERENCES `sessions` (`session`) ON DELETE CASCADE ON UPDATE CASCADE,
     `dt`       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `page`     TEXT    NOT NULL,
     `ip`       TEXT    NOT NULL,
+    `session`  TEXT    NOT NULL REFERENCES `sessions` (`session`) ON DELETE CASCADE ON UPDATE CASCADE,
+    `page`     TEXT    NOT NULL,
     `ref_id`   INTEGER DEFAULT NULL REFERENCES `referers` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
     `screen_x` INTEGER NOT NULL,
     `screen_y` INTEGER NOT NULL,
@@ -92,8 +92,9 @@ CREATE INDEX `idx_outlinks_dt` ON `outlinks` (`dt`);
 CREATE TABLE `search`
 (
     `id`    INTEGER PRIMARY KEY,
-    `session` TEXT NOT NULL REFERENCES `sessions` (`session`) ON DELETE CASCADE ON UPDATE CASCADE,
     `dt`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `ip`      TEXT NOT NULL,
+    `session` TEXT NOT NULL REFERENCES `sessions` (`session`) ON DELETE CASCADE ON UPDATE CASCADE,
     `query`  TEXT NOT NULL
 );
 CREATE INDEX `idx_search_dt` ON `search` (`dt`);
@@ -137,9 +138,9 @@ CREATE TABLE `media`
 (
     `id`      INTEGER PRIMARY KEY,
     `dt`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `media`   TEXT    NOT NULL,
     `ip`      TEXT,
     `session` TEXT    NOT NULL REFERENCES `sessions` (`session`) ON DELETE CASCADE ON UPDATE CASCADE,
+    `media`   TEXT    NOT NULL,
     `size`    INTEGER NOT NULL,
     `mime1`   TEXT    NOT NULL,
     `mime2`   TEXT    NOT NULL,

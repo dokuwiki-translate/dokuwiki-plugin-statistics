@@ -26,20 +26,14 @@ try {
     $plugin->sendGIF(); // browser be done
 
     $logger = $plugin->getLogger();
-    $logger->begin();
-    $logger->logLastseen(); // refresh session
+    $logger->begin(); // triggers autologging
 
     switch ($INPUT->str('do')) {
         case 'v':
-            $logger->logAccess();
-            $logger->logSession(1);
+            $logger->logPageView();
             break;
         case 'o':
             $logger->logOutgoing();
-            $logger->logSession();
-            break;
-        default:
-            $logger->logSession();
     }
 
     $logger->end();

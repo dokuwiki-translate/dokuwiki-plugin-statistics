@@ -20,6 +20,7 @@ class action_plugin_statistics extends ActionPlugin
         global $ACT;
         $JSINFO['act'] = $ACT;
 
+        // FIXME new save event might be better:
         $controller->register_hook('IO_WIKIPAGE_WRITE', 'BEFORE', $this, 'logedits', []);
         $controller->register_hook('SEARCH_QUERY_FULLPAGE', 'AFTER', $this, 'logsearch', []);
         $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'loglogins', []);
@@ -58,7 +59,7 @@ class action_plugin_statistics extends ActionPlugin
         }
         /** @var helper_plugin_statistics $hlp */
         $hlp = plugin_load('helper', 'statistics');
-        $hlp->getLogger()->logEdit(cleanID($event->data[1] . ':' . $event->data[2]), $type);
+        $hlp->getLogger()->logEdit($event->data[1] . ':' . $event->data[2], $type);
     }
 
     /**
@@ -68,7 +69,7 @@ class action_plugin_statistics extends ActionPlugin
     {
         /** @var helper_plugin_statistics $hlp */
         $hlp = plugin_load('helper', 'statistics');
-        $hlp->getLogger()->logSearch('', 'dokuwiki', $event->data['query'], $event->data['highlight']);
+        $hlp->getLogger()->logSearch($event->data['query'], $event->data['highlight']);
     }
 
     /**
@@ -149,7 +150,7 @@ class action_plugin_statistics extends ActionPlugin
 
         // check if a history was gathered already today
         $result = $db->queryAll(
-            "SELECT info FROM history WHERE dt = date('now')"
+            "SELECT info FROM history WHERE date(dt) = date('now')"
         );
 
         $page_ran  = false;
