@@ -6,6 +6,7 @@ use DeviceDetector\DeviceDetector;
 use DeviceDetector\Parser\Client\Browser;
 use DeviceDetector\Parser\Device\AbstractDeviceParser;
 use DeviceDetector\Parser\OperatingSystem;
+use dokuwiki\ErrorHandler;
 use dokuwiki\HTTP\DokuHTTPClient;
 use dokuwiki\plugin\sqlite\SQLiteDB;
 use dokuwiki\Utf8\Clean;
@@ -35,12 +36,22 @@ class Logger
     /** @var string The operating system/platform */
     protected string $uaPlatform;
 
+    /** @var string|null The user name, if available */
+    protected ?string $user = null;
+
     /** @var string The unique user identifier */
     protected string $uid;
+
+    /** @var string The session identifier */
+    protected string $session;
+
+    /** @var int|null The ID of the main access log entry if any */
+    protected ?int $hit = null;
 
     /** @var DokuHTTPClient|null The HTTP client instance for testing */
     protected ?DokuHTTPClient $httpClient = null;
 
+    // region lifecycle
 
     /**
      * Constructor
@@ -55,8 +66,9 @@ class Logger
         $this->db = $this->hlp->getDB();
         $this->httpClient = $httpClient;
 
-        $ua = trim($INPUT->server->str('HTTP_USER_AGENT'));
+        // FIXME if we already have a session, we should not re-parse the user agent
 
+        $ua = trim($INPUT->server->str('HTTP_USER_AGENT'));
         AbstractDeviceParser::setVersionTruncation(AbstractDeviceParser::VERSION_TRUNCATION_MAJOR);
         $dd = new DeviceDetector($ua); // FIXME we could use client hints, but need to add headers
         $dd->discardBotInformation();
@@ -75,19 +87,23 @@ class Logger
         $this->uaVersion = $dd->getClient('version') ?: '0';
         $this->uaPlatform = OperatingSystem::getOsFamily($dd->getOs('name')) ?: 'Unknown';
         $this->uid = $this->getUID();
-
-
-        $this->logLastseen();
+        $this->session = $this->getSession();
+        $this->user = $INPUT->server->str('REMOTE_USER') ?: null;
     }
 
     /**
      * Should be called before logging
      *
-     * This starts a transaction, so all logging is done in one go
+     * This starts a transaction, so all logging is done in one go. It also logs the user and session data.
      */
     public function begin(): void
     {
         $this->hlp->getDB()->getPdo()->beginTransaction();
+
+        $this->logUser();
+        $this->logGroups();
+        $this->logDomain();
+        $this->logSession();
     }
 
     /**
@@ -99,6 +115,9 @@ class Logger
     {
         $this->hlp->getDB()->getPdo()->commit();
     }
+
+    // endregion
+    // region data gathering
 
     /**
      * Get the unique user ID
@@ -127,6 +146,8 @@ class Logger
     {
         global $INPUT;
 
+        // FIXME session setting needs work. It should be reset on user change, maybe we do rely on the PHP session?
+        // We also want to store the user agent in the session table, so this needs also change the session ID
         $ses = $INPUT->str('ses');
         if (!$ses) $ses = get_doku_pref('plgstatsses', false);
         if (!$ses) $ses = session_id();
@@ -134,204 +155,214 @@ class Logger
         return $ses;
     }
 
-    /**
-     * Log that we've seen the user (authenticated only)
-     */
-    public function logLastseen(): void
-    {
-        global $INPUT;
+    // endregion
+    // region automatic logging
 
-        if (empty($INPUT->server->str('REMOTE_USER'))) return;
+    /**
+     * Log the user was seen
+     */
+    protected function logUser(): void
+    {
+        if (!$this->user) return;
 
         $this->db->exec(
-            'REPLACE INTO lastseen (user, dt) VALUES (?, CURRENT_TIMESTAMP)',
-            $INPUT->server->str('REMOTE_USER'),
+            'INSERT INTO users (user, dt)
+                  VALUES (?, CURRENT_TIMESTAMP)
+            ON CONFLICT (user) DO UPDATE SET
+                         dt = CURRENT_TIMESTAMP
+                   WHERE excluded.user = users.user
+            ',
+            $this->user
+        );
+
+    }
+
+    /**
+     * Log the session and user agent information
+     */
+    protected function logSession(): void
+    {
+        $this->db->exec(
+            'INSERT INTO sessions (session, dt, end, uid, user, ua, ua_info, ua_type, ua_ver, os)
+                  VALUES (?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT (session) DO UPDATE SET
+                         end = CURRENT_TIMESTAMP
+                   WHERE excluded.session = sessions.session
+             ',
+            $this->session,
+            $this->uid,
+            $this->user,
+            $this->uaAgent,
+            $this->uaName,
+            $this->uaType,
+            $this->uaVersion,
+            $this->uaPlatform
         );
     }
 
     /**
-     * Log actions by groups
+     * Log all groups for the user
      *
-     * @param int $pid Id of access data row (foreign key)
-     * @param string $type The type of access to log ('view','edit')
-     * @param array $groups The groups to log
+     * @todo maybe this should be done only once per session?
      */
-    public function logGroups(int $pid, string $type, array $groups): void
+    protected function logGroups(): void
     {
-        if ($groups === [] || !$pid) return;
+        global $USERINFO;
 
-        $toLog = (array)$this->hlp->getConf('loggroups');
+        if (!$this->user) return;
+        if (!isset($USERINFO['grps'])) return;
+        if (!is_array($USERINFO['grps'])) return;
+        $groups = $USERINFO['grps'];
 
-        // if specific groups are configured, limit logging to them only
-        $groups = empty(array_filter($toLog)) ? $groups : array_intersect($groups, $toLog);
-        if (!$groups) return;
+        $this->db->exec('DELETE FROM groups WHERE user = ?', $this->user);
 
         $placeholders = implode(',', array_fill(0, count($groups), '(?, ?, ?)'));
         $params = [];
-        $sql = "INSERT INTO groups (`pid`, `type`, `group`) VALUES $placeholders";
+        $sql = "INSERT INTO groups (`user`, `group`) VALUES $placeholders";
         foreach ($groups as $group) {
-            $params[] = $pid;
-            $params[] = $type;
+            $params[] = $this->user;
             $params[] = $group;
         }
-        $sql = rtrim($sql, ',');
         $this->db->exec($sql, $params);
     }
 
     /**
-     * Log email domain, skip logging if no domain is found
+     * Log email domain
      *
-     * @param int $pid Id of access data row (foreign key)
-     * @param string $type The type of access to log ('view','edit')
-     * @param string $mail The email to extract the domain from
+     * @todo maybe this should be done only once per session?
      */
-    public function logDomain(int $pid, string $type, string $mail): void
+    protected function logDomain(): void
     {
-        if (!$pid) return;
+        global $USERINFO;
+        if (!$this->user) return;
+        if (!isset($USERINFO['mail'])) return;
+        $mail = $USERINFO['mail'];
 
         $pos = strrpos($mail, '@');
         if (!$pos) return;
         $domain = substr($mail, $pos + 1);
         if (empty($domain)) return;
 
-        $sql = "INSERT INTO domain (`pid`, `type`, `domain`) VALUES (?, ?, ?)";
-        $this->db->exec($sql, [$pid, $type, $domain]);
+        $sql = 'UPDATE users SET domain = ? WHERE user = ?';
+        $this->db->exec($sql, [$domain, $this->user]);
     }
 
-    /**
-     * Log external search queries
-     *
-     * Will not write anything if the referer isn't a search engine
-     *
-     * @param string $referer The HTTP referer URL
-     * @param string $type Reference to the type variable that will be modified
-     */
-    public function logExternalSearch(string $referer, string &$type): void
-    {
-        global $INPUT;
-
-        $searchEngine = new SearchEngines($referer);
-
-        if (!$searchEngine->isSearchEngine()) {
-            return; // not a search engine
-        }
-
-        $type = 'search';
-        $query = $searchEngine->getQuery();
-
-        // log it!
-        $words = [];
-        if ($query) {
-            $words = explode(' ', Clean::stripspecials($query, ' ', '\._\-:\*'));
-        }
-        $this->logSearch($INPUT->str('p'), $searchEngine->getEngine(), $query, $words);
-    }
+    // endregion
+    // region internal loggers called by the dispatchers
 
     /**
-     * Log search data to the search related tables
+     * Log the given referer URL
      *
-     * @param string $page The page being searched from
-     * @param string $engine The search engine name
-     * @param string|null $query The search query
-     * @param array|null $words Array of search words
+     * @param $referer
+     * @return int|null The referer ID or null if no referer was given
      */
-    public function logSearch(string $page, string $engine, ?string $query, ?array $words): void
+    public function logReferer($referer): ?int
     {
-        $sid = $this->db->exec(
-            'INSERT INTO search (dt, page, query, engine) VALUES (CURRENT_TIMESTAMP, ?, ?, ?)',
-            $page,
-            $query ?? '',
-            $engine
-        );
-        if (!$sid) return;
+        if (!$referer) return null;
 
-        foreach ($words as $word) {
-            if (!$word) continue;
-            $this->db->exec(
-                'INSERT INTO searchwords (sid, word) VALUES (?, ?)',
-                $sid,
-                $word
-            );
-        }
-    }
+        // FIXME we could check against a blacklist here
 
-    /**
-     * Log that the session was seen
-     *
-     * This is used to calculate the time people spend on the whole site
-     * during their session
-     *
-     * Viewcounts are used for bounce calculation
-     *
-     * @param int $addview set to 1 to count a view
-     */
-    public function logSession(int $addview = 0): void
-    {
-        // only log browser sessions
-        if ($this->uaType != 'browser') return;
+        $se = new SearchEngines($referer);
+        $type = $se->isSearchEngine() ? 'search' : 'external';
 
-        $session = $this->getSession();
-        $this->db->exec(
-            'INSERT OR REPLACE INTO session (
-                session, dt, end, views, uid
-             ) VALUES (
-                ?,
-                CURRENT_TIMESTAMP,
-                CURRENT_TIMESTAMP,
-                COALESCE((SELECT views FROM session WHERE session = ?) + ?, ?),
-                ?
-             )',
-            $session,
-            $session,
-            $addview,
-            $addview,
-            $this->uid
-        );
+        $sql = '
+            INSERT INTO referers (url, type, dt)
+                 VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT (url)
+              DO UPDATE
+                    SET type = excluded.type, dt = excluded.dt;
+        ';
+        return $this->db->exec($sql, [$referer, $type]);
     }
 
     /**
      * Resolve IP to country/city and store in database
      *
-     * @param string $ip The IP address to resolve
+     * @return string The IP address as stored
      */
-    public function logIp(string $ip): void
+    public function logIp(): string
     {
+        $ip = clientIP(true);
+        $hash = $ip; // @todo we could anonymize here
+
         // check if IP already known and up-to-date
         $result = $this->db->queryValue(
             "SELECT ip
              FROM   iplocation
              WHERE  ip = ?
                AND  lastupd > date('now', '-30 days')",
-            $ip
+            $hash
         );
-        if ($result) return;
+        if ($result) return $hash; // already known and up-to-date
 
         $http = $this->httpClient ?: new DokuHTTPClient();
-        $http->timeout = 10;
+        $http->timeout = 7;
         $json = $http->get('http://ip-api.com/json/' . $ip); // yes, it's HTTP only
 
-        if (!$json) return; // FIXME log error
+        if (!$json) {
+            \dokuwiki\Logger::error('Statistics Plugin - Failed talk to ip-api.com.');
+            return $hash;
+        }
         try {
             $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
-            return; // FIXME log error
+            \dokuwiki\Logger::error('Statistics Plugin - Failed to decode JSON from ip-api.com.', $e);
+            return $hash;
         }
         if (!isset($data['status']) || $data['status'] !== 'success') {
-            return; // FIXME log error
+            \dokuwiki\Logger::error('Statistics Plugin - IP location lookup failed for ' . $ip, $data);
+            return $hash;
         }
 
-        $host = gethostbyaddr($ip);
+        $host = gethostbyaddr($ip); // @todo if we anonymize the IP, we should not do this
         $this->db->exec(
             'INSERT OR REPLACE INTO iplocation (
                     ip, country, code, city, host, lastupd
                  ) VALUES (
                     ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
                  )',
-            $ip,
+            $hash,
             $data['country'],
             $data['countryCode'],
             $data['city'],
             $host
+        );
+
+        return $hash;
+    }
+
+    // endregion
+    // region log dispatchers
+
+    public function logPageView(): void
+    {
+        global $INPUT;
+
+        if (!$INPUT->str('p')) return;
+
+
+        $referer = $INPUT->filter('trim')->str('r');
+        $ip = $this->logIp(); // resolve the IP address
+
+        $data = [
+            'page' => $INPUT->filter('cleanID')->str('p'),
+            'ip' => $ip,
+            'ref_id' => $this->logReferer($referer),
+            'sx' => $INPUT->int('sx'),
+            'sy' => $INPUT->int('sy'),
+            'vx' => $INPUT->int('vx'),
+            'vy' => $INPUT->int('vy'),
+            'session' => $this->session,
+        ];
+
+        $this->db->exec('
+        INSERT INTO pageviews (
+            dt, page, ip, ref_id, screen_x, screen_y, view_x, view_y, session
+        ) VALUES (
+            CURRENT_TIMESTAMP, :page, :ip, :ref_id, :sx, :sy, :vx, :vy, :session
+        )
+        ',
+            $data
         );
     }
 
@@ -346,114 +377,20 @@ class Logger
 
         if (!$INPUT->str('ol')) return;
 
-        $link = $INPUT->str('ol');
-        $link_md5 = md5($link);
-        $session = $this->getSession();
-        $page = $INPUT->str('p');
+        $link = $INPUT->filter('trim')->str('ol');
+        $session = $this->session;
+        $page = $INPUT->filter('cleanID')->str('p');
 
         $this->db->exec(
             'INSERT INTO outlinks (
-                dt, session, page, link_md5, link
+                dt, session, page, link
              ) VALUES (
                 CURRENT_TIMESTAMP, ?, ?, ?, ?
              )',
             $session,
             $page,
-            $link_md5,
             $link
         );
-    }
-
-    /**
-     * Log a page access
-     *
-     * Called from log.php
-     */
-    public function logAccess(): void
-    {
-        global $INPUT, $USERINFO;
-
-        if (!$INPUT->str('p')) return;
-
-        # FIXME check referer against blacklist and drop logging for bad boys
-
-        // handle referer
-        $referer = trim($INPUT->str('r'));
-        if ($referer) {
-            $ref = $referer;
-            $ref_md5 = md5($referer);
-            if (str_starts_with($referer, DOKU_URL)) {
-                $ref_type = 'internal';
-            } else {
-                $ref_type = 'external';
-                $this->logExternalSearch($referer, $ref_type);
-            }
-        } else {
-            $ref = '';
-            $ref_md5 = '';
-            $ref_type = '';
-        }
-
-        $page = $INPUT->str('p');
-        $ip = clientIP(true);
-        $sx = $INPUT->int('sx');
-        $sy = $INPUT->int('sy');
-        $vx = $INPUT->int('vx');
-        $vy = $INPUT->int('vy');
-        $js = $INPUT->int('js');
-        $user = $INPUT->server->str('REMOTE_USER');
-        $session = $this->getSession();
-
-        $accessId = $this->db->exec(
-            'INSERT INTO access (
-                dt, page, ip, ua, ua_info, ua_type, ua_ver, os, ref, ref_md5, ref_type,
-                screen_x, screen_y, view_x, view_y, js, user, session, uid
-             ) VALUES (
-                CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?, ?
-             )',
-            $page,
-            $ip,
-            $this->uaAgent,
-            $this->uaName,
-            $this->uaType,
-            $this->uaVersion,
-            $this->uaPlatform,
-            $ref,
-            $ref_md5,
-            $ref_type,
-            $sx,
-            $sy,
-            $vx,
-            $vy,
-            $js,
-            $user,
-            $session,
-            $this->uid
-        );
-
-        if ($ref_md5) {
-            $this->db->exec(
-                'INSERT OR IGNORE INTO refseen (
-                    ref_md5, dt
-                 ) VALUES (
-                    ?, CURRENT_TIMESTAMP
-                 )',
-                $ref_md5
-            );
-        }
-
-        // log group access
-        if (isset($USERINFO['grps'])) {
-            $this->logGroups($accessId, 'view', $USERINFO['grps']);
-        }
-        // log email domain
-        if (!empty($USERINFO['mail'])) {
-            $this->logDomain($accessId, 'view', $USERINFO['mail']);
-        }
-
-        // resolve the IP
-        $this->logIp(clientIP(true));
     }
 
     /**
@@ -468,77 +405,53 @@ class Logger
      */
     public function logMedia(string $media, string $mime, bool $inline, int $size): void
     {
-        global $INPUT;
-
         [$mime1, $mime2] = explode('/', strtolower($mime));
         $inline = $inline ? 1 : 0;
 
-        $ip = clientIP(true);
-        $user = $INPUT->server->str('REMOTE_USER');
-        $session = $this->getSession();
 
-        $this->db->exec(
-            'INSERT INTO media (
-                dt, media, ip, ua, ua_info, ua_type, ua_ver, os, user, session, uid,
-                size, mime1, mime2, inline
-             ) VALUES (
-                CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?
-             )',
-            $media,
-            $ip,
-            $this->uaAgent,
-            $this->uaName,
-            $this->uaType,
-            $this->uaVersion,
-            $this->uaPlatform,
-            $user,
-            $session,
-            $this->uid,
-            $size,
-            $mime1,
-            $mime2,
-            $inline
+        $data = [
+            'media' => cleanID($media),
+            'ip' => $this->logIp(), // resolve the IP address
+            'session' => $this->session,
+            'size' => $size,
+            'mime1' => $mime1,
+            'mime2' => $mime2,
+            'inline' => $inline,
+        ];
+
+        $this->db->exec('
+                INSERT INTO media ( dt, media, ip, session, size, mime1, mime2, inline )
+                     VALUES (CURRENT_TIMESTAMP, :media, :ip, :session, :size, :mime1, :mime2, :inline)
+            ',
+            $data
         );
     }
 
     /**
      * Log page edits
      *
+     * called from action.php
+     *
      * @param string $page The page that was edited
      * @param string $type The type of edit (create, edit, etc.)
      */
     public function logEdit(string $page, string $type): void
     {
-        global $INPUT, $USERINFO;
-
-        $ip = clientIP(true);
-        $user = $INPUT->server->str('REMOTE_USER');
-        $session = $this->getSession();
+        $data = [
+            'page' => cleanID($page),
+            'type' => $type,
+            'ip' => $this->logIp(), // resolve the IP address
+            'session' => $this->session
+        ];
 
         $editId = $this->db->exec(
             'INSERT INTO edits (
-                dt, page, type, ip, user, session, uid
+                dt, page, type, ip, session
              ) VALUES (
-                CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?
+                CURRENT_TIMESTAMP, :page, :type, :ip, :session
              )',
-            $page,
-            $type,
-            $ip,
-            $user,
-            $session,
-            $this->uid
+            $data
         );
-
-        // log group access
-        if (isset($USERINFO['grps'])) {
-            $this->logGroups($editId, 'edit', $USERINFO['grps']);
-        }
-
-        // log email domain
-        if (!empty($USERINFO['mail'])) {
-            $this->logDomain($editId, 'edit', $USERINFO['mail']);
-        }
     }
 
     /**
@@ -546,6 +459,7 @@ class Logger
      *
      * @param string $type The type of login event (login, logout, create)
      * @param string $user The username (optional, will use current user if empty)
+     * @fixme this is still broken, I need to figure out the session handling first
      */
     public function logLogin(string $type, string $user = ''): void
     {
@@ -554,11 +468,11 @@ class Logger
         if (!$user) $user = $INPUT->server->str('REMOTE_USER');
 
         $ip = clientIP(true);
-        $session = $this->getSession();
+        $session = $this->session;
 
         $this->db->exec(
             'INSERT INTO logins (
-                dt, type, ip, user, session, uid
+                dt, type, ip, session
              ) VALUES (
                 CURRENT_TIMESTAMP, ?, ?, ?, ?, ?
              )',
@@ -639,6 +553,8 @@ class Logger
             $media_size
         );
     }
+
+    // endregion
 
     /**
      * @todo can be dropped in favor of helper_plugin_popularity::initEmptySearchList() once it's public

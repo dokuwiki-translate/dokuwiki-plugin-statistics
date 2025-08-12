@@ -1,32 +1,69 @@
-CREATE TABLE `access`
+
+-- logged in users and their info and groups
+
+CREATE TABLE `users`
 (
-    `id`       INTEGER PRIMARY KEY,
-    `dt`       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `page`     TEXT    NOT NULL,
-    `ip`       TEXT    NOT NULL,
+    `user` TEXT PRIMARY KEY,
+    `dt`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, -- last seen
+    `domain` TEXT DEFAULT NULL -- email domain
+);
+
+CREATE TABLE `groups`
+(
+    `user` TEXT NOT NULL REFERENCES `users` (`user`) ON DELETE CASCADE ON UPDATE CASCADE,
+    `group` TEXT NOT NULL,
+    PRIMARY KEY (`user`, `group`)
+);
+
+-- current browsing session
+
+CREATE TABLE `sessions`
+(
+    `session` TEXT PRIMARY KEY,
+    `dt`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `end`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `uid`     TEXT    NOT NULL,
+    `user`    TEXT    NOT NULL REFERENCES `users` (`user`) ON DELETE SET NULL ON UPDATE CASCADE,
     `ua`       TEXT    NOT NULL,
     `ua_info`  TEXT    NOT NULL,
     `ua_type`  TEXT    NOT NULL,
     `ua_ver`   TEXT    NOT NULL,
-    `os`       TEXT    NOT NULL,
-    `ref_md5`  TEXT    NOT NULL,
-    `ref_type` TEXT    NOT NULL,
-    `ref`      TEXT    NOT NULL,
+    `os`       TEXT    NOT NULL
+);
+CREATE INDEX `idx_session_dt` ON `sessions` (`dt`);
+CREATE INDEX `idx_session_uid` ON `sessions` (`uid`);
+CREATE INDEX `idx_session_ua_type` ON `sessions` (`ua_type`);
+
+-- referrers
+
+CREATE TABLE `referers`
+(
+    `id`      INTEGER PRIMARY KEY,
+    `url`     TEXT NOT NULL,
+    `dt`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `type`    TEXT     NOT NULL DEFAULT 'external' -- 'external', 'search'
+);
+CREATE UNIQUE INDEX `idx_referers_url` ON `referers` (`url`);
+CREATE INDEX `idx_referers_dt` ON `referers` (`dt`);
+CREATE INDEX `idx_referers_type` ON `referers` (`type`);
+
+-- page view logging
+
+CREATE TABLE `pageviews`
+(
+    `id`       INTEGER PRIMARY KEY,
+    `session`  TEXT    NOT NULL REFERENCES `sessions` (`session`) ON DELETE CASCADE ON UPDATE CASCADE,
+    `dt`       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `page`     TEXT    NOT NULL,
+    `ip`       TEXT    NOT NULL,
+    `ref_id`   INTEGER DEFAULT NULL REFERENCES `referers` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
     `screen_x` INTEGER NOT NULL,
     `screen_y` INTEGER NOT NULL,
     `view_x`   INTEGER NOT NULL,
-    `view_y`   INTEGER NOT NULL,
-    `user`     TEXT    NOT NULL,
-    `session`  TEXT    NOT NULL,
-    `js`       INTEGER NOT NULL DEFAULT 1,
-    `uid`      TEXT    NOT NULL DEFAULT ''
+    `view_y`   INTEGER NOT NULL
 );
-CREATE INDEX `idx_access_ref_type` ON `access` (`ref_type`);
-CREATE INDEX `idx_access_page` ON `access` (`page`);
-CREATE INDEX `idx_access_ref_md5` ON `access` (`ref_md5`);
-CREATE INDEX `idx_access_dt` ON `access` (`dt`);
-CREATE INDEX `idx_access_ua_type` ON `access` (`ua_type`);
-
+CREATE INDEX `idx_pageviews_page` ON `pageviews` (`page`);
+CREATE INDEX `idx_pageviews_dt` ON `pageviews` (`dt`);
 
 CREATE TABLE `iplocation`
 (
@@ -43,48 +80,39 @@ CREATE TABLE `outlinks`
 (
     `id`       INTEGER PRIMARY KEY,
     `dt`       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `session`  TEXT NOT NULL,
-    `link_md5` TEXT NOT NULL,
+    `session`  TEXT NOT NULL REFERENCES `sessions` (`session`) ON DELETE CASCADE ON UPDATE CASCADE,
     `link`     TEXT NOT NULL,
     `page`     TEXT NOT NULL DEFAULT ''
 );
-CREATE INDEX `idx_outlinks_link_md5` ON `outlinks` (`link_md5`);
+CREATE INDEX `idx_outlinks_link` ON `outlinks` (`link`);
 CREATE INDEX `idx_outlinks_dt` ON `outlinks` (`dt`);
 
 
+-- Search engine query logging for internal searches
 CREATE TABLE `search`
 (
-    `id`     INTEGER PRIMARY KEY,
+    `id`    INTEGER PRIMARY KEY,
+    `session` TEXT NOT NULL REFERENCES `sessions` (`session`) ON DELETE CASCADE ON UPDATE CASCADE,
     `dt`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `page`   TEXT NOT NULL,
-    `query`  TEXT NOT NULL,
-    `engine` TEXT NOT NULL
+    `query`  TEXT NOT NULL
 );
-CREATE INDEX `idx_search_engine` ON `search` (`engine`);
 CREATE INDEX `idx_search_dt` ON `search` (`dt`);
 
 CREATE TABLE `searchwords`
 (
     `sid`  INTEGER NOT NULL,
     `word` TEXT    NOT NULL,
+    FOREIGN KEY (`sid`) REFERENCES `search` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     PRIMARY KEY (`sid`, `word`)
 );
 
-CREATE TABLE `refseen`
-(
-    `ref_md5` TEXT PRIMARY KEY,
-    `dt`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX `idx_refseen_dt` ON `refseen` (`dt`);
-
+-- Edit logging for content changes
 CREATE TABLE `edits`
 (
     `id`      INTEGER PRIMARY KEY,
     `dt`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `ip`      TEXT NOT NULL,
-    `user`    TEXT NOT NULL,
-    `session` TEXT NOT NULL,
-    `uid`     TEXT NOT NULL,
+    `session` TEXT NOT NULL REFERENCES `sessions` (`session`) ON DELETE CASCADE ON UPDATE CASCADE,
     `page`    TEXT NOT NULL,
     `type`    TEXT NOT NULL
 );
@@ -92,38 +120,18 @@ CREATE INDEX `idx_edits_dt` ON `edits` (`dt`);
 CREATE INDEX `idx_edits_type` ON `edits` (`type`);
 
 
-CREATE TABLE `session`
-(
-    `session` TEXT PRIMARY KEY,
-    `dt`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `end`     TEXT    NOT NULL,
-    `views`   INTEGER NOT NULL,
-    `uid`     TEXT    NOT NULL
-);
-CREATE INDEX `idx_session_dt` ON `session` (`dt`);
-CREATE INDEX `idx_session_views` ON `session` (`views`);
-CREATE INDEX `idx_session_uid` ON `session` (`uid`);
-
-
 CREATE TABLE `logins`
 (
     `id`      INTEGER PRIMARY KEY,
     `dt`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `ip`      TEXT NOT NULL,
-    `user`    TEXT NOT NULL,
-    `session` TEXT NOT NULL,
-    `uid`     TEXT NOT NULL,
+    `session` TEXT NOT NULL REFERENCES `sessions` (`session`) ON DELETE CASCADE ON UPDATE CASCADE,
     `type`    TEXT NOT NULL
 );
 CREATE INDEX `idx_logins_dt` ON `logins` (`dt`);
 CREATE INDEX `idx_logins_type` ON `logins` (`type`);
 
 
-CREATE TABLE `lastseen`
-(
-    `user` TEXT PRIMARY KEY,
-    `dt`   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
 
 CREATE TABLE `media`
 (
@@ -131,14 +139,7 @@ CREATE TABLE `media`
     `dt`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `media`   TEXT    NOT NULL,
     `ip`      TEXT,
-    `ua`      TEXT    NOT NULL,
-    `ua_info` TEXT    NOT NULL,
-    `ua_type` TEXT    NOT NULL,
-    `ua_ver`  TEXT    NOT NULL,
-    `os`      TEXT    NOT NULL,
-    `user`    TEXT    NOT NULL,
-    `session` TEXT    NOT NULL,
-    `uid`     TEXT    NOT NULL,
+    `session` TEXT    NOT NULL REFERENCES `sessions` (`session`) ON DELETE CASCADE ON UPDATE CASCADE,
     `size`    INTEGER NOT NULL,
     `mime1`   TEXT    NOT NULL,
     `mime2`   TEXT    NOT NULL,
@@ -146,7 +147,6 @@ CREATE TABLE `media`
 );
 CREATE INDEX `idx_media_media` ON `media` (`media`);
 CREATE INDEX `idx_media_dt` ON `media` (`dt`);
-CREATE INDEX `idx_media_ua_type` ON `media` (`ua_type`);
 CREATE INDEX `idx_media_mime1` ON `media` (`mime1`);
 
 
@@ -157,28 +157,4 @@ CREATE TABLE `history`
     `value` INTEGER NOT NULL,
     PRIMARY KEY (`info`, `dt`)
 );
-
-CREATE TABLE `groups`
-(
-    `id`    INTEGER PRIMARY KEY,
-    `dt`    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `group` TEXT NOT NULL,
-    `type`  TEXT NOT NULL,
-    `pid`   INTEGER REFERENCES access(id)
-);
-CREATE INDEX `idx_groups_dt` ON `groups` (`dt`);
-CREATE INDEX `idx_groups_type` ON `groups` (`type`);
-
-
-CREATE TABLE `domain` (
-    id      INTEGER PRIMARY KEY,
-    dt      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    domain  TEXT NOT NULL,
-    type    TEXT NOT NULL,
-    pid     INTEGER REFERENCES access(id)
-);
-
-
-
-
 
