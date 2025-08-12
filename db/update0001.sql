@@ -126,7 +126,7 @@ CREATE TABLE `logins`
     `id`      INTEGER PRIMARY KEY,
     `dt`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `ip`      TEXT NOT NULL,
-    `session` TEXT NOT NULL REFERENCES `sessions` (`session`) ON DELETE CASCADE ON UPDATE CASCADE,
+    `user`    TEXT NOT NULL, -- no references to users, as this is for all logins, including failed ones
     `type`    TEXT NOT NULL
 );
 CREATE INDEX `idx_logins_dt` ON `logins` (`dt`);

@@ -448,9 +448,8 @@ class Logger
     /**
      * Log login/logoffs and user creations
      *
-     * @param string $type The type of login event (login, logout, create)
-     * @param string $user The username (optional, will use current user if empty)
-     * @fixme this is still broken, I need to figure out the session handling first
+     * @param string $type The type of login event (login, logout, create, failed)
+     * @param string $user The username
      */
     public function logLogin(string $type, string $user = ''): void
     {
@@ -459,19 +458,16 @@ class Logger
         if (!$user) $user = $INPUT->server->str('REMOTE_USER');
 
         $ip = clientIP(true);
-        $session = $this->session;
 
         $this->db->exec(
             'INSERT INTO logins (
-                dt, type, ip, session
+                dt, ip, user, type
              ) VALUES (
-                CURRENT_TIMESTAMP, ?, ?, ?, ?, ?
+                CURRENT_TIMESTAMP, ?, ?, ?
              )',
-            $type,
             $ip,
             $user,
-            $session,
-            $this->uid
+            $type
         );
     }
 

@@ -121,22 +121,28 @@ class action_plugin_statistics extends ActionPlugin
 
         $type = '';
         $act = $this->actClean($event->data);
+        $user = $INPUT->server->str('REMOTE_USER');
         if ($act == 'logout') {
+            // logout
             $type = 'o';
         } elseif ($INPUT->server->str('REMOTE_USER') && $act == 'login') {
             if ($INPUT->str('r')) {
+                // permanent login
                 $type = 'p';
             } else {
+                // normal login
                 $type = 'l';
             }
         } elseif ($INPUT->str('u') && !$INPUT->str('http_credentials') && !$INPUT->server->str('REMOTE_USER')) {
+            // failed attempt
+            $user = $INPUT->str('u');
             $type = 'f';
         }
         if (!$type) return;
 
         /** @var helper_plugin_statistics $hlp */
         $hlp = plugin_load('helper', 'statistics');
-        $hlp->getLogger()->logLogin($type);
+        $hlp->getLogger()->logLogin($type, $user);
     }
 
     /**
