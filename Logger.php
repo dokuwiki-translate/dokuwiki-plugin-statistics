@@ -2,11 +2,19 @@
 
 namespace dokuwiki\plugin\statistics;
 
+/**
+ * Exception thrown when logging should be ignored
+ */
+class IgnoreException extends \RuntimeException
+{
+}
+
 use DeviceDetector\DeviceDetector;
 use DeviceDetector\Parser\Client\Browser;
 use DeviceDetector\Parser\Device\AbstractDeviceParser;
 use DeviceDetector\Parser\OperatingSystem;
 use dokuwiki\HTTP\DokuHTTPClient;
+use dokuwiki\Input\Input;
 use dokuwiki\plugin\sqlite\SQLiteDB;
 use helper_plugin_popularity;
 use helper_plugin_statistics;
@@ -58,6 +66,7 @@ class Logger
      */
     public function __construct(helper_plugin_statistics $hlp, ?DokuHTTPClient $httpClient = null)
     {
+        /** @var Input $INPUT */
         global $INPUT;
 
         $this->hlp = $hlp;
@@ -86,7 +95,7 @@ class Logger
         $this->uaPlatform = OperatingSystem::getOsFamily($dd->getOs('name')) ?: 'Unknown';
         $this->uid = $this->getUID();
         $this->session = $this->getSession();
-        $this->user = $INPUT->server->str('REMOTE_USER') ?: null;
+        $this->user = $INPUT->server->str('REMOTE_USER', null, true);
     }
 
     /**
@@ -180,7 +189,9 @@ class Logger
             'INSERT INTO sessions (session, dt, end, uid, user, ua, ua_info, ua_type, ua_ver, os)
                   VALUES (?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?)
              ON CONFLICT (session) DO UPDATE SET
-                         end = CURRENT_TIMESTAMP
+                         end = CURRENT_TIMESTAMP,
+                         user = excluded.user,
+                         uid = excluded.uid
                    WHERE excluded.session = sessions.session
              ',
             $this->session,
@@ -209,6 +220,10 @@ class Logger
         $groups = $USERINFO['grps'];
 
         $this->db->exec('DELETE FROM groups WHERE user = ?', $this->user);
+
+        if( empty($groups)) {
+            return;
+        }
 
         $placeholders = implode(',', array_fill(0, count($groups), '(?, ?)'));
         $params = [];
@@ -257,10 +272,10 @@ class Logger
         // FIXME we could check against a blacklist here
 
         $se = new SearchEngines($referer);
-        $type = $se->isSearchEngine() ? 'search' : 'external';
+        $engine = $se->getEngine();
 
-        $sql = 'INSERT OR IGNORE INTO referers (url, type, dt) VALUES (?, ?, CURRENT_TIMESTAMP)';
-        return $this->db->exec($sql, [$referer, $type]); // returns ID even if the insert was ignored
+        $sql = 'INSERT OR IGNORE INTO referers (url, engine, dt) VALUES (?, ?, CURRENT_TIMESTAMP)';
+        return $this->db->exec($sql, [$referer, $engine]); // returns ID even if the insert was ignored
     }
 
     /**
@@ -300,7 +315,7 @@ class Logger
         if (!isset($data['status'])) {
             \dokuwiki\Logger::error('Statistics Plugin - Invalid ip-api.com result' . $ip, $data);
             return $hash;
-        };
+        }
 
         // we do not check for 'success' status here. when the API can't resolve the IP we still log it
         // without location data, so we won't re-query it in the next 30 days.
@@ -376,7 +391,7 @@ class Logger
             'INSERT INTO outlinks (
                 dt, session, page, link
              ) VALUES (
-                CURRENT_TIMESTAMP, ?, ?, ?, ?
+                CURRENT_TIMESTAMP, ?, ?, ?
              )',
             $session,
             $page,
@@ -435,7 +450,7 @@ class Logger
             'session' => $this->session
         ];
 
-        $editId = $this->db->exec(
+        $this->db->exec(
             'INSERT INTO edits (
                 dt, page, type, ip, session
              ) VALUES (

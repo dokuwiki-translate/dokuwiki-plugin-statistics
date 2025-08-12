@@ -14,9 +14,7 @@ use dokuwiki\plugin\statistics\StatisticsGraph;
  */
 class helper_plugin_statistics extends Plugin
 {
-    public $prefix;
-    protected $oQuery;
-    protected ?Logger $oLogger = null;
+    protected ?Query $oQuery = null;
     protected ?StatisticsGraph $oGraph = null;
     protected ?SQLiteDB $db = null;
 
@@ -56,10 +54,7 @@ class helper_plugin_statistics extends Plugin
      */
     public function getLogger(): ?Logger
     {
-        if (is_null($this->oLogger)) {
-            $this->oLogger = new Logger($this);
-        }
-        return $this->oLogger;
+        return new Logger($this);
     }
 
     /**
