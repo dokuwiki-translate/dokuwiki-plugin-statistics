@@ -141,18 +141,35 @@ class LoggerTest extends DokuWikiTest
     }
 
     /**
-     * Data provider fortestLogReferer test
+     * Data provider for testLogReferer test
      */
     public function logRefererProvider()
     {
         return [
             'google search' => [
                 'https://www.google.com/search?q=dokuwiki+test',
-                'google'
+                'google',
+                true // should be logged
             ],
-            'non-search referer' => [
+            'bing search' => [
+                'https://www.bing.com/search?q=test+query',
+                'bing',
+                true // should be logged
+            ],
+            'external referer' => [
                 'https://example.com/page',
                 null,
+                true // should be logged
+            ],
+            'direct access (empty referer)' => [
+                '',
+                null,
+                true // should be logged
+            ],
+            'ws' => [
+                '   ',
+                null,
+                true // should be logged (trimmed to empty)
             ],
         ];
     }
@@ -161,12 +178,42 @@ class LoggerTest extends DokuWikiTest
      * Test logReferer method
      * @dataProvider logRefererProvider
      */
-    public function testLogReferer($referer, $expectedEngine)
+    public function testLogReferer($referer, $expectedEngine, $shouldBeLogged)
     {
-        $refId = $this->helper->getLogger()->logReferer($referer);
-        $this->assertNotNull($refId);
-        $refererRecord = $this->helper->getDB()->queryRecord('SELECT * FROM referers WHERE id = ?', [$refId]);
-        $this->assertEquals($expectedEngine, $refererRecord['engine']);
+        $logger = $this->helper->getLogger();
+        $logger->begin();
+        $refId = $logger->logReferer($referer);
+        $logger->end();
+
+        if ($shouldBeLogged) {
+            $this->assertNotNull($refId);
+            $refererRecord = $this->helper->getDB()->queryRecord('SELECT * FROM referers WHERE id = ?', [$refId]);
+            $this->assertNotNull($refererRecord);
+            $this->assertEquals($expectedEngine, $refererRecord['engine']);
+            $this->assertEquals(trim($referer), $refererRecord['url']);
+        } else {
+            $this->assertNull($refId);
+        }
+    }
+
+    /**
+     * Test that internal referers (our own pages) are not logged
+     */
+    public function testLogRefererInternal()
+    {
+        // Test internal referer (should return null and not be logged)
+        $internalReferer = DOKU_URL;
+        $refId = $this->helper->getLogger()->logReferer($internalReferer);
+        $this->assertNull($refId, 'Internal referers should not be logged');
+
+        // Verify no referer was actually stored
+        $count = $this->helper->getDB()->queryValue('SELECT COUNT(*) FROM referers WHERE url = ?', [$internalReferer]);
+        $this->assertEquals(0, $count, 'Internal referer should not be stored in database');
+
+        // Test another internal referer pattern
+        $internalReferer2 = rtrim(DOKU_URL, '/') . '/doku.php?id=start';
+        $refId2 = $this->helper->getLogger()->logReferer($internalReferer2);
+        $this->assertNull($refId2, 'Internal wiki pages should not be logged as referers');
     }
 
     /**

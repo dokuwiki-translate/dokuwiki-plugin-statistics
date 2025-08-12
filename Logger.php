@@ -278,10 +278,12 @@ class Logger
     {
         $referer = trim($referer);
 
-        // do not log our own pages as referers
-        $selfre = '^' . preg_quote(DOKU_URL, '/') . '$';
-        if(preg_match("/$selfre/", $referer)) {
-            return null;
+        // do not log our own pages as referers (empty referer is OK though)
+        if (!empty($referer)) {
+            $selfre = '^' . preg_quote(DOKU_URL, '/');
+            if(preg_match("/$selfre/", $referer)) {
+                return null;
+            }
         }
 
         // is it a search engine?
@@ -289,7 +291,8 @@ class Logger
         $engine = $se->getEngine();
 
         $sql = 'INSERT OR IGNORE INTO referers (url, engine, dt) VALUES (?, ?, CURRENT_TIMESTAMP)';
-        return $this->db->exec($sql, [$referer, $engine]); // returns ID even if the insert was ignored
+        $this->db->exec($sql, [$referer, $engine]);
+        return (int) $this->db->queryValue('SELECT id FROM referers WHERE url = ?', $referer);
     }
 
     /**

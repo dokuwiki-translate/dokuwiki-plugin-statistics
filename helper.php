@@ -52,7 +52,7 @@ class helper_plugin_statistics extends Plugin
      *
      * @return Logger
      */
-    public function getLogger(): ?Logger
+    public function getLogger(): Logger
     {
         return new Logger($this);
     }
