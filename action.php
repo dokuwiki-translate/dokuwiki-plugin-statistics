@@ -26,6 +26,7 @@ class action_plugin_statistics extends ActionPlugin
         $controller->register_hook('SEARCH_QUERY_FULLPAGE', 'AFTER', $this, 'logsearch', []);
         $controller->register_hook('FETCH_MEDIA_STATUS', 'BEFORE', $this, 'logmedia', []);
         $controller->register_hook('INDEXER_TASKS_RUN', 'AFTER', $this, 'loghistory', []);
+        $controller->register_hook('INDEXER_TASKS_RUN', 'AFTER', $this, 'retention', []);
 
         // log registration and login/logout actionsonly when user tracking is enabled
         if (!$this->getConf('nousers')) {
@@ -226,6 +227,59 @@ class action_plugin_statistics extends ActionPlugin
             $hlp->getLogger()->logHistoryPages();
         }
         echo 'Plugin Statistics: finished' . DOKU_LF;
+    }
+
+    /**
+     * Prune old data
+     *
+     * This is run once a day and removes all data older than the configured
+     * retention time.
+     */
+    public function retention(Event $event, $param)
+    {
+        $retention = (int)$this->getConf('retention');
+        if ($retention <= 0) return;
+        // pruning is only done once a day
+        $touch = getCacheName('statistics_retention', '.statistics-retention');
+        if (file_exists($touch) && time() - filemtime($touch) < 24 * 3600) {
+            return;
+        }
+
+        $event->stopPropagation();
+        $event->preventDefault();
+
+        // these are the tables to be pruned
+        $tables = [
+            'edits',
+            'history',
+            'iplocation',
+            'logins',
+            'media',
+            'outlinks',
+            'pageviews',
+            'referers',
+            'search',
+            'sessions',
+        ];
+
+        /** @var helper_plugin_statistics $hlp */
+        $hlp = plugin_load('helper', 'statistics');
+        $db = $hlp->getDB();
+
+        $db->getPdo()->beginTransaction();
+        foreach ($tables as $table) {
+            echo "Plugin Statistics: pruning $table" . DOKU_LF;
+            $db->exec(
+                "DELETE FROM $table WHERE dt < datetime('now', '-$retention days')"
+            );
+        }
+        $db->getPdo()->commit();
+
+        echo "Plugin Statistics: Optimizing" . DOKU_LF;
+        $db->exec('VACUUM');
+
+        // touch the retention file to prevent multiple runs
+        io_saveFile($touch, dformat());
     }
 
     /**

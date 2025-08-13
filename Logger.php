@@ -313,7 +313,7 @@ class Logger
             "SELECT ip
              FROM   iplocation
              WHERE  ip = ?
-               AND  lastupd > date('now', '-30 days')",
+               AND  dt > date('now', '-30 days')",
             $hash
         );
         if ($result) return $hash; // already known and up-to-date
@@ -329,7 +329,7 @@ class Logger
 
         $this->db->exec(
             'INSERT OR REPLACE INTO iplocation (
-                    ip, country, code, city, host, lastupd
+                    ip, country, code, city, host, dt
                  ) VALUES (
                     ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
                  )',
