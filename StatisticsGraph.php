@@ -141,6 +141,11 @@ class StatisticsGraph
         $this->sumUpPieChart('os', 'os');
     }
 
+    public function topdomain()
+    {
+        $this->sumUpPieChart('topdomain', 'domain');
+    }
+
     public function topuser()
     {
         $this->sumUpPieChart('topuser', 'user');

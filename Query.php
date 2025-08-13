@@ -541,6 +541,27 @@ class Query
     /**
      * @return array
      */
+    public function topdomain(): array
+    {
+        $sql = "SELECT COUNT(*) as cnt, U.domain
+                  FROM pageviews as P,
+                       sessions as S,
+                       users as U
+                 WHERE P.dt >= ? AND P.dt <= ?
+                   AND P.session = S.session
+                   AND S.user = U.user
+                   AND S.ua_type = ?
+                   AND S.user IS NOT NULL
+                   AND S.user != ?
+              GROUP BY U.domain
+              ORDER BY cnt DESC, U.domain" .
+            $this->limit;
+        return $this->db->queryAll($sql, [$this->from, $this->to, 'browser', '']);
+    }
+
+    /**
+     * @return array
+     */
     public function topuser(): array
     {
         $sql = "SELECT COUNT(*) as cnt, S.user

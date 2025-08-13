@@ -31,7 +31,7 @@ class admin_plugin_statistics extends AdminPlugin
     protected $pages = [
         'dashboard' => 1,
         'content' => ['page', 'edits', 'images', 'downloads', 'history'],
-        'users' => ['topuser', 'topeditor', 'topgroup', 'topgroupedit', 'seenusers'],
+        'users' => ['topdomain', 'topuser', 'topeditor', 'topgroup', 'topgroupedit', 'seenusers'],
         'links' => ['referer', 'newreferer', 'outlinks'],
         'search' => ['searchengines', 'internalsearchphrases', 'internalsearchwords'],
         'technology' => ['browsers', 'os', 'countries', 'resolution', 'viewport']
@@ -361,6 +361,14 @@ class admin_plugin_statistics extends AdminPlugin
         echo '<p>' . $this->getLang('intro_browsers') . '</p>';
         $this->html_graph('browsers', 300, 300);
         $result = $this->hlp->getQuery()->browsers(false);
+        $this->html_resulttable($result, '', 150);
+    }
+
+    public function html_topdomain()
+    {
+        echo '<p>' . $this->getLang('intro_topdomain') . '</p>';
+        $this->html_graph('topdomain', 300, 300);
+        $result = $this->hlp->getQuery()->topdomain();
         $this->html_resulttable($result, '', 150);
     }
 
