@@ -76,7 +76,7 @@ class helper_plugin_statistics extends Plugin
     /**
      * Just send a 1x1 pixel blank gif to the browser
      *
-     * @called from log.php
+     * @called from dispatch.php
      *
      * @author Andreas Gohr <andi@splitbrain.org>
      * @author Harry Fuecks <fuecks@gmail.com>

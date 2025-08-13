@@ -79,7 +79,7 @@ class action_plugin_statistics extends ActionPlugin
     public function putpixel()
     {
         global $ID, $INPUT;
-        $url = DOKU_BASE . 'lib/plugins/statistics/log.php?p=' . rawurlencode($ID) .
+        $url = DOKU_BASE . 'lib/plugins/statistics/dispatch.php?p=' . rawurlencode($ID) .
             '&amp;r=' . rawurlencode($INPUT->server->str('HTTP_REFERER')) . '&rnd=' . time();
 
         echo '<noscript><img alt="" src="' . $url . '" width="1" height="1" /></noscript>';

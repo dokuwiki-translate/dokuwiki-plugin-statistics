@@ -382,7 +382,7 @@ class Logger
     /**
      * Log a click on an external link
      *
-     * Called from log.php
+     * Called from dispatch.php
      */
     public function logOutgoing(): void
     {
