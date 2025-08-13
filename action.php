@@ -28,7 +28,7 @@ class action_plugin_statistics extends ActionPlugin
         $controller->register_hook('INDEXER_TASKS_RUN', 'AFTER', $this, 'loghistory', []);
 
         // log registration and login/logout actionsonly when user tracking is enabled
-        if(!$this->getConf('nousers')) {
+        if (!$this->getConf('nousers')) {
             $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'loglogins', []);
             $controller->register_hook('AUTH_USER_CHANGE', 'AFTER', $this, 'logregistration', []);
         }

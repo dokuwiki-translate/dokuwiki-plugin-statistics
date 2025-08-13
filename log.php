@@ -1,7 +1,6 @@
 <?php
 
 // phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols
-
 /**
  * Statistics plugin - data logger
  *
@@ -10,7 +9,7 @@
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
  * @author     Andreas Gohr <gohr@cosmocode.de>
  */
-
+use dokuwiki\plugin\statistics\IgnoreException;
 use dokuwiki\ErrorHandler;
 
 if (!defined('DOKU_INC')) define('DOKU_INC', realpath(__DIR__ . '/../../../') . '/');
@@ -38,7 +37,7 @@ try {
 
     $logger->end();
 } catch (\Exception $e) {
-    if (!$e instanceof dokuwiki\plugin\statistics\IgnoreException) {
+    if (!$e instanceof IgnoreException) {
         ErrorHandler::logException($e);
     }
 }

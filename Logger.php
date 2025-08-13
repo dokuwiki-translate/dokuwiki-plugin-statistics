@@ -2,13 +2,6 @@
 
 namespace dokuwiki\plugin\statistics;
 
-/**
- * Exception thrown when logging should be ignored
- */
-class IgnoreException extends \RuntimeException
-{
-}
-
 use DeviceDetector\DeviceDetector;
 use DeviceDetector\Parser\Client\Browser;
 use DeviceDetector\Parser\Device\AbstractDeviceParser;
@@ -175,7 +168,6 @@ class Logger
             ',
             $this->user
         );
-
     }
 
     /**
@@ -219,7 +211,7 @@ class Logger
 
         $this->db->exec('DELETE FROM groups WHERE user = ?', $this->user);
 
-        if (empty($groups)) {
+        if ($groups === []) {
             return;
         }
 
@@ -375,7 +367,8 @@ class Logger
             'session' => $this->session,
         ];
 
-        $this->db->exec('
+        $this->db->exec(
+            '
         INSERT INTO pageviews (
             dt, page, ip, ref_id, screen_x, screen_y, view_x, view_y, session
         ) VALUES (
@@ -439,7 +432,8 @@ class Logger
             'inline' => $inline,
         ];
 
-        $this->db->exec('
+        $this->db->exec(
+            '
                 INSERT INTO media ( dt, media, ip, session, size, mime1, mime2, inline )
                      VALUES (CURRENT_TIMESTAMP, :media, :ip, :session, :size, :mime1, :mime2, :inline)
             ',

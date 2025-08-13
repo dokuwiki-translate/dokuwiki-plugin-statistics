@@ -640,7 +640,9 @@ class Query
         $sql = "SELECT COUNT(DISTINCT S.uid) as cnt,
                        ROUND(P.screen_x/100)*100 as res_x,
                        ROUND(P.screen_y/100)*100 as res_y,
-                       CAST(ROUND(P.screen_x/100)*100 AS int) || 'x' || CAST(ROUND(P.screen_y/100)*100 AS int) as resolution
+                       CAST(ROUND(P.screen_x/100)*100 AS int)
+                           || 'x' ||
+                       CAST(ROUND(P.screen_y/100)*100 AS int) as resolution
                   FROM pageviews as P,
                        sessions as S
                  WHERE P.dt >= ? AND P.dt <= ?
@@ -662,7 +664,9 @@ class Query
         $sql = "SELECT COUNT(DISTINCT S.uid) as cnt,
                        ROUND(P.view_x/100)*100 as res_x,
                        ROUND(P.view_y/100)*100 as res_y,
-                       CAST(ROUND(P.view_x/100)*100 AS int) || 'x' || CAST(ROUND(P.view_y/100)*100 AS int) as resolution
+                       CAST(ROUND(P.view_x/100)*100 AS int)
+                           || 'x' ||
+                       CAST(ROUND(P.view_y/100)*100 AS int) as resolution
                   FROM pageviews as P,
                        sessions as S
                  WHERE P.dt >= ? AND P.dt <= ?
