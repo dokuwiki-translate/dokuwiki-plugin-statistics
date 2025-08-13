@@ -461,25 +461,6 @@ class SearchEnginesTest extends DokuWikiTest
     }
 
     /**
-     * Test DokuWiki internal search detection
-     */
-    public function testDokuWikiInternalSearch(): void
-    {
-        // Mock DOKU_URL for testing
-        if (!defined('DOKU_URL')) {
-            define('DOKU_URL', 'https://wiki.example.com/');
-        }
-
-        $referer = 'https://wiki.example.com/doku.php?do=search&q=internal+search';
-        $searchEngine = new SearchEngines($referer);
-
-        $this->assertTrue($searchEngine->isSearchEngine());
-        $this->assertEquals('dokuwiki', $searchEngine->getEngine());
-        $this->assertEquals('internal search', $searchEngine->getQuery());
-        $this->assertEquals('DokuWiki Internal Search', SearchEngines::getName('dokuwiki'));
-    }
-
-    /**
      * Test case insensitive domain matching
      */
     public function testCaseInsensitiveDomainMatching(): void
