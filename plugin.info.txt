@@ -1,8 +1,8 @@
-# General Plugin Info do not edit
+# General Plugin Info
 base   statistics
 author Andreas Gohr
 email  dokuwiki@cosmocode.de
-date   2025-08-11
+date   2025-08-13
 name   Statistics Plugin
 desc   Gather usage/view statistics
 url    http://www.dokuwiki.org/plugin:statistics
