@@ -553,7 +553,6 @@ class Query
                    AND S.user = U.user
                    AND S.ua_type = 'browser'
                    AND S.user IS NOT NULL
-                   AND S.user != ''
               GROUP BY U.domain
               ORDER BY cnt DESC, U.domain" .
             $this->limit;
@@ -571,7 +570,7 @@ class Query
                  WHERE P.dt >= ? AND P.dt <= ?
                    AND P.session = S.session
                    AND S.ua_type = 'browser'
-                   AND S.user != ''
+                   AND S.user IS NOT NULL
               GROUP BY S.user
               ORDER BY cnt DESC, S.user" .
             $this->limit;
@@ -588,7 +587,7 @@ class Query
                        sessions as S
                  WHERE E.dt >= ? AND E.dt <= ?
                    AND E.session = S.session
-                   AND S.user != ''
+                   AND S.user IS NOT NULL
               GROUP BY user
               ORDER BY cnt DESC, user" .
             $this->limit;
