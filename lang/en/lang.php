@@ -96,6 +96,7 @@ $lang['dash_bouncerate']    = '<strong>%.1f%%</strong> Bounces';
 $lang['dash_timespent']     = '<strong>%.2f</strong> Minutes Spent in an Average Session';
 $lang['dash_avgpages']      = '<strong>%.2f</strong> Pages Viewed in an Average Session';
 $lang['dash_newvisitors']   = '<strong>%.1f%%</strong> New Visitors';
+$lang['dash_last']          = '<strong>%s</strong> Last Visit';
 
 $lang['dash_mostpopular'] = 'Most Popular Pages';
 $lang['dash_newincoming'] = 'Top Incoming New Links';

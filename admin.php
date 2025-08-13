@@ -274,7 +274,7 @@ class admin_plugin_statistics extends AdminPlugin
         echo '</ul>';
 
         echo '<ul>';
-        foreach (['bouncerate', 'timespent', 'avgpages', 'newvisitors', 'registrations'] as $name) {
+        foreach (['bouncerate', 'timespent', 'avgpages', 'newvisitors', 'registrations', 'last'] as $name) {
             echo '<li><div class="li">' . sprintf($this->getLang('dash_' . $name), $result[$name]) . '</div></li>';
         }
         echo '</ul>';
