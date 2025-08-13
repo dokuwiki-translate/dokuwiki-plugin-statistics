@@ -302,10 +302,10 @@ class Query
     public function searchengines(): array
     {
         $sql = "SELECT COUNT(*) as cnt, R.engine
-                  FROM pageviews as P
-                  LEFT JOIN referers as R ON P.ref_id = R.id
+                  FROM pageviews as P,
+                       referers as R
                  WHERE P.dt >= ? AND P.dt <= ?
-                   AND R.engine IS NOT NULL
+                   AND P.ref_id = R.id
                    AND R.engine != ''
               GROUP BY R.engine
               ORDER BY cnt DESC, R.engine" .
@@ -363,9 +363,10 @@ class Query
     public function pages(): array
     {
         $sql = "SELECT COUNT(*) as cnt, P.page
-                  FROM pageviews as P
-                  LEFT JOIN sessions as S ON P.session = S.session
+                  FROM pageviews as P,
+                       sessions as S
                  WHERE P.dt >= ? AND P.dt <= ?
+                   AND P.session = S.session
                    AND S.ua_type = ?
               GROUP BY P.page
               ORDER BY cnt DESC, P.page" .
@@ -488,10 +489,10 @@ class Query
     public function countries(): array
     {
         $sql = "SELECT COUNT(DISTINCT P.session) as cnt, I.country
-                  FROM pageviews as P
-                  LEFT JOIN iplocation as I ON P.ip = I.ip
+                  FROM pageviews as P,
+                       iplocation as I
                  WHERE P.dt >= ? AND P.dt <= ?
-                   AND I.country IS NOT NULL
+                   AND P.ip = I.ip
                    AND I.country != ''
               GROUP BY I.code
               ORDER BY cnt DESC, I.country" .
@@ -565,11 +566,11 @@ class Query
     public function topuser(): array
     {
         $sql = "SELECT COUNT(*) as cnt, S.user
-                  FROM pageviews as P
-                  LEFT JOIN sessions as S ON P.session = S.session
+                  FROM pageviews as P,
+                       sessions as S
                  WHERE P.dt >= ? AND P.dt <= ?
+                   AND P.session = S.session
                    AND S.ua_type = ?
-                   AND S.user IS NOT NULL
                    AND S.user != ?
               GROUP BY S.user
               ORDER BY cnt DESC, S.user" .
@@ -583,9 +584,10 @@ class Query
     public function topeditor(): array
     {
         $sql = "SELECT COUNT(*) as cnt, user
-                  FROM edits as E
-             LEFT JOIN sessions as S ON E.session = S.session
+                  FROM edits as E,
+                       sessions as S
                  WHERE E.dt >= ? AND E.dt <= ?
+                   AND E.session = S.session
                    AND S.user != ?
               GROUP BY user
               ORDER BY cnt DESC, user" .
@@ -599,12 +601,13 @@ class Query
     public function topgroup(): array
     {
         $sql = "SELECT COUNT(*) as cnt, G.`group`
-                  FROM pageviews as P
-                  LEFT JOIN sessions as S ON P.session = S.session
-                  LEFT JOIN groups as G ON S.user = G.user
+                  FROM pageviews as P,
+                       sessions as S,
+                       groups as G
                  WHERE P.dt >= ? AND P.dt <= ?
+                   AND P.session = S.session
+                   AND S.user = G.user
                    AND S.ua_type = ?
-                   AND G.`group` IS NOT NULL
               GROUP BY G.`group`
               ORDER BY cnt DESC, G.`group`" .
             $this->limit;
@@ -617,11 +620,12 @@ class Query
     public function topgroupedit(): array
     {
         $sql = "SELECT COUNT(*) as cnt, G.`group`
-                  FROM edits as E
-                  LEFT JOIN sessions as S ON E.session = S.session
-                  LEFT JOIN groups as G ON S.user = G.user
+                  FROM edits as E,
+                       sessions as S,
+                       groups as G
                  WHERE E.dt >= ? AND E.dt <= ?
-                   AND G.`group` IS NOT NULL
+                   AND E.session = S.session
+                   AND S.user = G.user
               GROUP BY G.`group`
               ORDER BY cnt DESC, G.`group`" .
             $this->limit;
@@ -638,9 +642,10 @@ class Query
                        ROUND(P.screen_x/100)*100 as res_x,
                        ROUND(P.screen_y/100)*100 as res_y,
                        CAST(ROUND(P.screen_x/100)*100 AS int) || 'x' || CAST(ROUND(P.screen_y/100)*100 AS int) as resolution
-                  FROM pageviews as P
-                  LEFT JOIN sessions as S ON P.session = S.session
+                  FROM pageviews as P,
+                       sessions as S
                  WHERE P.dt >= ? AND P.dt <= ?
+                   AND P.session = S.session
                    AND S.ua_type = ?
                    AND P.screen_x != ?
                    AND P.screen_y != ?
@@ -659,9 +664,10 @@ class Query
                        ROUND(P.view_x/100)*100 as res_x,
                        ROUND(P.view_y/100)*100 as res_y,
                        CAST(ROUND(P.view_x/100)*100 AS int) || 'x' || CAST(ROUND(P.view_y/100)*100 AS int) as resolution
-                  FROM pageviews as P
-                  LEFT JOIN sessions as S ON P.session = S.session
+                  FROM pageviews as P,
+                       sessions as S
                  WHERE P.dt >= ? AND P.dt <= ?
+                   AND P.session = S.session
                    AND S.ua_type = ?
                    AND P.view_x != ?
                    AND P.view_y != ?
