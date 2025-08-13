@@ -134,7 +134,7 @@ class Logger
      */
     protected function getUID(): string
     {
-        if(!isset($_SESSION[DOKU_COOKIE]['statistics']['uid'])) {
+        if (!isset($_SESSION[DOKU_COOKIE]['statistics']['uid'])) {
             // when there is no session UID set, we assume this was deliberate and we simply abort all logging
             // @todo we may later make UID generation optional
             throw new IgnoreException('No user ID found');
@@ -150,7 +150,7 @@ class Logger
      */
     protected function getSession(): string
     {
-        if(!isset($_SESSION[DOKU_COOKIE]['statistics']['id'])) {
+        if (!isset($_SESSION[DOKU_COOKIE]['statistics']['id'])) {
             // when there is no session ID set, we assume this was deliberate and we simply abort all logging
             throw new IgnoreException('No session ID found');
         }
@@ -221,7 +221,7 @@ class Logger
 
         $this->db->exec('DELETE FROM groups WHERE user = ?', $this->user);
 
-        if( empty($groups)) {
+        if (empty($groups)) {
             return;
         }
 
@@ -281,7 +281,7 @@ class Logger
         // do not log our own pages as referers (empty referer is OK though)
         if (!empty($referer)) {
             $selfre = '^' . preg_quote(DOKU_URL, '/');
-            if(preg_match("/$selfre/", $referer)) {
+            if (preg_match("/$selfre/", $referer)) {
                 return null;
             }
         }
@@ -292,7 +292,7 @@ class Logger
 
         $sql = 'INSERT OR IGNORE INTO referers (url, engine, dt) VALUES (?, ?, CURRENT_TIMESTAMP)';
         $this->db->exec($sql, [$referer, $engine]);
-        return (int) $this->db->queryValue('SELECT id FROM referers WHERE url = ?', $referer);
+        return (int)$this->db->queryValue('SELECT id FROM referers WHERE url = ?', $referer);
     }
 
     /**
@@ -303,7 +303,15 @@ class Logger
     public function logIp(): string
     {
         $ip = clientIP(true);
-        $hash = $ip; // @todo we could anonymize here
+
+        // anonymize the IP address for storage?
+        if ($this->hlp->getConf('anonips')) {
+            $hash = md5($ip . strrev($ip)); // we use the reversed IP as salt to avoid common rainbow tables
+            $host = '';
+        } else {
+            $hash = $ip;
+            $host = gethostbyaddr($ip);
+        }
 
         // check if IP already known and up-to-date
         $result = $this->db->queryValue(
@@ -337,7 +345,6 @@ class Logger
         // we do not check for 'success' status here. when the API can't resolve the IP we still log it
         // without location data, so we won't re-query it in the next 30 days.
 
-        $host = gethostbyaddr($ip); // @todo if we anonymize the IP, we should not do this
         $this->db->exec(
             'INSERT OR REPLACE INTO iplocation (
                     ip, country, code, city, host, lastupd

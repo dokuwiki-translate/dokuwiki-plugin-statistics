@@ -7,3 +7,4 @@
  */
 
 $meta['loggroups']   = array('array');
+$meta['anonips']     = array('onoff');

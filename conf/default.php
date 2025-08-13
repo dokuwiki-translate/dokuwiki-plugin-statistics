@@ -5,3 +5,4 @@
  */
 
 $conf['loggroups']   = array();
+$conf['anonips']     = 0;
