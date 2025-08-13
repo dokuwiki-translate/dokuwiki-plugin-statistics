@@ -1,6 +1,3 @@
-/* DOKUWIKI:include_once lib/chart.js */
-/* DOKUWIKI:include_once lib/chartjs-plugin-datalabels.js */
-
 /* globals JSINFO, DOKU_BASE, DokuCookie */
 
 /**
