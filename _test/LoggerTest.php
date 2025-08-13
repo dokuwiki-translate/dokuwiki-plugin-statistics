@@ -296,7 +296,8 @@ class LoggerTest extends DokuWikiTest
         $mockHttpClient->timeout = 10;
 
         // Create logger with mock HTTP client
-        $logger = new Logger($this->helper, $mockHttpClient);
+        $this->helper->httpClient = $mockHttpClient;
+        $logger = new Logger($this->helper);
 
         // Test with IP that doesn't exist in database
         $logger->logIp();
@@ -314,8 +315,11 @@ class LoggerTest extends DokuWikiTest
         $mockHttpClient2 = $this->createMock(\dokuwiki\HTTP\DokuHTTPClient::class);
         $mockHttpClient2->expects($this->never())->method('get');
 
-        $logger2 = new Logger($this->helper, $mockHttpClient2);
+        $this->helper->httpClient = $mockHttpClient2;
+        $logger2 = new Logger($this->helper);
         $logger2->logIp(); // Should not trigger HTTP call
+
+        $this->helper->httpClient = null; // Reset HTTP client for other tests
     }
 
     /**

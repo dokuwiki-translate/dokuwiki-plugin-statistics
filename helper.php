@@ -1,7 +1,9 @@
 <?php
 
 use dokuwiki\Extension\Plugin;
+use dokuwiki\HTTP\DokuHTTPClient;
 use dokuwiki\plugin\sqlite\SQLiteDB;
+use dokuwiki\plugin\statistics\IpResolverException;
 use dokuwiki\plugin\statistics\Logger;
 use dokuwiki\plugin\statistics\Query;
 use dokuwiki\plugin\statistics\StatisticsGraph;
@@ -17,6 +19,7 @@ class helper_plugin_statistics extends Plugin
     protected ?Query $oQuery = null;
     protected ?StatisticsGraph $oGraph = null;
     protected ?SQLiteDB $db = null;
+    public ?DokuHTTPClient $httpClient = null; // public for testing purposes
 
     /**
      * Get SQLiteDB instance
@@ -92,5 +95,34 @@ class helper_plugin_statistics extends Plugin
         flush();
         // Browser should drop connection after this
         // Thinks it got the whole image
+    }
+
+    /**
+     * Return the location information for an IP address
+     *
+     * @throws IpResolverException
+     * @noinspection HttpUrlsUsage
+     */
+    public function resolveIP($ip)
+    {
+        $http = $this->httpClient ?: new DokuHTTPClient();
+        $http->timeout = 7;
+        $json = $http->get('http://ip-api.com/json/' . $ip); // yes, it's HTTP only
+
+        if (!$json) {
+            throw new IpResolverException('Failed talk to ip-api.com.');
+        }
+        try {
+            $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            throw new IpResolverException('Failed to decode JSON from ip-api.com.', $e->getTrace(), 0, $e);
+        }
+        if (!isset($data['status'])) {
+            throw new IpResolverException('Invalid ip-api.com result for' . $ip, $data);
+        }
+        // we do not check for 'success' status here. when the API can't resolve the IP we still log it
+        // without location data, so we won't re-query it in the next 30 days.
+
+        return $data;
     }
 }

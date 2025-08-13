@@ -54,9 +54,6 @@ class Logger
     /** @var int|null The ID of the main access log entry if any */
     protected ?int $hit = null;
 
-    /** @var DokuHTTPClient|null The HTTP client instance for testing */
-    protected ?DokuHTTPClient $httpClient = null;
-
     // region lifecycle
 
     /**
@@ -64,14 +61,13 @@ class Logger
      *
      * Parses browser info and set internal vars
      */
-    public function __construct(helper_plugin_statistics $hlp, ?DokuHTTPClient $httpClient = null)
+    public function __construct(helper_plugin_statistics $hlp)
     {
         /** @var Input $INPUT */
         global $INPUT;
 
         $this->hlp = $hlp;
         $this->db = $this->hlp->getDB();
-        $this->httpClient = $httpClient;
 
         // FIXME if we already have a session, we should not re-parse the user agent
 
@@ -313,6 +309,11 @@ class Logger
             $host = gethostbyaddr($ip);
         }
 
+        if($this->hlp->getConf('nolocation')) {
+            // if we don't resolve location data, we just return the IP address
+            return $hash;
+        }
+
         // check if IP already known and up-to-date
         $result = $this->db->queryValue(
             "SELECT ip
@@ -323,27 +324,14 @@ class Logger
         );
         if ($result) return $hash; // already known and up-to-date
 
-        $http = $this->httpClient ?: new DokuHTTPClient();
-        $http->timeout = 7;
-        $json = $http->get('http://ip-api.com/json/' . $ip); // yes, it's HTTP only
 
-        if (!$json) {
-            \dokuwiki\Logger::error('Statistics Plugin - Failed talk to ip-api.com.');
-            return $hash;
-        }
+        // resolve the IP address to location data
         try {
-            $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
-            \dokuwiki\Logger::error('Statistics Plugin - Failed to decode JSON from ip-api.com.', $e);
-            return $hash;
+            $data = $this->hlp->resolveIP($ip);
+        } catch (IpResolverException $e) {
+            \dokuwiki\Logger::error('Statistics Plugin: ' . $e->getMessage(), $e->details);
+            $data = [];
         }
-        if (!isset($data['status'])) {
-            \dokuwiki\Logger::error('Statistics Plugin - Invalid ip-api.com result' . $ip, $data);
-            return $hash;
-        }
-
-        // we do not check for 'success' status here. when the API can't resolve the IP we still log it
-        // without location data, so we won't re-query it in the next 30 days.
 
         $this->db->exec(
             'INSERT OR REPLACE INTO iplocation (

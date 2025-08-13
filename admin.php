@@ -47,6 +47,11 @@ class admin_plugin_statistics extends AdminPlugin
     {
         $this->hlp = plugin_load('helper', 'statistics');
 
+        // remove pages that are not available because logging its data is disabled
+        if($this->getConf('nolocation')) {
+            $this->pages['technology'] = array_diff($this->pages['technology'], ['countries']);
+        }
+
         // build a list of pages
         foreach ($this->pages as $key => $val) {
             if (is_array($val)) {
