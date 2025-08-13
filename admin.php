@@ -51,6 +51,9 @@ class admin_plugin_statistics extends AdminPlugin
         if($this->getConf('nolocation')) {
             $this->pages['technology'] = array_diff($this->pages['technology'], ['countries']);
         }
+        if($this->getConf('nousers')) {
+            unset($this->pages['users']);
+        }
 
         // build a list of pages
         foreach ($this->pages as $key => $val) {

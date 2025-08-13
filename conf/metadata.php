@@ -9,3 +9,4 @@
 $meta['loggroups']   = array('array');
 $meta['anonips']     = array('onoff');
 $meta['nolocation'] = array('onoff');
+$meta['nousers']     = array('onoff');

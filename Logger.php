@@ -13,7 +13,6 @@ use DeviceDetector\DeviceDetector;
 use DeviceDetector\Parser\Client\Browser;
 use DeviceDetector\Parser\Device\AbstractDeviceParser;
 use DeviceDetector\Parser\OperatingSystem;
-use dokuwiki\HTTP\DokuHTTPClient;
 use dokuwiki\Input\Input;
 use dokuwiki\plugin\sqlite\SQLiteDB;
 use helper_plugin_popularity;
@@ -91,7 +90,10 @@ class Logger
         $this->uaPlatform = OperatingSystem::getOsFamily($dd->getOs('name')) ?: 'Unknown';
         $this->uid = $this->getUID();
         $this->session = $this->getSession();
-        $this->user = $INPUT->server->str('REMOTE_USER', null, true);
+
+        if (!$this->hlp->getConf('nousers')) {
+            $this->user = $INPUT->server->str('REMOTE_USER', null, true);
+        }
     }
 
     /**
@@ -309,7 +311,7 @@ class Logger
             $host = gethostbyaddr($ip);
         }
 
-        if($this->hlp->getConf('nolocation')) {
+        if ($this->hlp->getConf('nolocation')) {
             // if we don't resolve location data, we just return the IP address
             return $hash;
         }

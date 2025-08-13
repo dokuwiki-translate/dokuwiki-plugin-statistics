@@ -24,10 +24,14 @@ class action_plugin_statistics extends ActionPlugin
         // FIXME new save event might be better:
         $controller->register_hook('IO_WIKIPAGE_WRITE', 'BEFORE', $this, 'logedits', []);
         $controller->register_hook('SEARCH_QUERY_FULLPAGE', 'AFTER', $this, 'logsearch', []);
-        $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'loglogins', []);
-        $controller->register_hook('AUTH_USER_CHANGE', 'AFTER', $this, 'logregistration', []);
         $controller->register_hook('FETCH_MEDIA_STATUS', 'BEFORE', $this, 'logmedia', []);
         $controller->register_hook('INDEXER_TASKS_RUN', 'AFTER', $this, 'loghistory', []);
+
+        // log registration and login/logout actionsonly when user tracking is enabled
+        if(!$this->getConf('nousers')) {
+            $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'loglogins', []);
+            $controller->register_hook('AUTH_USER_CHANGE', 'AFTER', $this, 'logregistration', []);
+        }
     }
 
     /**
