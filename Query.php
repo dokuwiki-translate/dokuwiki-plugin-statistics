@@ -49,6 +49,27 @@ class Query
 
         $this->from = $from->format('Y-m-d H:i:s');
         $this->to = $to->format('Y-m-d H:i:s');
+
+        $this->setTimezone();
+    }
+
+    /**
+     * Force configured timezone.
+     * This is useful if you cannot set localtime on the server.
+     *
+     * @return void
+     */
+    public function setTimezone()
+    {
+        $timezoneId = $this->hlp->getConf('timezone');
+        if (!$timezoneId || !in_array($timezoneId, \DateTimeZone::listIdentifiers())) return;
+
+        try {
+            $dateTime = new \DateTime($this->from, new \DateTimeZone($timezoneId));
+            $this->tz = $dateTime->format('P');
+        } catch (\Exception $e) {
+            \dokuwiki\Logger::error($e->getMessage());
+        }
     }
 
     /**
@@ -296,7 +317,7 @@ class Query
                    AND info = ?
                   GROUP BY $TIME
                   ORDER BY $TIME";
-        
+
         return $this->db->queryAll($sql, [$this->tz, $this->from, $this->tz, $this->to, $info]);
     }
 
