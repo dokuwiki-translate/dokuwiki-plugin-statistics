@@ -190,10 +190,9 @@ class Query
         $data['avgpages'] = $this->db->queryValue($sql, [$this->tz, $this->from, $this->tz, $this->to]);
 
         // average time spent on the site
-        $sql = "SELECT AVG((julianday(end) - julianday(dt)) * 24 * 60) as time
+        $sql = "SELECT AVG((unixepoch(end) - unixepoch(dt)) / 60) as time
                   FROM sessions as S
-                 WHERE S.dt >= ? AND S.dt <= ?
-                   AND S.dt != S.end
+                 WHERE S.dt != S.end
                    AND DATETIME(S.dt, ?) >= ? AND DATETIME(S.dt, ?) <= ?
                    AND S.ua_type = 'browser'";
         $data['timespent'] = $this->db->queryValue($sql, [$this->tz, $this->from, $this->tz, $this->to]);
