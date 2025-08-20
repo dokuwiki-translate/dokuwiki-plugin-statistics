@@ -36,7 +36,7 @@ class StatisticsPlugin {
             vy: window.innerHeight,
             utm_source: params.get('utm_source') || '',
             utm_medium: params.get('utm_medium') || '',
-            utm_campaign: params.get('utm_campaign'),
+            utm_campaign: params.get('utm_campaign') || '',
             rnd: now
         };
     }
