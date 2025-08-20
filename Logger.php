@@ -78,7 +78,7 @@ class Logger
         }
 
         $this->uaAgent = $ua;
-        $this->uaName = Browser::getBrowserFamily($dd->getClient('name')) ?: 'Unknown';
+        $this->uaName = $dd->getClient('name') ?: 'Unknown';
         $this->uaVersion = $dd->getClient('version') ?: '0';
         $this->uaPlatform = OperatingSystem::getOsFamily($dd->getOs('name')) ?: 'Unknown';
         $this->uid = $this->getUID();
