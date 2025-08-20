@@ -33,6 +33,7 @@ class admin_plugin_statistics extends AdminPlugin
         'content' => ['page', 'edits', 'images', 'downloads', 'history'],
         'users' => ['topdomain', 'topuser', 'topeditor', 'topgroup', 'topgroupedit', 'seenusers'],
         'links' => ['referer', 'newreferer', 'outlinks'],
+        'campaigns' => ['campaign', 'source', 'medium'],
         'search' => ['searchengines', 'internalsearchphrases', 'internalsearchwords'],
         'technology' => ['browsers', 'os', 'countries', 'resolution', 'viewport']
     ];

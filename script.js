@@ -26,6 +26,7 @@ class StatisticsPlugin {
      */
     buildTrackingData() {
         const now = Date.now();
+        const params = new URLSearchParams(window.location.search);
         this.data = {
             p: JSINFO.id,
             r: document.referrer,
@@ -33,6 +34,9 @@ class StatisticsPlugin {
             sy: screen.height,
             vx: window.innerWidth,
             vy: window.innerHeight,
+            utm_source: params.get('utm_source') || '',
+            utm_medium: params.get('utm_medium') || '',
+            utm_campaign: params.get('utm_campaign'),
             rnd: now
         };
     }

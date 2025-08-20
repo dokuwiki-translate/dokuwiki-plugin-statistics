@@ -4,7 +4,6 @@ namespace dokuwiki\plugin\statistics;
 
 use DeviceDetector\ClientHints;
 use DeviceDetector\DeviceDetector;
-use DeviceDetector\Parser\Client\Browser;
 use DeviceDetector\Parser\Device\AbstractDeviceParser;
 use DeviceDetector\Parser\OperatingSystem;
 use dokuwiki\Input\Input;
@@ -103,6 +102,7 @@ class Logger
         $this->logGroups();
         $this->logDomain();
         $this->logSession();
+        $this->logCampaign();
     }
 
     /**
@@ -193,6 +193,31 @@ class Logger
             $this->uaType,
             $this->uaVersion,
             $this->uaPlatform
+        );
+    }
+
+    /**
+     * Log UTM campaign data
+     *
+     * @return void
+     */
+    protected function logCampaign(): void
+    {
+        global $INPUT;
+
+        $campaign = $INPUT->filter('trim')->str('utm_campaign', null, true);
+        $source = $INPUT->filter('trim')->str('utm_source', null, true);
+        $medium = $INPUT->filter('trim')->str('utm_medium', null, true);
+
+        if (!$campaign) return;
+
+        $this->db->exec(
+            'INSERT OR IGNORE INTO campaigns (session, campaign, source, medium)
+                  VALUES (?, ?, ?, ?)',
+            $this->session,
+            $campaign,
+            $source,
+            $medium
         );
     }
 
