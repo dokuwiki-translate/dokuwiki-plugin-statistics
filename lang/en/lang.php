@@ -87,6 +87,9 @@ $lang['intro_topuser']               = 'This page shows which of your logged in 
 $lang['intro_topeditor']             = 'This page shows which of your logged in users did the most edits in the seleced timeframe.';
 $lang['intro_topgroup']              = 'These are the groups of the logged in users that browsed the most pages in your wiki in the selected timeframe. Note: when a user is member of multiple groups, all her groups are counted.';
 $lang['intro_topgroupedit']          = 'These are the groups of the logged in users that did the mst edits in the selected timeframe. Note: when a user is member of multiple groups, all her groups are counted.';
+$lang['intro_campaigns']             = 'This shows the number of visits you received through a tracked campaign.';
+$lang['intro_medium']                = 'This shows the number of visits you received via a specific medium of a tracked campaign, e.g. email, social media, etc.';
+$lang['intro_source']                = 'This shows the number of visits you received via a specific source of a tracked campaign, e.g. newsletter, Facebook, etc.';
 
 // the dashboard items
 $lang['dash_pageviews']     = '<strong>%d</strong> Page Views';
