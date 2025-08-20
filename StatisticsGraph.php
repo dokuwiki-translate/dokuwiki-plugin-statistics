@@ -56,12 +56,22 @@ class StatisticsGraph
      * Build a PieChart with only the top data shown and all other summarized
      *
      * @param string $query The function to call on the Query object to get the data
-     * @param string $key The key containing the label
+     * @param ?string $key The key containing the label, or null for the first non-cnt key
      * @param int $max How many discrete values to show before summarizing under "other"
      */
-    protected function sumUpPieChart($query, $key, $max = 4)
+    public function sumUpPieChart($query, $key = null, $max = 4)
     {
         $result = $this->hlp->getQuery()->$query();
+        if(!$result) return;
+
+        if ($key === null) {
+            $keys = array_keys($result[0]);
+            $key = array_shift($keys);
+            if($key === 'cnt') {
+                $key = array_shift($keys);
+            }
+        }
+
         $data   = [];
         $top    = 0;
         foreach ($result as $row) {

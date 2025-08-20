@@ -510,6 +510,57 @@ class Query
     /**
      * @return array
      */
+    public function campaigns(): array
+    {
+        $sql = "SELECT COUNT(*) as cnt, C.campaign
+                  FROM campaigns as C,
+                       sessions as S
+                 WHERE DATETIME(S.dt, ?) >= ? AND DATETIME(S.dt, ?) <= ?
+                   AND S.session = C.session
+              GROUP BY C.campaign
+              ORDER BY cnt DESC, C.campaign" .
+            $this->limit;
+        return $this->db->queryAll($sql, [$this->tz, $this->from, $this->tz, $this->to]);
+    }
+
+    /**
+     * @return array
+     */
+    public function source(): array
+    {
+        $sql = "SELECT COUNT(*) as cnt, C.campaign || ' - ' || C.source AS campaign
+                  FROM campaigns as C,
+                       sessions as S
+                 WHERE DATETIME(S.dt, ?) >= ? AND DATETIME(S.dt, ?) <= ?
+                   AND S.session = C.session
+                   AND C.source IS NOT NULL
+              GROUP BY C.campaign, C.source
+              ORDER BY cnt DESC, C.campaign" .
+            $this->limit;
+        return $this->db->queryAll($sql, [$this->tz, $this->from, $this->tz, $this->to]);
+    }
+
+    /**
+     * @return array
+     */
+    public function medium(): array
+    {
+        $sql = "SELECT COUNT(*) as cnt, C.campaign || ' - ' || C.medium AS campaign
+                  FROM campaigns as C,
+                       sessions as S
+                 WHERE DATETIME(S.dt, ?) >= ? AND DATETIME(S.dt, ?) <= ?
+                   AND S.session = C.session
+                   AND C.medium IS NOT NULL
+              GROUP BY C.campaign, C.medium
+              ORDER BY cnt DESC, C.campaign" .
+            $this->limit;
+        return $this->db->queryAll($sql, [$this->tz, $this->from, $this->tz, $this->to]);
+    }
+
+
+    /**
+     * @return array
+     */
     public function countries(): array
     {
         $sql = "SELECT COUNT(DISTINCT P.session) as cnt, I.country

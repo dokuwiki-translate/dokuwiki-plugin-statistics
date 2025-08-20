@@ -5,3 +5,7 @@ CREATE TABLE `campaigns`
     `source`   TEXT NULL,
     `medium`   TEXT NULL
 );
+
+CREATE INDEX `idx_campaigns_campaign` ON `campaigns` (`campaign`);
+CREATE INDEX `idx_campaigns_source` ON `campaigns` (`source`);
+CREATE INDEX `idx_campaigns_medium` ON `campaigns` (`medium`);

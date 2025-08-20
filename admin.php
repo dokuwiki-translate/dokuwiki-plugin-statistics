@@ -50,8 +50,8 @@ class admin_plugin_statistics extends AdminPlugin
             'newreferer' => 'printTable',
             'outlinks'  => 'printTable'
         ],
-        'campaigns' => [
-            'campaign' => 'printTableAndPieGraph',
+        'campaign' => [
+            'campaigns' => 'printTableAndPieGraph',
             'source' => 'printTableAndPieGraph',
             'medium' => 'printTableAndPieGraph',
         ],
@@ -357,7 +357,11 @@ class admin_plugin_statistics extends AdminPlugin
 
     public function printTableAndPieGraph($name) {
         echo '<p>' . $this->getLang("intro_$name") . '</p>';
-        $this->html_graph($name, 300, 300);
+
+
+        $graph = $this->hlp->getGraph($this->from, $this->to, 300, 300);
+        $graph->sumUpPieChart($name);
+
         $result = $this->hlp->getQuery()->$name();
         $this->html_resulttable($result, '', 150);
     }
