@@ -2,6 +2,7 @@
 
 namespace dokuwiki\plugin\statistics;
 
+use DeviceDetector\ClientHints;
 use DeviceDetector\DeviceDetector;
 use DeviceDetector\Parser\Client\Browser;
 use DeviceDetector\Parser\Device\AbstractDeviceParser;
@@ -65,7 +66,7 @@ class Logger
 
         $ua = trim($INPUT->server->str('HTTP_USER_AGENT'));
         AbstractDeviceParser::setVersionTruncation(AbstractDeviceParser::VERSION_TRUNCATION_MAJOR);
-        $dd = new DeviceDetector($ua); // FIXME we could use client hints, but need to add headers
+        $dd = new DeviceDetector($ua, ClientHints::factory($_SERVER));
         $dd->discardBotInformation();
         $dd->parse();
 
