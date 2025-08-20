@@ -324,7 +324,7 @@ class admin_plugin_statistics extends AdminPlugin
         $quickgraphs = [
             ['lbl' => 'dash_mostpopular', 'query' => 'pages', 'opt' => 'page'],
             ['lbl' => 'dash_newincoming', 'query' => 'newreferer', 'opt' => 'newreferer'],
-            ['lbl' => 'dash_topsearch', 'query' => 'searchphrases', 'opt' => 'internalsearchphrases'],
+            ['lbl' => 'dash_topsearch', 'query' => 'internalsearchphrases', 'opt' => 'internalsearchphrases'],
         ];
 
         foreach ($quickgraphs as $graph) {
