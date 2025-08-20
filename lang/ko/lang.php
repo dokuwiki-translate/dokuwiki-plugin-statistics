@@ -2,7 +2,7 @@
 
 /**
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
- * 
+ *
  * @author Myeongjin <aranet100@gmail.com>
  */
 $lang['menu']                  = '접근 및 사용 통계';
@@ -19,7 +19,7 @@ $lang['days']                  = '일';
 $lang['weeks']                 = '주';
 $lang['months']                = '월';
 $lang['dashboard']             = '대시보드';
-$lang['page']                  = '문서';
+$lang['pages']                 = '문서';
 $lang['edits']                 = '편집';
 $lang['images']                = '그림';
 $lang['downloads']             = '다운로드';

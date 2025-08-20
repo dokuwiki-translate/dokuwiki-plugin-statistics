@@ -28,7 +28,7 @@ $lang['months']                = 'Months';
 
 // the different pages
 $lang['dashboard']             = 'Dashboard';
-$lang['page']                  = 'Pages';
+$lang['pages']                 = 'Pages';
 $lang['edits']                 = 'Edits';
 $lang['images']                = 'Images';
 $lang['downloads']             = 'Downloads';

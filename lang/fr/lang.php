@@ -2,7 +2,7 @@
 
 /**
  * @license    GPL 2 (http://www.gnu.org/licenses/gpl.html)
- * 
+ *
  * @author NicolasFriedli <nicolas@theologique.ch>
  * @author Schplurtz le Déboulonné <schplurtz@laposte.net>
  * @author Alexandre Saillet <moutardea@gmail.com>
@@ -24,7 +24,7 @@ $lang['days']                  = 'Jours';
 $lang['weeks']                 = 'Semaines';
 $lang['months']                = 'Mois';
 $lang['dashboard']             = 'Tableau de bord';
-$lang['page']                  = 'Pages';
+$lang['pages']                 = 'Pages';
 $lang['edits']                 = 'Editions';
 $lang['images']                = 'Images';
 $lang['downloads']             = 'Téléchargements';
