@@ -1,8 +1,10 @@
 <?php
 
+use dokuwiki\ErrorHandler;
 use dokuwiki\Extension\ActionPlugin;
 use dokuwiki\Extension\Event;
 use dokuwiki\Extension\EventHandler;
+use dokuwiki\plugin\statistics\IgnoreException;
 
 /**
  *
@@ -180,12 +182,18 @@ class action_plugin_statistics extends ActionPlugin
 
         /** @var helper_plugin_statistics $hlp */
         $hlp = plugin_load('helper', 'statistics');
-        $hlp->getLogger()->logMedia(
-            $event->data['media'],
-            $event->data['mime'],
-            !$event->data['download'],
-            $size
-        );
+        try {
+            $hlp->getLogger()->logMedia(
+                $event->data['media'],
+                $event->data['mime'],
+                !$event->data['download'],
+                $size
+            );
+        } catch (Exception $e) {
+            if (!$e instanceof IgnoreException) {
+                ErrorHandler::logException($e);
+            }
+        }
     }
 
     /**
