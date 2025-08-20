@@ -340,7 +340,7 @@ class Query
     /**
      * @return array
      */
-    public function searchphrases(): array
+    public function internalsearchphrases(): array
     {
         $sql = "SELECT COUNT(*) as cnt, query, query as ilookup
                   FROM search
@@ -354,7 +354,7 @@ class Query
     /**
      * @return array
      */
-    public function searchwords(): array
+    public function internalsearchwords(): array
     {
         $sql = "SELECT COUNT(*) as cnt, SW.word, SW.word as ilookup
                   FROM search as S,

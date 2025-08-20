@@ -29,13 +29,44 @@ class admin_plugin_statistics extends AdminPlugin
      * Available statistic pages
      */
     protected $pages = [
-        'dashboard' => 1,
-        'content' => ['page', 'edits', 'images', 'downloads', 'history'],
-        'users' => ['topdomain', 'topuser', 'topeditor', 'topgroup', 'topgroupedit', 'seenusers'],
-        'links' => ['referer', 'newreferer', 'outlinks'],
-        'campaigns' => ['campaign', 'source', 'medium'],
-        'search' => ['searchengines', 'internalsearchphrases', 'internalsearchwords'],
-        'technology' => ['browsers', 'os', 'countries', 'resolution', 'viewport']
+        'dashboard' => 'printDashboard',
+        'content' => [
+            'pages' => 'printTable',
+            'edits' => 'printTable',
+            'images' => 'printImages',
+            'downloads'  => 'printDownloads',
+            'history'  => 'printHistory',
+        ],
+        'users' => [
+            'topdomain' => 'printTableAndPieGraph',
+            'topuser' => 'printTableAndPieGraph',
+            'topeditor' => 'printTableAndPieGraph',
+            'topgroup' => 'printTableAndPieGraph',
+            'topgroupedit' => 'printTableAndPieGraph',
+            'seenusers' => 'printTable',
+        ],
+        'links' => [
+            'referer' => 'printReferer',
+            'newreferer' => 'printTable',
+            'outlinks'  => 'printTable'
+        ],
+        'campaigns' => [
+            'campaign' => 'printTableAndPieGraph',
+            'source' => 'printTableAndPieGraph',
+            'medium' => 'printTableAndPieGraph',
+        ],
+        'search' => [
+            'searchengines'  => 'printTableAndPieGraph',
+            'internalsearchphrases' => 'printTable',
+            'internalsearchwords' => 'printTable',
+        ],
+        'technology' => [
+            'browsers' => 'printTableAndPieGraph',
+            'os' => 'printTableAndPieGraph',
+            'countries' => 'printTableAndPieGraph',
+            'resolution' => 'printTableAndScatterGraph',
+            'viewport' => 'printTableAndScatterGraph',
+        ]
     ];
 
     /** @var array keeps a list of all real content pages, generated from above array */
@@ -61,7 +92,7 @@ class admin_plugin_statistics extends AdminPlugin
             if (is_array($val)) {
                 $this->allowedpages = array_merge($this->allowedpages, $val);
             } else {
-                $this->allowedpages[] = $key;
+                $this->allowedpages[$key] = $val;
             }
         }
     }
@@ -89,7 +120,7 @@ class admin_plugin_statistics extends AdminPlugin
     {
         global $INPUT;
         $this->opt = preg_replace('/[^a-z]+/', '', $INPUT->str('opt'));
-        if (!in_array($this->opt, $this->allowedpages)) $this->opt = 'dashboard';
+        if (!isset($this->allowedpages[$this->opt])) $this->opt = 'dashboard';
 
         $this->start = $INPUT->int('s');
         $this->setTimeframe($INPUT->str('f', date('Y-m-d')), $INPUT->str('t', date('Y-m-d')));
@@ -121,11 +152,12 @@ class admin_plugin_statistics extends AdminPlugin
         $this->html_timeselect();
         tpl_flush();
 
-        $method = 'html_' . $this->opt;
+
+        $method = $this->allowedpages[$this->opt];
         if (method_exists($this, $method)) {
             echo '<div class="plg_stats_' . $this->opt . '">';
             echo '<h2>' . $this->getLang($this->opt) . '</h2>';
-            $this->$method();
+            $this->$method($this->opt);
             echo '</div>';
         }
         echo '</div>';
@@ -148,7 +180,7 @@ class admin_plugin_statistics extends AdminPlugin
                     ''
                 );
 
-                foreach ($info as $page) {
+                foreach (array_keys($info) as $page) {
                     $toc[] = html_mktocitem(
                         '?do=admin&amp;page=statistics&amp;opt=' . $page .
                         '&amp;f=' . $this->from .
@@ -172,6 +204,9 @@ class admin_plugin_statistics extends AdminPlugin
         return $toc;
     }
 
+    /**
+     * @fixme instead of this, I would like the print* methods to call the Graph methods
+     */
     public function html_graph($name, $width, $height)
     {
         $this->hlp->getGraph($this->from, $this->to, $width, $height)->$name();
@@ -257,10 +292,12 @@ class admin_plugin_statistics extends AdminPlugin
         echo '</div>';
     }
 
+    // region: Print functions for the different statistic pages
+
     /**
      * Print an introductionary screen
      */
-    public function html_dashboard()
+    public function printDashboard()
     {
         echo '<p>' . $this->getLang('intro_dashboard') . '</p>';
 
@@ -308,7 +345,7 @@ class admin_plugin_statistics extends AdminPlugin
         }
     }
 
-    public function html_history()
+    public function printHistory($name)
     {
         echo '<p>' . $this->getLang('intro_history') . '</p>';
         $this->html_graph('history_page_count', 600, 200);
@@ -317,29 +354,31 @@ class admin_plugin_statistics extends AdminPlugin
         $this->html_graph('history_media_size', 600, 200);
     }
 
-    public function html_countries()
-    {
-        echo '<p>' . $this->getLang('intro_countries') . '</p>';
-        $this->html_graph('countries', 300, 300);
-        $result = $this->hlp->getQuery()->countries();
+
+    public function printTableAndPieGraph($name) {
+        echo '<p>' . $this->getLang("intro_$name") . '</p>';
+        $this->html_graph($name, 300, 300);
+        $result = $this->hlp->getQuery()->$name();
         $this->html_resulttable($result, '', 150);
     }
 
-    public function html_page()
+    public function printTableAndScatterGraph()
     {
-        echo '<p>' . $this->getLang('intro_page') . '</p>';
-        $result = $this->hlp->getQuery()->pages();
+        echo '<p>' . $this->getLang('intro_resolution') . '</p>';
+        $this->html_graph('resolution', 650, 490);
+        $result = $this->hlp->getQuery()->resolution();
         $this->html_resulttable($result, '', 150);
     }
 
-    public function html_edits()
+    public function printTable($name)
     {
-        echo '<p>' . $this->getLang('intro_edits') . '</p>';
-        $result = $this->hlp->getQuery()->edits();
+        echo '<p>' . $this->getLang("intro_$name") . '</p>';
+        $result = $this->hlp->getQuery()->$name();
         $this->html_resulttable($result, '', 150);
     }
 
-    public function html_images()
+
+    public function printImages()
     {
         echo '<p>' . $this->getLang('intro_images') . '</p>';
 
@@ -352,7 +391,7 @@ class admin_plugin_statistics extends AdminPlugin
         $this->html_resulttable($result, '', 150);
     }
 
-    public function html_downloads()
+    public function printDownloads()
     {
         echo '<p>' . $this->getLang('intro_downloads') . '</p>';
 
@@ -365,63 +404,7 @@ class admin_plugin_statistics extends AdminPlugin
         $this->html_resulttable($result, '', 150);
     }
 
-    public function html_browsers()
-    {
-        echo '<p>' . $this->getLang('intro_browsers') . '</p>';
-        $this->html_graph('browsers', 300, 300);
-        $result = $this->hlp->getQuery()->browsers(false);
-        $this->html_resulttable($result, '', 150);
-    }
-
-    public function html_topdomain()
-    {
-        echo '<p>' . $this->getLang('intro_topdomain') . '</p>';
-        $this->html_graph('topdomain', 300, 300);
-        $result = $this->hlp->getQuery()->topdomain();
-        $this->html_resulttable($result, '', 150);
-    }
-
-    public function html_topuser()
-    {
-        echo '<p>' . $this->getLang('intro_topuser') . '</p>';
-        $this->html_graph('topuser', 300, 300);
-        $result = $this->hlp->getQuery()->topuser();
-        $this->html_resulttable($result, '', 150);
-    }
-
-    public function html_topeditor()
-    {
-        echo '<p>' . $this->getLang('intro_topeditor') . '</p>';
-        $this->html_graph('topeditor', 300, 300);
-        $result = $this->hlp->getQuery()->topeditor();
-        $this->html_resulttable($result, '', 150);
-    }
-
-    public function html_topgroup()
-    {
-        echo '<p>' . $this->getLang('intro_topgroup') . '</p>';
-        $this->html_graph('topgroup', 300, 300);
-        $result = $this->hlp->getQuery()->topgroup();
-        $this->html_resulttable($result, '', 150);
-    }
-
-    public function html_topgroupedit()
-    {
-        echo '<p>' . $this->getLang('intro_topgroupedit') . '</p>';
-        $this->html_graph('topgroupedit', 300, 300);
-        $result = $this->hlp->getQuery()->topgroupedit();
-        $this->html_resulttable($result, '', 150);
-    }
-
-    public function html_os()
-    {
-        echo '<p>' . $this->getLang('intro_os') . '</p>';
-        $this->html_graph('os', 300, 300);
-        $result = $this->hlp->getQuery()->os();
-        $this->html_resulttable($result, '', 150);
-    }
-
-    public function html_referer()
+    public function printReferer()
     {
         $result = $this->hlp->getQuery()->aggregate();
 
@@ -442,79 +425,8 @@ class admin_plugin_statistics extends AdminPlugin
         $this->html_resulttable($result, '', 150);
     }
 
-    public function html_newreferer()
-    {
-        echo '<p>' . $this->getLang('intro_newreferer') . '</p>';
+    // endregion
 
-        $result = $this->hlp->getQuery()->newreferer();
-        $this->html_resulttable($result, '', 150);
-    }
-
-    public function html_outlinks()
-    {
-        echo '<p>' . $this->getLang('intro_outlinks') . '</p>';
-        $result = $this->hlp->getQuery()->outlinks();
-        $this->html_resulttable($result, '', 150);
-    }
-
-    public function html_searchphrases()
-    {
-        echo '<p>' . $this->getLang('intro_searchphrases') . '</p>';
-        $result = $this->hlp->getQuery()->searchphrases(true);
-        $this->html_resulttable($result, '', 150);
-    }
-
-    public function html_searchwords()
-    {
-        echo '<p>' . $this->getLang('intro_searchwords') . '</p>';
-        $result = $this->hlp->getQuery()->searchwords(true);
-        $this->html_resulttable($result, '', 150);
-    }
-
-    public function html_internalsearchphrases()
-    {
-        echo '<p>' . $this->getLang('intro_internalsearchphrases') . '</p>';
-        $result = $this->hlp->getQuery()->searchphrases(false);
-        $this->html_resulttable($result, '', 150);
-    }
-
-    public function html_internalsearchwords()
-    {
-        echo '<p>' . $this->getLang('intro_internalsearchwords') . '</p>';
-        $result = $this->hlp->getQuery()->searchwords(false);
-        $this->html_resulttable($result, '', 150);
-    }
-
-    public function html_searchengines()
-    {
-        echo '<p>' . $this->getLang('intro_searchengines') . '</p>';
-        $this->html_graph('searchengines', 400, 200);
-        $result = $this->hlp->getQuery()->searchengines();
-        $this->html_resulttable($result, '', 150);
-    }
-
-    public function html_resolution()
-    {
-        echo '<p>' . $this->getLang('intro_resolution') . '</p>';
-        $this->html_graph('resolution', 650, 490);
-        $result = $this->hlp->getQuery()->resolution();
-        $this->html_resulttable($result, '', 150);
-    }
-
-    public function html_viewport()
-    {
-        echo '<p>' . $this->getLang('intro_viewport') . '</p>';
-        $this->html_graph('viewport', 650, 490);
-        $result = $this->hlp->getQuery()->viewport();
-        $this->html_resulttable($result, '', 150);
-    }
-
-    public function html_seenusers()
-    {
-        echo '<p>' . $this->getLang('intro_seenusers') . '</p>';
-        $result = $this->hlp->getQuery()->seenusers();
-        $this->html_resulttable($result, '', 150);
-    }
 
     /**
      * Display a result in a HTML table
@@ -559,18 +471,6 @@ class admin_plugin_statistics extends AdminPlugin
                     echo '</a>';
                 } elseif ($k == 'ilookup') {
                     echo '<a href="' . wl('', ['id' => $v, 'do' => 'search']) . '">Search</a>';
-                } elseif ($k == 'lookup') {
-                    echo '<a href="http://www.google.com/search?q=' . rawurlencode($v) . '">';
-                    echo '<img src="' . DOKU_BASE . 'lib/plugins/statistics/ico/search/google.png" alt="Google" />';
-                    echo '</a> ';
-
-                    echo '<a href="http://search.yahoo.com/search?p=' . rawurlencode($v) . '">';
-                    echo '<img src="' . DOKU_BASE . 'lib/plugins/statistics/ico/search/yahoo.png" alt="Yahoo!" />';
-                    echo '</a> ';
-
-                    echo '<a href="http://www.bing.com/search?q=' . rawurlencode($v) . '">';
-                    echo '<img src="' . DOKU_BASE . 'lib/plugins/statistics/ico/search/bing.png" alt="Bing" />';
-                    echo '</a> ';
                 } elseif ($k == 'engine') {
                     $name = SearchEngines::getName($v);
                     $url = SearchEngines::getURL($v);
