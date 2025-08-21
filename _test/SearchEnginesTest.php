@@ -191,13 +191,22 @@ class SearchEnginesTest extends DokuWikiTest
                 'babylon search'
             ],
 
-            // Google AVG
+            // AVG
             'avg.com' => [
                 'https://search.avg.com/search?q=avg+search',
                 true,
-                'google_avg',
-                'Google',
+                'avg',
+                'AVG Safe Search',
                 'avg search'
+            ],
+
+            // Brave
+            'brave.com' => [
+                'https://search.brave.com/search?q=brave+search',
+                true,
+                'brave',
+                'Brave Search',
+                'brave search'
             ],
         ];
     }
@@ -455,8 +464,8 @@ class SearchEnginesTest extends DokuWikiTest
      */
     public function testGetUrl(): void
     {
-        $this->assertEquals('http://www.google.com', SearchEngines::getUrl('google'));
-        $this->assertEquals('http://www.bing.com', SearchEngines::getUrl('bing'));
+        $this->assertEquals('https://www.google.com', SearchEngines::getUrl('google'));
+        $this->assertEquals('https://www.bing.com', SearchEngines::getUrl('bing'));
         $this->assertNull(SearchEngines::getUrl('unknown_engine'));
     }
 

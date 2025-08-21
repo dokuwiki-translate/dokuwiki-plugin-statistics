@@ -13,67 +13,67 @@ class SearchEngines
     protected static array $searchEngines = [
         'google' => [
             'name' => 'Google',
-            'url' => 'http://www.google.com',
+            'url' => 'https://www.google.com',
             'regex' => '^(\w+\.)*google(\.co)?\.([a-z]{2,5})$',
             'params' => ['q']
         ],
         'bing' => [
             'name' => 'Bing',
-            'url' => 'http://www.bing.com',
+            'url' => 'https://www.bing.com',
             'regex' => '^(\w+\.)*bing(\.co)?\.([a-z]{2,5})$',
             'params' => ['q']
         ],
         'yandex' => [
             'name' => 'Яндекс (Yandex)',
-            'url' => 'http://www.yandex.ru',
+            'url' => 'https://www.yandex.ru',
             'regex' => '^(\w+\.)*yandex(\.co)?\.([a-z]{2,5})$',
             'params' => ['query']
         ],
         'yahoo' => [
             'name' => 'Yahoo!',
-            'url' => 'http://www.yahoo.com',
+            'url' => 'https://www.yahoo.com',
             'regex' => '^(\w+\.)*yahoo\.com$',
             'params' => ['p']
         ],
         'naver' => [
             'name' => '네이버 (Naver)',
-            'url' => 'http://www.naver.com',
+            'url' => 'https://www.naver.com',
             'regex' => '^search\.naver\.com$',
             'params' => ['query']
         ],
         'baidu' => [
             'name' => '百度 (Baidu)',
-            'url' => 'http://www.baidu.com',
+            'url' => 'https://www.baidu.com',
             'regex' => '^(\w+\.)*baidu\.com$',
             'params' => ['wd', 'word', 'kw']
         ],
         'ask' => [
             'name' => 'Ask',
-            'url' => 'http://www.ask.com',
+            'url' => 'https://www.ask.com',
             'regex' => '^(\w+\.)*ask\.com$',
             'params' => ['ask', 'q', 'searchfor']
         ],
         'ask_search_results' => [
             'name' => 'Ask',
-            'url' => 'http://www.ask.com',
+            'url' => 'https://www.ask.com',
             'regex' => '^(\w+\.)*search-results\.com$',
             'params' => ['ask', 'q', 'searchfor']
         ],
         'babylon' => [
             'name' => 'Babylon',
-            'url' => 'http://search.babylon.com',
+            'url' => 'https://search.babylon.com',
             'regex' => '^search\.babylon\.com$',
             'params' => ['q']
         ],
         'aol' => [
             'name' => 'AOL Search',
-            'url' => 'http://search.aol.com',
+            'url' => 'https://search.aol.com',
             'regex' => '^(\w+\.)*(aol)?((search|recherches?|images|suche|alicesuche)\.)aol(\.co)?\.([a-z]{2,5})$',
             'params' => ['query', 'q']
         ],
         'duckduckgo' => [
             'name' => 'DuckDuckGo',
-            'url' => 'http://duckduckgo.com',
+            'url' => 'https://duckduckgo.com',
             'regex' => '^duckduckgo\.com$',
             'params' => ['q']
         ],
@@ -89,12 +89,18 @@ class SearchEngines
             'regex' => '^(\w+\.)*qwant\.com$',
             'params' => ['q']
         ],
-        'google_avg' => [
-            'name' => 'Google',
-            'url' => 'http://www.google.com',
+        'avg' => [
+            'name' => 'AVG Safe Search',
+            'url' => 'https://search.avg.com',
             'regex' => '^search\.avg\.com$',
             'params' => ['q']
-        ]
+        ],
+        'brave' => [
+            'name' => 'Brave Search',
+            'url' => 'https://search.brave.com',
+            'regex' => '^(\w+\.)*search\.brave\.com$',
+            'params' => ['q']
+        ],
     ];
 
     /** @var string|null The search engine key */
