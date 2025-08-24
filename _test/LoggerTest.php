@@ -533,4 +533,139 @@ class LoggerTest extends DokuWikiTest
 
         $this->assertEquals('feedreader', $uaTypeProperty->getValue($logger));
     }
+
+    /**
+     * Data provider for logCampaign test
+     */
+    public function logCampaignProvider()
+    {
+        return [
+            'all utm parameters' => [
+                ['utm_campaign' => 'summer_sale', 'utm_source' => 'google', 'utm_medium' => 'cpc'],
+                ['summer_sale', 'google', 'cpc'],
+                true
+            ],
+            'only campaign' => [
+                ['utm_campaign' => 'newsletter'],
+                ['newsletter', null, null],
+                true
+            ],
+            'only source' => [
+                ['utm_source' => 'facebook'],
+                [null, 'facebook', null],
+                true
+            ],
+            'only medium' => [
+                ['utm_medium' => 'email'],
+                [null, null, 'email'],
+                true
+            ],
+            'campaign and source' => [
+                ['utm_campaign' => 'holiday', 'utm_source' => 'twitter'],
+                ['holiday', 'twitter', null],
+                true
+            ],
+            'no utm parameters' => [
+                [],
+                [null, null, null],
+                false
+            ],
+            'empty utm parameters' => [
+                ['utm_campaign' => '', 'utm_source' => '', 'utm_medium' => ''],
+                [null, null, null],
+                false
+            ],
+            'whitespace utm parameters' => [
+                ['utm_campaign' => '  ', 'utm_source' => '  ', 'utm_medium' => '  '],
+                [null, null, null],
+                false
+            ],
+            'mixed empty and valid' => [
+                ['utm_campaign' => '', 'utm_source' => 'instagram', 'utm_medium' => ''],
+                [null, 'instagram', null],
+                true
+            ],
+        ];
+    }
+
+    /**
+     * Test logCampaign method
+     * @dataProvider logCampaignProvider
+     */
+    public function testLogCampaign($inputParams, $expectedValues, $shouldBeLogged)
+    {
+        global $INPUT;
+
+        // Clean up any existing campaign data first
+        $this->helper->getDB()->exec('DELETE FROM campaigns WHERE session = ?', [self::SESSION_ID]);
+
+        // Set up INPUT parameters
+        foreach ($inputParams as $key => $value) {
+            $INPUT->set($key, $value);
+        }
+
+        $logger = $this->helper->getLogger();
+        $logger->begin();
+        $logger->end();
+
+        if ($shouldBeLogged) {
+            $campaign = $this->helper->getDB()->queryRecord(
+                'SELECT * FROM campaigns WHERE session = ? ORDER BY rowid DESC LIMIT 1',
+                [self::SESSION_ID]
+            );
+            
+            $this->assertNotNull($campaign, 'Campaign should be logged');
+            $this->assertEquals(self::SESSION_ID, $campaign['session']);
+            $this->assertEquals($expectedValues[0], $campaign['campaign']);
+            $this->assertEquals($expectedValues[1], $campaign['source']);
+            $this->assertEquals($expectedValues[2], $campaign['medium']);
+        } else {
+            $count = $this->helper->getDB()->queryValue(
+                'SELECT COUNT(*) FROM campaigns WHERE session = ?',
+                [self::SESSION_ID]
+            );
+            $this->assertEquals(0, $count, 'No campaign should be logged');
+        }
+
+        // Clean up INPUT for next test
+        foreach ($inputParams as $key => $value) {
+            $INPUT->set($key, null);
+        }
+    }
+
+    /**
+     * Test that logCampaign uses INSERT OR IGNORE to prevent duplicates
+     */
+    public function testLogCampaignDuplicatePrevention()
+    {
+        global $INPUT;
+
+        // Clean up any existing campaign data first
+        $this->helper->getDB()->exec('DELETE FROM campaigns WHERE session = ?', [self::SESSION_ID]);
+
+        $INPUT->set('utm_campaign', 'test_campaign');
+        $INPUT->set('utm_source', 'test_source');
+        $INPUT->set('utm_medium', 'test_medium');
+
+        // Log the same campaign twice
+        $logger1 = $this->helper->getLogger();
+        $logger1->begin();
+        $logger1->end();
+
+        $logger2 = $this->helper->getLogger();
+        $logger2->begin();
+        $logger2->end();
+
+        // Should only have one record due to INSERT OR IGNORE
+        $count = $this->helper->getDB()->queryValue(
+            'SELECT COUNT(*) FROM campaigns WHERE session = ?',
+            [self::SESSION_ID]
+        );
+        $this->assertEquals(1, $count, 'Should only have one campaign record due to INSERT OR IGNORE');
+
+        // Clean up
+        $INPUT->set('utm_campaign', null);
+        $INPUT->set('utm_source', null);
+        $INPUT->set('utm_medium', null);
+    }
 }
