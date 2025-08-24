@@ -528,7 +528,7 @@ class Query
      */
     public function source(): array
     {
-        $sql = "SELECT COUNT(*) as cnt, C.campaign || ' - ' || C.source AS campaign
+        $sql = "SELECT COUNT(*) as cnt, C.campaign || ' ' || C.source AS campaign
                   FROM campaigns as C,
                        sessions as S
                  WHERE DATETIME(S.dt, ?) >= ? AND DATETIME(S.dt, ?) <= ?
@@ -545,7 +545,7 @@ class Query
      */
     public function medium(): array
     {
-        $sql = "SELECT COUNT(*) as cnt, C.campaign || ' - ' || C.medium AS campaign
+        $sql = "SELECT COUNT(*) as cnt, C.campaign || ' ' || C.medium AS campaign
                   FROM campaigns as C,
                        sessions as S
                  WHERE DATETIME(S.dt, ?) >= ? AND DATETIME(S.dt, ?) <= ?

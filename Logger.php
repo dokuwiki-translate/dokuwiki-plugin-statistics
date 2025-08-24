@@ -209,7 +209,7 @@ class Logger
         $source = $INPUT->filter('trim')->str('utm_source', null, true);
         $medium = $INPUT->filter('trim')->str('utm_medium', null, true);
 
-        if (!$campaign) return;
+        if (!$campaign && !$source && !$medium) return;
 
         $this->db->exec(
             'INSERT OR IGNORE INTO campaigns (session, campaign, source, medium)
