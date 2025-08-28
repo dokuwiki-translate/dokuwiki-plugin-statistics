@@ -1,10 +1,8 @@
 <?php
 
-use dokuwiki\ErrorHandler;
 use dokuwiki\Extension\ActionPlugin;
 use dokuwiki\Extension\Event;
 use dokuwiki\Extension\EventHandler;
-use dokuwiki\plugin\statistics\IgnoreException;
 
 /**
  *
@@ -48,11 +46,8 @@ class action_plugin_statistics extends ActionPlugin
         global $INPUT;
 
         // load session data
-        if (isset($_SESSION[DOKU_COOKIE]['statistics'])) {
-            $session = $_SESSION[DOKU_COOKIE]['statistics'];
-        } else {
-            $session = [];
-        }
+        $session = $_SESSION[DOKU_COOKIE]['statistics'] ?? [];
+
         // reset if session is too old
         if (time() - ($session['time'] ?? 0) > 60 * 15) {
             $session = [];
@@ -182,18 +177,12 @@ class action_plugin_statistics extends ActionPlugin
 
         /** @var helper_plugin_statistics $hlp */
         $hlp = plugin_load('helper', 'statistics');
-        try {
-            $hlp->getLogger()->logMedia(
-                $event->data['media'],
-                $event->data['mime'],
-                !$event->data['download'],
-                $size
-            );
-        } catch (Exception $e) {
-            if (!$e instanceof IgnoreException) {
-                ErrorHandler::logException($e);
-            }
-        }
+        $hlp->getLogger()->logMedia(
+            $event->data['media'],
+            $event->data['mime'],
+            !$event->data['download'],
+            $size
+        );
     }
 
     /**

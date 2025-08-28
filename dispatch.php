@@ -19,25 +19,19 @@ session_write_close();
 
 global $INPUT;
 
-try {
-    /** @var helper_plugin_statistics $plugin */
-    $plugin = plugin_load('helper', 'statistics');
-    $plugin->sendGIF(); // browser be done
+/** @var helper_plugin_statistics $plugin */
+$plugin = plugin_load('helper', 'statistics');
+$plugin->sendGIF(); // browser be done
 
-    $logger = $plugin->getLogger();
-    $logger->begin(); // triggers autologging
+$logger = $plugin->getLogger();
+$logger->begin(); // triggers autologging
 
-    switch ($INPUT->str('do')) {
-        case 'v':
-            $logger->logPageView();
-            break;
-        case 'o':
-            $logger->logOutgoing();
-    }
-
-    $logger->end();
-} catch (\Exception $e) {
-    if (!$e instanceof IgnoreException) {
-        ErrorHandler::logException($e);
-    }
+switch ($INPUT->str('do')) {
+    case 'v':
+        $logger->logPageView();
+        break;
+    case 'o':
+        $logger->logOutgoing();
 }
+
+$logger->end();

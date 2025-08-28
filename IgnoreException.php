@@ -2,6 +2,6 @@
 
 namespace dokuwiki\plugin\statistics;
 
-class IgnoreException extends \RuntimeException
+class IgnoreException extends \Exception
 {
 }

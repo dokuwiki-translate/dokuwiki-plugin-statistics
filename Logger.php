@@ -4,6 +4,7 @@ namespace dokuwiki\plugin\statistics;
 
 use DeviceDetector\ClientHints;
 use DeviceDetector\DeviceDetector;
+use DeviceDetector\Parser\AbstractParser;
 use DeviceDetector\Parser\Device\AbstractDeviceParser;
 use DeviceDetector\Parser\OperatingSystem;
 use dokuwiki\Input\Input;
@@ -52,6 +53,7 @@ class Logger
      * Constructor
      *
      * Parses browser info and set internal vars
+     * @throws IgnoreException
      */
     public function __construct(helper_plugin_statistics $hlp)
     {
@@ -64,7 +66,7 @@ class Logger
         // FIXME if we already have a session, we should not re-parse the user agent
 
         $ua = trim($INPUT->server->str('HTTP_USER_AGENT'));
-        AbstractDeviceParser::setVersionTruncation(AbstractDeviceParser::VERSION_TRUNCATION_MAJOR);
+        AbstractDeviceParser::setVersionTruncation(AbstractParser::VERSION_TRUNCATION_MAJOR);
         $dd = new DeviceDetector($ua, ClientHints::factory($_SERVER));
         $dd->discardBotInformation();
         $dd->parse();
@@ -96,7 +98,7 @@ class Logger
      */
     public function begin(): void
     {
-        $this->hlp->getDB()->getPdo()->beginTransaction();
+        $this->db->getPdo()->beginTransaction();
 
         $this->logUser();
         $this->logGroups();
@@ -112,7 +114,7 @@ class Logger
      */
     public function end(): void
     {
-        $this->hlp->getDB()->getPdo()->commit();
+        $this->db->getPdo()->commit();
     }
 
     // endregion
@@ -123,6 +125,7 @@ class Logger
      *
      * The user ID is stored in the user preferences and should stay there forever.
      * @return string The unique user identifier
+     * @throws IgnoreException
      */
     protected function getUID(): string
     {
@@ -139,6 +142,7 @@ class Logger
      * Return the user's session ID
      *
      * @return string The session identifier
+     * @throws IgnoreException
      */
     protected function getSession(): string
     {

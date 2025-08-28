@@ -1,8 +1,11 @@
 <?php
 
+use dokuwiki\ErrorHandler;
 use dokuwiki\Extension\Plugin;
 use dokuwiki\HTTP\DokuHTTPClient;
 use dokuwiki\plugin\sqlite\SQLiteDB;
+use dokuwiki\plugin\statistics\DummyLogger;
+use dokuwiki\plugin\statistics\IgnoreException;
 use dokuwiki\plugin\statistics\IpResolverException;
 use dokuwiki\plugin\statistics\Logger;
 use dokuwiki\plugin\statistics\Query;
@@ -53,11 +56,21 @@ class helper_plugin_statistics extends Plugin
     /**
      * Return an instance of the logger class
      *
-     * @return Logger
+     * When the logger cannot be created for any reason a DummyLogger is returned
+     *
+     * @return Logger|DummyLogger
      */
-    public function getLogger(): Logger
+    public function getLogger()
     {
-        return new Logger($this);
+        try {
+            return new Logger($this);
+        } catch (Exception $e) {
+            if (!$e instanceof IgnoreException) {
+                ErrorHandler::logException($e);
+            }
+
+            return new DummyLogger();
+        }
     }
 
     /**
