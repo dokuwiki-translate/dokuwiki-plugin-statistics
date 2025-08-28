@@ -20,7 +20,7 @@ class action_plugin_statistics extends ActionPlugin
         global $ACT;
         $JSINFO['act'] = $ACT;
 
-        $controller->register_hook('DOKUWIKI_STARTED', 'AFTER', $this, 'initSession', []);
+        $controller->register_hook('DOKUWIKI_INIT_DONE', 'AFTER', $this, 'initSession', []);
         // FIXME new save event might be better:
         $controller->register_hook('IO_WIKIPAGE_WRITE', 'BEFORE', $this, 'logedits', []);
         $controller->register_hook('SEARCH_QUERY_FULLPAGE', 'AFTER', $this, 'logsearch', []);
