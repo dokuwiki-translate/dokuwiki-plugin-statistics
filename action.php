@@ -68,7 +68,12 @@ class action_plugin_statistics extends ActionPlugin
 
         // store session and cookie data
         $_SESSION[DOKU_COOKIE]['statistics'] = $session;
-        set_doku_pref('plgstats', $session['uid']);
+
+        // Workaround for dokuwiki/dokuwiki#4544
+        $old = get_doku_pref('plgstats', false);
+        if ($old !== $session['uid']) {
+            set_doku_pref('plgstats', $session['uid']);
+        }
     }
 
     /**
