@@ -1,0 +1,1 @@
+https://github.com/cosmocode/sqlite.git  lib/plugins/sqlite
