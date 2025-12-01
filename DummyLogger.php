@@ -14,7 +14,6 @@ class DummyLogger
      *
      * @param string $name ignored
      * @param array $arguments ignored
-     * @return null
      */
     public function __call($name, $arguments)
     {

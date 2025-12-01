@@ -2,6 +2,7 @@
 
 namespace dokuwiki\plugin\statistics;
 
+use dokuwiki\Logger;
 use dokuwiki\plugin\sqlite\SQLiteDB;
 use helper_plugin_statistics;
 
@@ -68,7 +69,7 @@ class Query
             $dateTime = new \DateTime($this->from, new \DateTimeZone($timezoneId));
             $this->tz = $dateTime->format('P');
         } catch (\Exception $e) {
-            \dokuwiki\Logger::error($e->getMessage());
+            Logger::error($e->getMessage());
         }
     }
 
