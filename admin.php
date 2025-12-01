@@ -144,8 +144,8 @@ class admin_plugin_statistics extends AdminPlugin
      */
     public function html()
     {
-        echo '<script src="' . DOKU_BASE . 'lib/plugins/statistics/lib/chart.js"></script>';
-        echo '<script src="' . DOKU_BASE . 'lib/plugins/statistics/lib/chartjs-plugin-datalabels.js"></script>';
+        echo '<script src="' . DOKU_BASE . 'lib/plugins/statistics/js/chart.js"></script>';
+        echo '<script src="' . DOKU_BASE . 'lib/plugins/statistics/js/chartjs-plugin-datalabels.js"></script>';
 
         echo '<div id="plugin__statistics">';
         echo '<h1>' . $this->getLang('menu') . '</h1>';
