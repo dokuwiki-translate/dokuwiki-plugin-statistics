@@ -355,7 +355,8 @@ class admin_plugin_statistics extends AdminPlugin
     }
 
 
-    public function printTableAndPieGraph($name) {
+    public function printTableAndPieGraph($name)
+    {
         echo '<p>' . $this->getLang("intro_$name") . '</p>';
 
 

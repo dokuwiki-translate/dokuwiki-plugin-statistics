@@ -62,12 +62,12 @@ class StatisticsGraph
     public function sumUpPieChart($query, $key = null, $max = 4)
     {
         $result = $this->hlp->getQuery()->$query();
-        if(!$result) return;
+        if (!$result) return;
 
         if ($key === null) {
             $keys = array_keys($result[0]);
             $key = array_shift($keys);
-            if($key === 'cnt') {
+            if ($key === 'cnt') {
                 $key = array_shift($keys);
             }
         }
